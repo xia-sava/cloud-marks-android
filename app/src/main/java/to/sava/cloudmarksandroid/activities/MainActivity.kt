@@ -6,15 +6,28 @@ import android.view.Menu
 import android.view.MenuItem
 import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.toast
+import to.sava.cloudmarksandroid.BlankFragment
 import to.sava.cloudmarksandroid.R
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), BlankFragment.OnFragmentButtonClickedListener {
+    override fun onFragmentButtonClicked(current: String, next: String) {
+        supportFragmentManager
+                .beginTransaction()
+                .add(R.id.main_view_wrapper, BlankFragment.newInstance("$current/$next"))
+                .addToBackStack(null)
+                .commit()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-
+//        setSupportActionBar(toolbar)
+        if (savedInstanceState == null) {
+            supportFragmentManager
+                    .beginTransaction()
+                    .add(R.id.main_view_wrapper, BlankFragment.newInstance("root"))
+                    .commit()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
