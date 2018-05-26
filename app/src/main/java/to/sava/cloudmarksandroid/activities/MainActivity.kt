@@ -4,19 +4,32 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.R
-import to.sava.cloudmarksandroid.dummy.DummyContent
 import to.sava.cloudmarksandroid.fragments.MarksFragment
+import to.sava.cloudmarksandroid.libs.Marks
+import to.sava.cloudmarksandroid.models.MarkNode
+import to.sava.cloudmarksandroid.models.MarkType
 
 class MainActivity : AppCompatActivity(),
-        MarksFragment.onListItemClickedListener, MarksFragment.onListItemChangedListener {
+        MarksFragment.OnListItemClickedListener, MarksFragment.OnListItemChangedListener {
+
+    private lateinit var realm: Realm
+
+    init {
+        Marks().load()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        realm = Realm.getDefaultInstance()
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+
         if (savedInstanceState == null) {
             supportFragmentManager
                     .beginTransaction()
@@ -26,6 +39,11 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        realm.close()
+    }
+
     override fun onBackPressed() {
         super.onBackPressed()
         if (supportFragmentManager.backStackEntryCount == 0) {
@@ -33,17 +51,24 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onListItemChanged(markId: String) {
-        toolbar.title = markId
+    override fun onListItemChanged(mark: MarkNode) {
+        toolbar.title = mark.title
         supportActionBar?.setDisplayHomeAsUpEnabled(supportFragmentManager.backStackEntryCount > 1)
     }
 
-    override fun onListItemClicked(item: DummyContent.DummyItem?) {
-        supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.main_view_wrapper, MarksFragment.newInstance("$item"))
-                .addToBackStack("$item")
-                .commit()
+    override fun onListItemClicked(mark: MarkNode?) {
+        when (mark?.type) {
+            MarkType.Folder -> {
+                supportFragmentManager
+                        .beginTransaction()
+                        .replace(R.id.main_view_wrapper, MarksFragment.newInstance(mark.id))
+                        .addToBackStack(mark.id)
+                        .commit()
+            }
+            MarkType.Bookmark -> {
+                toast(mark.url)
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

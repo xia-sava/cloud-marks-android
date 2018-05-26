@@ -8,31 +8,32 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import io.realm.Realm
+import io.realm.kotlin.where
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 import to.sava.cloudmarksandroid.R
-
-import to.sava.cloudmarksandroid.dummy.DummyContent
-import to.sava.cloudmarksandroid.dummy.DummyContent.DummyItem
+import to.sava.cloudmarksandroid.models.MarkNode
+import java.lang.RuntimeException
 
 /**
  * A fragment representing a list of Items.
  * Activities containing this fragment MUST implement the
- * [MarksFragment.onMarkListItemClickedListener] interface.
+ * [MarksFragment.OnListItemClickedListener] interface.
  */
 class MarksFragment : Fragment() {
 
     // TODO: Customize parameters
-    private var markId: String = "root"
+    private lateinit var mark: MarkNode
 
-    private var listItemClickedListener: onListItemClickedListener? = null
-    private var listItemChangedListener: onListItemChangedListener? = null
+    private var listItemClickedListener: OnListItemClickedListener? = null
+    private var listItemChangedListener: OnListItemChangedListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        arguments?.let {
-            markId = it.getString(ARG_MARK_ID)
-        }
+        val realm = Realm.getDefaultInstance()
+        val markId = arguments?.getString(ARG_MARK_ID) ?: "root"
+        mark = realm.where<MarkNode>().equalTo("id", markId).findFirst() ?: throw RuntimeException()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -43,7 +44,9 @@ class MarksFragment : Fragment() {
         if (view is RecyclerView) {
             with(view) {
                 layoutManager = LinearLayoutManager(context)
-                adapter = MarksRecyclerViewAdapter(DummyContent(markId).ITEMS, listItemClickedListener)
+                val realm = Realm.getDefaultInstance()
+                val items = realm.where<MarkNode>().equalTo("parent.id", mark.id).findAll()
+                adapter = MarksRecyclerViewAdapter(items, listItemClickedListener)
             }
         }
         return view
@@ -51,17 +54,17 @@ class MarksFragment : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        if (context is onListItemClickedListener) {
+        if (context is OnListItemClickedListener) {
             listItemClickedListener = context
         }
-        if (context is onListItemChangedListener) {
+        if (context is OnListItemChangedListener) {
             listItemChangedListener = context
         }
     }
 
     override fun onResume() {
         super.onResume()
-        listItemChangedListener?.onListItemChanged(markId)
+        listItemChangedListener?.onListItemChanged(mark)
     }
 
     override fun onDetach() {
@@ -69,30 +72,18 @@ class MarksFragment : Fragment() {
         listItemClickedListener = null
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     *
-     *
-     * See the Android Training lesson
-     * [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html)
-     * for more information.
-     */
-    interface onListItemClickedListener {
-        // TODO: Update argument type and name
-        fun onListItemClicked(item: DummyItem?)
+    interface OnListItemClickedListener {
+        fun onListItemClicked(mark: MarkNode?)
     }
 
-    interface onListItemChangedListener {
-        fun onListItemChanged(markId: String)
+    interface OnListItemChangedListener {
+        fun onListItemChanged(mark: MarkNode)
     }
 
     companion object {
 
         // TODO: Customize parameter argument names
-        const val ARG_MARK_ID = "column-count"
+        const val ARG_MARK_ID = "mark-id"
 
         // TODO: Customize parameter initialization
         @JvmStatic
