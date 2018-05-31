@@ -1,4 +1,4 @@
 package to.sava.cloudmarksandroid.libs
 
-class Storage {
+class Storage(settings: Settings) {
 }

@@ -8,7 +8,13 @@ import to.sava.cloudmarksandroid.models.MarkType
 import java.util.*
 
 
-class Marks {
+class Marks (settings: Settings) {
+
+    fun load() {
+
+    }
+
+
     private fun createMark(id: String = UUID.randomUUID().toString(),
                          type: MarkType = MarkType.Bookmark,
                          title: String = "",
@@ -25,7 +31,7 @@ class Marks {
         return mark
     }
 
-    fun load(): Unit {
+    fun setupFixture() {
         val f = MarkType.Folder
         val b = MarkType.Bookmark
 
