@@ -37,6 +37,8 @@
     <string name="pref_key_google_drive_connection">pref_gdrive_connection</string>
     <string name="pref_title_google_drive_connection">Google Drive Connection</string>
 
+    <string name="pref_key_google_drive_account">pref_gdrive_account</string>
+
 
     <string name="marks_folder_chevron"><![CDATA[>]]></string>
 </resources>

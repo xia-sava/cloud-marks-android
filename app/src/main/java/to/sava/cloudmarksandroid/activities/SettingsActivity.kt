@@ -1,14 +1,32 @@
 package to.sava.cloudmarksandroid.activities
 
+import android.accounts.Account
+import android.accounts.AccountManager
 import android.annotation.TargetApi
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.preference.*
 import android.view.MenuItem
+import com.google.android.gms.auth.GoogleAuthException
+import com.google.android.gms.auth.GoogleAuthUtil
+import com.google.android.gms.auth.GooglePlayServicesAvailabilityException
+import com.google.android.gms.auth.UserRecoverableAuthException
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.api.client.extensions.android.http.AndroidHttp
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
+import com.google.api.client.json.gson.GsonFactory
+import com.google.api.services.drive.Drive
+import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.toast
+import org.jetbrains.anko.uiThread
 import to.sava.cloudmarksandroid.R
+import java.io.IOException
+import java.util.*
 
 /**
  * A [PreferenceActivity] that presents a set of application settings. On
@@ -84,33 +102,113 @@ class SettingsActivity : PreferenceActivity() {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     class GoogleDrivePreferenceFragment : PreferenceFragment(), Preference.OnPreferenceClickListener  {
+        private lateinit var credential: GoogleAccountCredential
+        private val scopes = Arrays.asList("https://www.googleapis.com/auth/drive")
+        private lateinit var connectionPref: SwitchPreference
+
+        companion object {
+            const val REQUEST_PICK_ACCOUNT = 1
+            const val REQUEST_AUTHENTICATE = 2
+            const val REQUEST_GMS_ERROR_DIALOG = 3
+        }
+
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             addPreferencesFromResource(R.xml.pref_google_drive)
             setHasOptionsMenu(true)
 
-            val connectionId = getString(R.string.pref_key_google_drive_connection)
-            findPreference(connectionId).onPreferenceClickListener = this
+            connectionPref = (findPreference(getString(R.string.pref_key_google_drive_connection)) as SwitchPreference)
+            connectionPref.onPreferenceClickListener = this
         }
 
         override fun onPreferenceClick(preference: Preference?): Boolean {
-            return when (preference?.key) {
+            when (preference?.key) {
                 getString(R.string.pref_key_google_drive_connection) -> {
-                    toggleGoogleDriveConnection(preference as SwitchPreference)
+                    when (connectionPref.isChecked) {
+                        true -> {
+                            // 接続処理をする
+                            toast("Google Drive へ接続します")
+                            credential = GoogleAccountCredential.usingOAuth2(activity, scopes)
+                            startActivityForResult(credential.newChooseAccountIntent(), REQUEST_PICK_ACCOUNT)
+                        }
+                        false -> {
+                            // 接続をリセットする
+                        }
+                    }
+                    connectionPref.isChecked = false
+                    return true
                 }
-                else -> true
+            }
+            return false
+        }
+
+        override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+            super.onActivityResult(requestCode, resultCode, data)
+            when (requestCode) {
+                REQUEST_PICK_ACCOUNT -> {
+                    if (resultCode == Activity.RESULT_OK && data?.extras != null) {
+                        val name = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+                        if (name != null) {
+                            val account = Account(name, "com.google")
+                            credential.selectedAccount = account
+                            tryAuthenticate(account)
+                        }
+                    } else {
+                        toast("アカウントが確認できませんでした")
+                    }
+                }
+                REQUEST_AUTHENTICATE -> {
+                    if (resultCode == Activity.RESULT_OK) {
+                        tryAuthenticate(credential.selectedAccount)
+                    } else {
+                        toast("Google Drive との接続が許可されませんでした")
+                    }
+                }
             }
         }
 
-        private fun toggleGoogleDriveConnection(pref: SwitchPreference): Boolean {
-            return when (pref.isChecked) {
-                true -> {
-                    // 接続処理をする
-                    true
+        private fun tryAuthenticate(account: Account) {
+            doAsync {
+                try {
+                    GoogleAuthUtil.getToken(activity, account, "oauth2" + scopes.joinToString(" "))
+                    listFiles()
+                } catch (playEx: GooglePlayServicesAvailabilityException) {
+                    GoogleApiAvailability.getInstance().getErrorDialog(activity, playEx.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG)
+                } catch (userAuthEx: UserRecoverableAuthException) {
+                    startActivityForResult(userAuthEx.intent, REQUEST_AUTHENTICATE)
+                } catch (transientEx: IOException) {
+                    uiThread { toast(transientEx.message ?: "") }
+                } catch (authEx: GoogleAuthException) {
+                    if (authEx.message == "Unknown") {
+                        listFiles()
+                    } else {
+                        uiThread { toast(authEx.message ?: "") }
+                    }
                 }
-                false -> {
-                    // 接続をリセットする
-                    true
+            }
+        }
+
+        private fun listFiles() {
+            val service = Drive.Builder(AndroidHttp.newCompatibleTransport(), GsonFactory(), credential).build()
+
+            doAsync {
+                try {
+                    val result = service.files()?.list()
+                            ?.setQ("name = 'cloud_marks' and trashed = false")
+                            ?.execute()
+                    uiThread {
+                        connectionPref.isChecked = true
+                        toast(result.toString())
+                    }
+                } catch (userAuthIoEx: UserRecoverableAuthIOException) {
+                    startActivityForResult(userAuthIoEx.intent, REQUEST_AUTHENTICATE)
+                } catch (illArgEx: IllegalArgumentException) {
+                    uiThread { toast(illArgEx.message!!) }
+                } catch (ex: Exception) {
+                    uiThread {
+                        connectionPref.isChecked = false
+                        toast(ex.message!!)
+                    }
                 }
             }
         }
@@ -128,13 +226,12 @@ class SettingsActivity : PreferenceActivity() {
             if (preference is ListPreference) {
                 // For list preferences, look up the correct display value in
                 // the preference's 'entries' list.
-                val listPreference = preference
-                val index = listPreference.findIndexOfValue(stringValue)
+                val index = preference.findIndexOfValue(stringValue)
 
                 // Set the summary to reflect the new value.
                 preference.setSummary(
                         if (index >= 0)
-                            listPreference.entries[index]
+                            preference.entries[index]
                         else
                             null)
 

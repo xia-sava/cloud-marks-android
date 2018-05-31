@@ -14,7 +14,6 @@ import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
 import android.accounts.AccountManager
-import to.sava.cloudmarksandroid.GoogleLoginSampleActivity
 import to.sava.cloudmarksandroid.libs.Settings
 
 
@@ -101,8 +100,6 @@ class MainActivity : AppCompatActivity(),
             R.id.main_menu_load -> {
                 toast("読むぜ！")
                 val marks = Marks(Settings(this))
-                startActivity<GoogleLoginSampleActivity>()
-//                getGoogleToken(mAccountName)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -113,30 +110,4 @@ class MainActivity : AppCompatActivity(),
         menu?.findItem(R.id.main_menu_load)?.isEnabled = true
         return super.onPrepareOptionsMenu(menu)
     }
-
-//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
-//        super.onActivityResult(requestCode, resultCode, data);
-//        if (resultCode == Activity.RESULT_OK && RC_AUTHORIZE_CONTACTS == requestCode) {
-//            getContacts()
-//        }
-//    }
-//
-//    private fun getGoogleToken(accountName: String) {
-//        val SCOPE_CONTACTS_READ = Scope("https://www.googleapis.com/auth/contacts.readonly")
-//        val SCOPE_EMAIL = Scope(Scopes.EMAIL)
-//
-//        if (!GoogleSignIn.hasPermissions(
-//                        GoogleSignIn.getLastSignedInAccount(this),
-//                        SCOPE_CONTACTS_READ,
-//                        SCOPE_EMAIL)) {
-//            GoogleSignIn.requestPermissions(
-//                    this,
-//                    RC_AUTHORIZE_CONTACTS,
-//                    GoogleSignIn.getLastSignedInAccount(this),
-//                    SCOPE_CONTACTS_READ,
-//                    SCOPE_EMAIL)
-//        } else {
-//            getContacts()
-//        }
-//    }
 }
