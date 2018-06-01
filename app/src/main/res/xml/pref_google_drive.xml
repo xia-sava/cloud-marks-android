@@ -3,6 +3,7 @@
     <SwitchPreference
         android:defaultValue="false"
         android:key="@string/pref_key_google_drive_connection"
-        android:title="@string/pref_title_google_drive_connection" />
+        android:title="@string/pref_title_google_drive_connection"
+        android:summary="未接続" />
 
 </PreferenceScreen>
