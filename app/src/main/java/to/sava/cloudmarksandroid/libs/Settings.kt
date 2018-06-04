@@ -18,6 +18,8 @@ class Settings(val context: Context) {
                     .apply()
         }
 
+    var currentService: Services = Services.Gdrive
+
     var googleAccount: String
         get() {
             return pref.getString(context.getString(R.string.pref_key_google_drive_account), "")

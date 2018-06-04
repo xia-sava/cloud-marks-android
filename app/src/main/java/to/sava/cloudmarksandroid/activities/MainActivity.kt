@@ -6,14 +6,13 @@ import android.view.Menu
 import android.view.MenuItem
 import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_main.*
-import org.jetbrains.anko.startActivity
-import org.jetbrains.anko.toast
+import org.jetbrains.anko.*
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.fragments.MarksFragment
 import to.sava.cloudmarksandroid.libs.Marks
+import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
-import android.accounts.AccountManager
 import to.sava.cloudmarksandroid.libs.Settings
 
 
@@ -22,15 +21,7 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var realm: Realm
 
-    private val TAG = "AUTH_SAMPLE"
-    private val ACCOUNT_TYPE_GOOGLE = "com.google"
-    private val AUTH_SCOPE = "oauth2:profile email"
-    private val REQUEST_SIGN_IN = 10000
-    private var mAccountName = ""
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        Marks(Settings(this)).setupFixture()
-
         realm = Realm.getDefaultInstance()
 
         super.onCreate(savedInstanceState)
@@ -44,10 +35,6 @@ class MainActivity : AppCompatActivity(),
                     .addToBackStack("root")
                     .commit()
         }
-
-        val accountManager = AccountManager.get(this)
-//        val accounts = accountManager.getAccountsByType(ACCOUNT_TYPE_GOOGLE)
-//        mAccountName = accounts[0].name
     }
 
     override fun onDestroy() {
@@ -88,26 +75,47 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        return when (item?.itemId) {
+        when (item?.itemId) {
             android.R.id.home -> {
                 onBackPressed()
-                true
             }
             R.id.main_menu_settings -> {
                 startActivity<SettingsActivity>()
-                true
             }
             R.id.main_menu_load -> {
-                toast("読むぜ！")
-                val marks = Marks(Settings(this))
-                true
+                toast("クラウドから読込みます")
+                val marks = Marks(this)
+                doAsync {
+                    try {
+                        marks.load()
+                        uiThread {
+                            toast("読んだ")
+                        }
+                    } catch (ex: ServiceAuthenticationException) {
+                        uiThread {
+                            alert("認証エラーが発生しました。クラウド接続設定をご確認ください。") {
+                                yesButton {
+                                    startActivity<SettingsActivity>()
+                                }
+                            }.show()
+                        }
+                    } catch (ex: Exception) {
+                        uiThread {
+                            alert("エラーが発生しました： ${ex.message}") {
+                                yesButton { }
+                            }.show()
+                        }
+                    }
+                }
             }
-            else -> super.onOptionsItemSelected(item)
+            else -> return super.onOptionsItemSelected(item)
         }
+        return true
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        menu?.findItem(R.id.main_menu_load)?.isEnabled = true
+        val marksMenuEnabled = Settings(this).googleConnected
+        menu?.findItem(R.id.main_menu_load)?.isEnabled = marksMenuEnabled
         return super.onPrepareOptionsMenu(menu)
     }
 }

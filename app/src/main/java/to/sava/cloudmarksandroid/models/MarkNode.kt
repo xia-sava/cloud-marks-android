@@ -1,7 +1,10 @@
 package to.sava.cloudmarksandroid.models
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonSerializationContext
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.lang.reflect.Type
 import java.util.*
 
 
@@ -22,4 +25,18 @@ open class MarkNode (@PrimaryKey open var id: String = UUID.randomUUID().toStrin
         set(value) {
             typeValue = value.rawValue
         }
+}
+
+class MarkNodeJson(val type: MarkType, val title: String, val url: String, val children: List<MarkNodeJson>) {
+    companion object {
+        fun jsonSerialize(mark: MarkNodeJson, typeOfSrc: Type, context: JsonSerializationContext): JsonObject {
+            // ブラウザ側に合わせてプロパティ順序を保存しつつシリアライズするやつ
+            return JsonObject().apply {
+                addProperty("type", mark.type.rawValue)
+                addProperty("title", mark.title)
+                addProperty("url", mark.url)
+                add("children", context.serialize(mark.children))
+            }
+        }
+    }
 }
