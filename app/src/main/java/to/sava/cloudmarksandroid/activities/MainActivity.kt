@@ -22,19 +22,15 @@ class MainActivity : AppCompatActivity(),
     private lateinit var realm: Realm
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        realm = Realm.getDefaultInstance()
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
         if (savedInstanceState == null) {
-            supportFragmentManager
-                    .beginTransaction()
-                    .add(R.id.main_view_wrapper, MarksFragment.newInstance("root"))
-                    .addToBackStack("root")
-                    .commit()
+            transitionMarksFragment(MarkNode.ROOT_ID)
         }
+
+        realm = Realm.getDefaultInstance()
     }
 
     override fun onDestroy() {
@@ -49,19 +45,18 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onListItemChanged(mark: MarkNode) {
-        toolbar.title = mark.title
-        supportActionBar?.setDisplayHomeAsUpEnabled(supportFragmentManager.backStackEntryCount > 1)
+    override fun onListItemChanged(mark: MarkNode?) {
+        val backCount = supportFragmentManager.backStackEntryCount
+        toolbar.title =
+                if (backCount == 1) getString(R.string.app_name)
+                else mark?.title ?: "ブックマークが見つかりません"
+        supportActionBar?.setDisplayHomeAsUpEnabled(backCount > 1)
     }
 
     override fun onListItemClicked(mark: MarkNode?) {
         when (mark?.type) {
             MarkType.Folder -> {
-                supportFragmentManager
-                        .beginTransaction()
-                        .replace(R.id.main_view_wrapper, MarksFragment.newInstance(mark.id))
-                        .addToBackStack(mark.id)
-                        .commit()
+                transitionMarksFragment(mark.id)
             }
             MarkType.Bookmark -> {
                 toast(mark.url)
@@ -84,29 +79,50 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.main_menu_load -> {
                 toast("クラウドから読込みます")
-                val marks = Marks(this)
+//                val marks = Marks(realm)
+//                    try {
+//                        marks.load()
+//                            toast("読んだ")
+//                    } catch (ex: ServiceAuthenticationException) {
+//                            alert("認証エラーが発生しました。クラウド接続設定をご確認ください。") {
+//                                yesButton {
+//                                    startActivity<SettingsActivity>()
+//                                }
+//                            }.show()
+//                    } catch (ex: Exception) {
+//                            alert("エラーが発生しました： ${ex.message}") {
+//                                yesButton { }
+//                            }.show()
+//                    }
                 doAsync {
-                    try {
-                        marks.load()
-                        uiThread {
-                            toast("読んだ")
-                        }
-                    } catch (ex: ServiceAuthenticationException) {
-                        uiThread {
-                            alert("認証エラーが発生しました。クラウド接続設定をご確認ください。") {
-                                yesButton {
-                                    startActivity<SettingsActivity>()
-                                }
-                            }.show()
-                        }
-                    } catch (ex: Exception) {
-                        uiThread {
-                            alert("エラーが発生しました： ${ex.message}") {
-                                yesButton { }
-                            }.show()
+                    Realm.getDefaultInstance().use {
+                        val marks = Marks(it)
+                        try {
+                            marks.load()
+                            uiThread {
+                                toast("読んだ")
+                                startActivity<MainActivity>()
+                            }
+                        } catch (ex: ServiceAuthenticationException) {
+                            uiThread {
+                                alert("認証エラーが発生しました。クラウド接続設定をご確認ください。") {
+                                    yesButton {
+                                        startActivity<SettingsActivity>()
+                                    }
+                                }.show()
+                            }
+                        } catch (ex: Exception) {
+                            uiThread {
+                                alert("エラーが発生しました： ${ex.message}") {
+                                    yesButton { }
+                                }.show()
+                            }
                         }
                     }
                 }
+            }
+            R.id.main_menu_debug -> {
+                startActivity<DebugActivity>()
             }
             else -> return super.onOptionsItemSelected(item)
         }
@@ -114,8 +130,16 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        val marksMenuEnabled = Settings(this).googleConnected
+        val marksMenuEnabled = Settings().googleConnected
         menu?.findItem(R.id.main_menu_load)?.isEnabled = marksMenuEnabled
         return super.onPrepareOptionsMenu(menu)
+    }
+
+    private fun transitionMarksFragment(markId: String) {
+        supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.main_view_wrapper, MarksFragment.newInstance(markId))
+                .addToBackStack(markId)
+                .commit()
     }
 }

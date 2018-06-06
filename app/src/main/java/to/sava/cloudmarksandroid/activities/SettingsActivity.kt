@@ -118,7 +118,7 @@ class SettingsActivity : PreferenceActivity() {
             Preference.OnPreferenceClickListener {
 
         private val storage: GoogleDriveStorage by lazy {
-            GoogleDriveStorage(Settings(activity))
+            GoogleDriveStorage(Settings())
         }
         private val connectionPref: SwitchPreference by lazy {
             findPreference(getString(R.string.pref_key_google_drive_connection)) as SwitchPreference

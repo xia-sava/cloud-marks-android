@@ -5,7 +5,12 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 
 
-class Application : Application() {
+class CloudMarksAndroidApplication : Application() {
+
+    companion object ApplicationInstance {
+        lateinit var instance: CloudMarksAndroidApplication
+    }
+
     override fun onCreate() {
         super.onCreate()
         Realm.init(this)
@@ -13,6 +18,8 @@ class Application : Application() {
                 .deleteRealmIfMigrationNeeded()
                 .build()
         Realm.setDefaultConfiguration(config)
+
+        instance = this
     }
 }
 

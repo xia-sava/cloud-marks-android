@@ -1,11 +1,12 @@
 package to.sava.cloudmarksandroid.libs
 
-import android.content.Context
 import android.preference.PreferenceManager
+import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 
-class Settings(val context: Context) {
-    private val pref = PreferenceManager.getDefaultSharedPreferences(context)
+class Settings {
+    val context = CloudMarksAndroidApplication.instance
+    private val pref = PreferenceManager.getDefaultSharedPreferences(CloudMarksAndroidApplication.instance)
 
     var folderName: String
         get() {

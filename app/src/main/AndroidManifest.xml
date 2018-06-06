@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name=".Application"
+        android:name=".CloudMarksAndroidApplication"
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_descriptor"
         android:icon="@mipmap/ic_launcher"
@@ -26,15 +26,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".activities.SettingsActivity"
-            android:theme="@style/AppTheme.Settings"
-            android:label="@string/main_menu_settings" />
-
-        <activity android:name=".GoogleLoginSampleActivity">
-
-        </activity>
+            android:label="@string/main_menu_settings"
+            android:theme="@style/AppTheme.Settings" />
+        <activity android:name=".GoogleLoginSampleActivity"></activity>
+        <activity android:name=".activities.DebugActivity"></activity>
     </application>
 
 </manifest>

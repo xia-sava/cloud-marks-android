@@ -9,48 +9,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import io.realm.Realm
-import io.realm.kotlin.where
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.models.MarkNode
-import java.lang.RuntimeException
 
-/**
- * A fragment representing a list of Items.
- * Activities containing this fragment MUST implement the
- * [MarksFragment.OnListItemClickedListener] interface.
- */
 class MarksFragment : Fragment() {
 
-    // TODO: Customize parameters
-    private lateinit var mark: MarkNode
+    private var mark: MarkNode? = null
+
+    private lateinit var realm: Realm
 
     private var listItemClickedListener: OnListItemClickedListener? = null
     private var listItemChangedListener: OnListItemChangedListener? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val realm = Realm.getDefaultInstance()
-        val markId = arguments?.getString(ARG_MARK_ID) ?: "root"
-        mark = realm.where<MarkNode>().equalTo("id", markId).findFirst() ?: throw RuntimeException()
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
-        val view = inflater.inflate(R.layout.fragment_marks_list, container, false)
-
-        // Set the adapter
-        if (view is RecyclerView) {
-            with(view) {
-                layoutManager = LinearLayoutManager(context)
-                val realm = Realm.getDefaultInstance()
-                val items = realm.where<MarkNode>().equalTo("parent.id", mark.id).findAll()
-                adapter = MarksRecyclerViewAdapter(items, listItemClickedListener)
-            }
-        }
-        return view
-    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -62,14 +33,38 @@ class MarksFragment : Fragment() {
         }
     }
 
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
+                              savedInstanceState: Bundle?): View? {
+
+        realm = Realm.getDefaultInstance()
+
+        val markId = arguments?.getString(ARG_MARK_ID) ?: MarkNode.ROOT_ID
+        mark = Marks(realm).getMark(markId)
+
+        val layout = when(mark) {
+            null -> R.layout.fragment_mark_not_found
+            else -> R.layout.fragment_marks_list
+        }
+        val view = inflater.inflate(layout, container, false)
+
+        if (mark != null && view is RecyclerView) {
+            with(view) {
+                layoutManager = LinearLayoutManager(context)
+                val marks = Marks(realm).getMarkChildren(mark!!)
+                adapter = MarksRecyclerViewAdapter(marks, listItemClickedListener)
+            }
+        }
+        return view
+    }
+
     override fun onResume() {
         super.onResume()
         listItemChangedListener?.onListItemChanged(mark)
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        listItemClickedListener = null
+    override fun onDestroy() {
+        super.onDestroy()
+        realm.close()
     }
 
     interface OnListItemClickedListener {
@@ -77,15 +72,12 @@ class MarksFragment : Fragment() {
     }
 
     interface OnListItemChangedListener {
-        fun onListItemChanged(mark: MarkNode)
+        fun onListItemChanged(mark: MarkNode?)
     }
 
     companion object {
-
-        // TODO: Customize parameter argument names
         const val ARG_MARK_ID = "mark-id"
 
-        // TODO: Customize parameter initialization
         @JvmStatic
         fun newInstance(markId: String) =
                 MarksFragment().apply {

@@ -14,11 +14,16 @@ enum class MarkType(val rawValue: Int) {
 }
 
 
-open class MarkNode (@PrimaryKey open var id: String = UUID.randomUUID().toString(),
+open class MarkNode (@PrimaryKey open var id: String = newKey(),
                      open var typeValue: Int = MarkType.Bookmark.rawValue,
                      open var title: String = "",
                      open var url: String = "",
                      open var parent: MarkNode? = null): RealmObject() {
+
+    companion object {
+        const val ROOT_ID = "root________"
+        fun newKey() = UUID.randomUUID().toString()
+    }
 
     open var type: MarkType
         get() = MarkType.values().first { it.rawValue == typeValue }
