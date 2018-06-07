@@ -1,12 +1,14 @@
 package to.sava.cloudmarksandroid.activities
 
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_debug.*
-import org.jetbrains.anko.startActivity
+import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.services.MarksIntentService
 
 class DebugActivity : AppCompatActivity() {
 
@@ -22,8 +24,15 @@ class DebugActivity : AppCompatActivity() {
             }
             toast("Realmをtruncateしました")
         }
+
+        debug_start_service.setOnClickListener {
+            MarksIntentService.startActionLoad(this)
+        }
+
         debug_return.setOnClickListener {
-            startActivity<MainActivity>()
+            val intent = intentFor<MainActivity>()
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
         }
     }
 }

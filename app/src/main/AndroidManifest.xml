@@ -26,12 +26,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".activities.SettingsActivity"
             android:label="@string/main_menu_settings"
             android:theme="@style/AppTheme.Settings" />
-        <activity android:name=".GoogleLoginSampleActivity"></activity>
-        <activity android:name=".activities.DebugActivity"></activity>
+
+        <service
+            android:name=".services.MarksIntentService"
+            android:exported="false">
+        </service>
+
+
+        <activity android:name=".activities.DebugActivity" />
+
     </application>
 
 </manifest>
