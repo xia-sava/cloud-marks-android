@@ -18,10 +18,12 @@ open class MarkNode (@PrimaryKey open var id: String = newKey(),
                      open var typeValue: Int = MarkType.Bookmark.rawValue,
                      open var title: String = "",
                      open var url: String = "",
+                     open var order: Int = 0,
                      open var parent: MarkNode? = null): RealmObject() {
 
     companion object {
         const val ROOT_ID = "root________"
+
         fun newKey() = UUID.randomUUID().toString()
     }
 

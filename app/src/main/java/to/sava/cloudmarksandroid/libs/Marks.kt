@@ -1,5 +1,6 @@
 package to.sava.cloudmarksandroid.libs
 
+import android.util.Log
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import io.realm.Realm
 import io.realm.RealmResults
@@ -36,11 +37,10 @@ class Marks (private val realm: Realm) {
         val remote = storage.readMarks(remoteFile)
 
         // 差分を取って適用
-        realm.executeTransaction {
+        MarksManipulator(realm).use {
             try {
-                MarksManipulator(realm).applyRemote(remote, bookmark)
-            }
-            catch (userAuthIoEx: UserRecoverableAuthIOException) {
+                it.applyRemote(remote, bookmark)
+            } catch (userAuthIoEx: UserRecoverableAuthIOException) {
                 throw ServiceAuthenticationException(userAuthIoEx.message ?: "")
             }
         }
@@ -76,7 +76,6 @@ class Marks (private val realm: Realm) {
         Realm.getDefaultInstance().use {realm ->
             realm.beginTransaction()
             val newRoot = realm.createObject<MarkNode>(MarkNode.ROOT_ID)
-            newRoot.title = ""
             newRoot.type = MarkType.Folder
             realm.commitTransaction()
             return newRoot
@@ -88,66 +87,23 @@ class Marks (private val realm: Realm) {
     }
 
     fun getMarkChildren(parent: MarkNode): RealmResults<MarkNode> {
-        return MarksManipulator(realm).getMarkChildren(parent)
+        return realm
+                .where<MarkNode>()
+                .equalTo("parent.id", parent.id)
+                .sort("order")
+                .findAll()
     }
-
-//
-//
-//    private fun createMark(id: String = UUID.randomUUID().toString(),
-//                           type: MarkType = MarkType.Bookmark,
-//                           title: String = "",
-//                           url: String = "",
-//                           parent: MarkNode? = null): MarkNode {
-//        val realm = Realm.getDefaultInstance()
-//        realm.beginTransaction()
-//        val mark = realm.createObject<MarkNode>(id)
-//        mark.type = type
-//        mark.title = title
-//        mark.url = url
-//        mark.parent = parent
-//        realm.commitTransaction()
-//        return mark
-//    }
-//
-//    fun setupFixture() {
-//        val f = MarkType.Folder
-//        val b = MarkType.Bookmark
-//
-//        Realm.getDefaultInstance().executeTransaction {
-//            Realm.getDefaultInstance().delete<MarkNode>()
-//        }
-//
-//        val root = createMark(id = "root", type = f, title = "root")
-//        val menu = createMark(type = f, title = "ブックマークメニュー", parent = root)
-//        createMark(type = f, title = "ブックマークツールバー", parent = root)
-//        createMark(type = f, title = "他のブックマーク", parent = root)
-//        createMark(type = f, title = "モバイルのブックマーク", parent = root)
-//
-//        for (i in 1..3) {
-//            val parent1 = createMark(type = f, title = "フォルダ$i", parent = menu)
-//            for (j in 1..25) {
-//                when (j) {
-//                    in 1..3 -> {
-//                        val parent2 = createMark(type = f, title = "フォルダ$i-$j", parent = parent1)
-//                        for (k in 1..3) {
-//                            val parent3 = createMark(type = f, title = "フォルダ$i-$j-$k", parent = parent2)
-//                            for (m in 1..5) {
-//                                createMark(type = b, title = "ブックマーク $i-$j-$k-$m",
-//                                        url = "https://xia.sava.to/$i-$j-$k-$m", parent = parent3)
-//                            }
-//                        }
-//                    }
-//                    else -> {
-//                        createMark(type = b, title = "ブックマーク $i-$j",
-//                                url = "https://xia.sava.to/$i-$j", parent = parent1)
-//                    }
-//                }
-//            }
-//        }
-//    }
 }
 
-class MarksManipulator(private val realm: Realm) {
+class MarksManipulator(private val realm: Realm): AutoCloseable {
+
+    init {
+        realm.beginTransaction()
+    }
+
+    override fun close() {
+        realm.commitTransaction()
+    }
 
     fun applyRemote(remote: MarkNodeJson, bookmark: MarkNode): Boolean {
         if (diffMark(remote, bookmark)) {
@@ -174,43 +130,35 @@ class MarksManipulator(private val realm: Realm) {
         return false
     }
 
-    private fun createBookmark(parent: MarkNode, mark: MarkNodeJson, index: Int? = null): MarkNode {
+    private fun createBookmark(parent: MarkNode, mark: MarkNodeJson, markOrder: Int = 0): MarkNode {
+        Log.d("cma:createBookmark", "${parent.title}[$markOrder]/${mark.title}")
         val added = realm.createObject<MarkNode>(MarkNode.newKey()).apply {
             type = mark.type
             title = mark.title
             url = mark.url
+            order = markOrder
             this.parent = parent
         }
-        for (child in mark.children) {
-            createBookmark(added, child)
+        for ((order, child) in mark.children.withIndex()) {
+            createBookmark(added, child, order)
         }
         return added
     }
 
     private fun removeBookmark(target: MarkNode) {
-        if (target.id == MarkNode.ROOT_ID || target.parent == null || target.parent?.id == MarkNode.ROOT_ID) {
+        Log.d("cma:removeBookmark", target.title)
+        if (target.type == MarkType.Folder) {
             for (child in getMarkChildren(target)) {
                 removeBookmark(child)
             }
-        } else {
-            fun remove (mark: MarkNode) {
-                for (child in getMarkChildren(mark)) {
-                    remove(child)
-                }
-                remove(mark)
-            }
-            remove(target)
         }
+        target.deleteFromRealm()
     }
 
     private fun updateBookmark(target: MarkNode, modify: MarkNodeJson) {
-        if (target.id == MarkNode.ROOT_ID || target.parent == null || target.parent?.id == MarkNode.ROOT_ID) {
-            return
-        }
-        realm.executeTransaction {
-            target.title = modify.title
-            target.url = modify.url
-        }
+        Log.d("cma:updateBookmark", "${target.title} = ${modify.title}")
+        target.title = modify.title
+        target.url = modify.url
     }
 
     private fun diffMark(remote: MarkNodeJson, bookmark: MarkNode): Boolean {
@@ -230,7 +178,11 @@ class MarksManipulator(private val realm: Realm) {
         return false
     }
 
-    fun getMarkChildren(target: MarkNode): RealmResults<MarkNode> {
-        return realm.where<MarkNode>().equalTo("parent.id", target.id).findAll()
+    private fun getMarkChildren(parent: MarkNode): RealmResults<MarkNode> {
+        return realm
+                .where<MarkNode>()
+                .equalTo("parent.id", parent.id)
+                .sort("order")
+                .findAll()
     }
 }

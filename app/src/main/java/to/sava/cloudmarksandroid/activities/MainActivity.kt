@@ -79,21 +79,6 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.main_menu_load -> {
                 toast("クラウドから読込みます")
-//                val marks = Marks(realm)
-//                    try {
-//                        marks.load()
-//                            toast("読んだ")
-//                    } catch (ex: ServiceAuthenticationException) {
-//                            alert("認証エラーが発生しました。クラウド接続設定をご確認ください。") {
-//                                yesButton {
-//                                    startActivity<SettingsActivity>()
-//                                }
-//                            }.show()
-//                    } catch (ex: Exception) {
-//                            alert("エラーが発生しました： ${ex.message}") {
-//                                yesButton { }
-//                            }.show()
-//                    }
                 doAsync {
                     Realm.getDefaultInstance().use {
                         val marks = Marks(it)
@@ -114,7 +99,9 @@ class MainActivity : AppCompatActivity(),
                         } catch (ex: Exception) {
                             uiThread {
                                 alert("エラーが発生しました： ${ex.message}") {
-                                    yesButton { }
+                                    yesButton {
+                                        startActivity<MainActivity>()
+                                    }
                                 }.show()
                             }
                         }
