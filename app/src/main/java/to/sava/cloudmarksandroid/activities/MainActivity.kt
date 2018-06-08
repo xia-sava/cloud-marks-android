@@ -1,5 +1,7 @@
 package to.sava.cloudmarksandroid.activities
 
+import android.content.Intent
+import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
@@ -59,7 +61,7 @@ class MainActivity : AppCompatActivity(),
                 transitionMarksFragment(mark.id)
             }
             MarkType.Bookmark -> {
-                toast(mark.url)
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(mark.url)))
             }
         }
     }
