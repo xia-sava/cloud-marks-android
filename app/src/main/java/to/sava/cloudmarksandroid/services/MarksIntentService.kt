@@ -97,13 +97,13 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
 
         // TODO: 開始時に，既に何か notification が表示されていたらそれを消したい
 
-        val startNotification = NotificationCompat.Builder(this).apply {
+        val progressNotificationBuilder = NotificationCompat.Builder(this).apply {
             setSmallIcon(params.startNotificationIcon)
             setContentTitle(params.startNotificationTitle)
-            setProgress(0, 0, true)
-        }.build()
+            setProgress(100, 0, false)
+        }
 
-        startForeground(NOTIFICATION_ID, startNotification)
+        startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
 
         val completeNotificationBuilder = NotificationCompat.Builder(this).apply {
             setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
@@ -117,7 +117,15 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
                     Settings().context.loading = true
                     try {
                         Realm.getDefaultInstance().use { realm ->
-                            Marks(realm).load()
+                            Marks(realm).let {
+                                it.progressListener = {folder: String, percent: Int ->
+                                    NotificationCompat.BigTextStyle(progressNotificationBuilder).bigText(
+                                            getString(R.string.service_progress_folder, folder))
+                                    progressNotificationBuilder.setProgress(100, percent, false)
+                                    startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
+                                }
+                                it.load()
+                            }
                         }
                     } finally {
                         Settings().context.loading = false

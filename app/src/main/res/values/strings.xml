@@ -60,5 +60,6 @@
     <string name="service_auth_error_title">認証エラーが発生しました</string>
     <string name="service_auth_error_text">認証処理でエラーが発生しました。\n設定画面から認証をやり直してみてください。</string>
     <string name="service_error_title">何かエラーが発生しました</string>
+    <string name="service_progress_folder">フォルダ %s を処理しています……</string>
 
 </resources>

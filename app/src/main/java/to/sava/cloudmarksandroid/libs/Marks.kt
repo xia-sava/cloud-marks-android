@@ -24,6 +24,8 @@ class Marks (private val realm: Realm) {
     private var remoteFile: FileInfo? = null
     private var remoteFileCreated: Long? = null
 
+    var progressListener: ((folder: String, percent: Int) -> Unit)? = null
+
     fun load() {
         // ストレージの最新ファイルを取得
         val (remoteFile, remoteFileCreated) = getLatestRemoteFile()
@@ -34,11 +36,14 @@ class Marks (private val realm: Realm) {
         val remote = storage.readMarks(remoteFile)
 
         // 差分を取って適用
-        MarksManipulator(realm).use {
-            try {
-                it.applyRemote(remote, bookmark)
-            } catch (userAuthIoEx: UserRecoverableAuthIOException) {
-                throw ServiceAuthenticationException(userAuthIoEx.message ?: "")
+        MarksManipulator(realm).let {
+            it.progressListener = progressListener
+            it.use {
+                try {
+                    it.applyRemote(remote, bookmark)
+                } catch (userAuthIoEx: UserRecoverableAuthIOException) {
+                    throw ServiceAuthenticationException(userAuthIoEx.message ?: "")
+                }
             }
         }
 
@@ -95,6 +100,10 @@ class Marks (private val realm: Realm) {
 
 class MarksManipulator(private val realm: Realm): AutoCloseable {
 
+    var progressListener: ((folder: String, percent: Int) -> Unit)? = null
+    var folderCount = 0
+    var currentFolderNum = 0
+
     init {
         realm.beginTransaction()
     }
@@ -104,6 +113,14 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
     }
 
     fun applyRemote(remote: MarkNodeJson, bookmark: MarkNode): Boolean {
+        if (remote.type == MarkType.Folder) {
+            if (folderCount == 0) {
+                folderCount = countFolder(remote)
+            }
+            currentFolderNum++
+            progressListener?.invoke(remote.title, 100 * currentFolderNum / folderCount)
+        }
+
         if (diffMark(remote, bookmark)) {
             updateBookmark(bookmark, remote)
             if (remote.type == MarkType.Folder) {
@@ -117,14 +134,16 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
             }
             return true
         }
-        val children = getMarkChildren(bookmark)
-        if (remote.type == MarkType.Folder && ! children.isEmpty()) {
-            Log.i("cma", remote.title)
-            var rc = false
-            for (i in children.indices) {
-                rc = applyRemote(remote.children[i], children[i]!!) || rc
+
+        if (remote.type == MarkType.Folder) {
+            val children = getMarkChildren(bookmark)
+            if (!children.isEmpty()) {
+                var rc = false
+                for (i in children.indices) {
+                    rc = applyRemote(remote.children[i], children[i]!!) || rc
+                }
+                return rc
             }
-            return rc
         }
         return false
     }
@@ -191,5 +210,11 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
                 .equalTo("parent.id", parent.id)
                 .sort("order")
                 .count()
+    }
+
+    private fun countFolder(remote: MarkNodeJson): Int {
+        return if (remote.type == MarkType.Folder) {
+            1 + remote.children.map { countFolder(it) }.sum()
+        } else 0
     }
 }
