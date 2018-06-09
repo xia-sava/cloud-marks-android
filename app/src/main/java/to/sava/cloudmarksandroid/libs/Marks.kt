@@ -9,7 +9,6 @@ import io.realm.kotlin.where
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkNodeJson
 import to.sava.cloudmarksandroid.models.MarkType
-import java.math.BigDecimal
 
 
 class Marks (private val realm: Realm) {
@@ -23,7 +22,7 @@ class Marks (private val realm: Realm) {
     }
 
     private var remoteFile: FileInfo? = null
-    private var remoteFileCreated: BigDecimal? = null
+    private var remoteFileCreated: Long? = null
 
     fun load() {
         // ストレージの最新ファイルを取得
@@ -43,14 +42,13 @@ class Marks (private val realm: Realm) {
             }
         }
 
-//         最終ロード日時保存
-//        storage.settings.lastSynced = remoteFileCreated;
-//        storage.settings.lastBookmarkModify = Date.now();
-//        await storage.settings.save();
+        // 最終ロード日時保存
+        settings.lastSynced = remoteFileCreated
+        settings.lastBookmarkModify = System.currentTimeMillis()
     }
 
 
-    private fun getLatestRemoteFile(): Pair<FileInfo, BigDecimal> {
+    private fun getLatestRemoteFile(): Pair<FileInfo, Long> {
         // ストレージのファイル一覧を取得して最新ファイルを取得
         // 複数回呼ばれると結果が変わらないのに時間がかかるのでプロパティにキャッシュ
         if (remoteFile == null || remoteFileCreated == null) {
@@ -62,10 +60,10 @@ class Marks (private val realm: Realm) {
             if (!remoteFiles.isEmpty()) {
                 remoteFile = remoteFiles.last()
                 remoteFileCreated = Regex("""\d+""")
-                        .find(remoteFile!!.filename)?.groupValues?.get(0)?.toBigDecimal()
+                        .find(remoteFile!!.filename)?.groupValues?.get(0)?.toLong()
             }
         }
-        return Pair(remoteFile ?: FileInfo(""), remoteFileCreated ?: BigDecimal(0))
+        return Pair(remoteFile ?: FileInfo(""), remoteFileCreated ?: 0L)
     }
 
     private fun getMarkRoot(): MarkNode {

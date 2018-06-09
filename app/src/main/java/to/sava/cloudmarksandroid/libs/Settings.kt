@@ -4,6 +4,7 @@ import android.preference.PreferenceManager
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 
+
 class Settings {
     val context = CloudMarksAndroidApplication.instance
     private val pref = PreferenceManager.getDefaultSharedPreferences(CloudMarksAndroidApplication.instance)
@@ -16,6 +17,26 @@ class Settings {
         set(value) {
             pref.edit()
                     .putString(context.getString(R.string.pref_key_app_folder_name), value)
+                    .apply()
+        }
+
+    var lastSynced: Long
+        get() {
+            return pref.getLong(context.getString(R.string.pref_key_app_last_synced), 0L)
+        }
+        set(value) {
+            pref.edit()
+                    .putLong(context.getString(R.string.pref_key_app_last_synced), value)
+                    .apply()
+        }
+
+    var lastBookmarkModify: Long
+        get() {
+            return pref.getLong(context.getString(R.string.pref_key_app_last_bookmark_modify), 0L)
+        }
+        set(value) {
+            pref.edit()
+                    .putLong(context.getString(R.string.pref_key_app_last_bookmark_modify), value)
                     .apply()
         }
 

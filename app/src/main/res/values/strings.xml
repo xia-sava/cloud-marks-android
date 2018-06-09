@@ -20,6 +20,9 @@
     <string name="pref_title_app_folder_name">Folder name on storage service</string>
     <string name="pref_default_app_folder_name">cloud_marks</string>
 
+    <string name="pref_key_app_last_synced">pref_last_synced</string>
+    <string name="pref_key_app_last_bookmark_modify">pref_last_bookmark_modify</string>
+
     <string name="pref_key_app_autosync">pref_aytosync</string>
     <string name="pref_title_app_autosync">Sync frequency</string>
     <string-array name="pref_list_values_app_autosync">
