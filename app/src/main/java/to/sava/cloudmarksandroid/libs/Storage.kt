@@ -20,7 +20,10 @@ enum class Services(rawvalue: Int) {
 }
 
 
-class FileInfo(var filename: String, var fileObject: Map<String, String> = mutableMapOf())
+class FileInfo(var filename: String, var fileObject: Map<String, String> = mutableMapOf()) {
+    val isEmpty: Boolean
+        get() = filename != ""
+}
 
 
 class JsonContainer(val version: String, val hash: String, val contents: Any)
@@ -131,7 +134,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
 
     override fun lsDir(dirName: String, parent: FileInfo): List<FileInfo> {
         val dirInfo = lsFile(dirName, parent)
-        if (dirInfo.filename == "") {
+        if (dirInfo.isEmpty) {
             return listOf()
         }
         val response = api
@@ -164,7 +167,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
 
     private fun findDirectory(dirName: String): FileInfo {
         val dirInfo = lsFile(dirName)
-        if (dirInfo.filename == "") {
+        if (dirInfo.isEmpty) {
             throw DirectoryNotFoundException("ディレクトリ $dirName が見つかりません")
         }
         return dirInfo

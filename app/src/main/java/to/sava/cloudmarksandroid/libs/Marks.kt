@@ -27,10 +27,8 @@ class Marks (private val realm: Realm) {
 
     fun load() {
         // ストレージの最新ファイルを取得
-        fetchLatestRemoteFile()
-        val remoteFile = this.remoteFile
-        val remoteFileCreated = this.remoteFileCreated
-        if (remoteFile == null || remoteFile.filename == "") {
+        val (remoteFile, remoteFileCreated) = getLatestRemoteFile()
+        if (remoteFile.isEmpty) {
             throw FileNotFoundException("ブックマークがまだ保存されていません")
         }
         val bookmark = getMarkRoot()
@@ -52,8 +50,9 @@ class Marks (private val realm: Realm) {
     }
 
 
-    private fun fetchLatestRemoteFile() {
+    private fun getLatestRemoteFile(): Pair<FileInfo, BigDecimal> {
         // ストレージのファイル一覧を取得して最新ファイルを取得
+        // 複数回呼ばれると結果が変わらないのに時間がかかるのでプロパティにキャッシュ
         if (remoteFile == null || remoteFileCreated == null) {
             val remoteFiles = storage.lsDir(settings.folderName)
                     .filter {
@@ -66,6 +65,7 @@ class Marks (private val realm: Realm) {
                         .find(remoteFile!!.filename)?.groupValues?.get(0)?.toBigDecimal()
             }
         }
+        return Pair(remoteFile ?: FileInfo(""), remoteFileCreated ?: BigDecimal(0))
     }
 
     private fun getMarkRoot(): MarkNode {
