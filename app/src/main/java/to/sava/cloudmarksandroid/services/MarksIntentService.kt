@@ -1,5 +1,6 @@
 package to.sava.cloudmarksandroid.services
 
+import android.app.Activity
 import android.app.IntentService
 import android.app.PendingIntent
 import android.content.Intent
@@ -7,12 +8,13 @@ import android.content.Context
 import android.os.Handler
 import android.support.v4.app.NotificationCompat
 import io.realm.Realm
-import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.activities.MainActivity
+import to.sava.cloudmarksandroid.activities.SettingsActivity
 import to.sava.cloudmarksandroid.libs.Marks
+import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
 import to.sava.cloudmarksandroid.libs.Settings
 
 
@@ -23,10 +25,8 @@ internal enum class Action {
 }
 
 internal class ActionParams(
-        val startNotificationId: Int,
         val startNotificationTitle: String,
         val startNotificationIcon: Int,
-        val completeNotificationId: Int,
         val completeNotificationTitle: String
 )
 
@@ -55,6 +55,8 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
             }
             context.startService(intent)
         }
+
+        const val NOTIFICATION_ID = 1001
     }
 
     private val handler = Handler()
@@ -62,24 +64,18 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
     private fun params(action: Action): ActionParams {
         return when (action) {
             Action.LOAD -> ActionParams(
-                    1,
                     "ブックマークをロードしています",
                     R.drawable.ic_cloud_download_black_24dp,
-                    2,
                     "ブックマークをロードしました"
             )
             Action.SAVE -> ActionParams(
-                    101,
                     "ブックマークをセーブしています",
                     R.drawable.ic_cloud_download_black_24dp,
-                    102,
                     "ブックマークをセーブしました"
             )
             Action.MERGE ->ActionParams(
-                    201,
                     "ブックマークをマージしています",
                     R.drawable.ic_cloud_download_black_24dp,
-                    202,
                     "ブックマークをマージしました"
             )
         }
@@ -107,29 +103,50 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
             setProgress(0, 0, true)
         }.build()
 
-        startForeground(params.startNotificationId, startNotification)
+        startForeground(NOTIFICATION_ID, startNotification)
 
-        when (action) {
-            Action.LOAD -> {
-                Settings().context.loading = true
-                Realm.getDefaultInstance().use {realm ->
-                    Marks(realm).load()
+        val completeNotificationBuilder = NotificationCompat.Builder(this).apply {
+            setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
+            setContentTitle(params.completeNotificationTitle)
+            setAutoCancel(true)
+        }
+        var nextActivity: Class<out Activity> = MainActivity::class.java
+        try {
+            when (action) {
+                Action.LOAD -> {
+                    Settings().context.loading = true
+                    try {
+                        Realm.getDefaultInstance().use { realm ->
+                            Marks(realm).load()
+                        }
+                    } finally {
+                        Settings().context.loading = false
+                    }
                 }
-                Settings().context.loading = false
+                else -> {}
             }
-            else -> {}
+        }
+        catch (authEx: ServiceAuthenticationException) {
+            completeNotificationBuilder.apply {
+                setContentTitle(getString(R.string.service_auth_error_title))
+                NotificationCompat.BigTextStyle(completeNotificationBuilder).bigText(getString(R.string.service_auth_error_text))
+            }
+            nextActivity = SettingsActivity::class.java
+        }
+        catch (ex: Exception) {
+            completeNotificationBuilder.apply {
+                setContentTitle(getString(R.string.service_error_title))
+                NotificationCompat.BigTextStyle(completeNotificationBuilder).bigText(ex.message)
+            }
         }
 
         stopForeground(true)
 
-        val completeNotification = NotificationCompat.Builder(this).apply {
-            setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
-            setContentTitle(params.completeNotificationTitle)
-            val intentMain = intentFor<MainActivity>()
-            intentMain.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-            setContentIntent(PendingIntent.getActivity(this@MarksIntentService, 1, intentMain, PendingIntent.FLAG_ONE_SHOT))
-            setAutoCancel(true)
-        }.build()
-        notificationManager.notify(params.completeNotificationId, completeNotification)
+        completeNotificationBuilder.apply {
+            val intentNext = Intent(this@MarksIntentService, nextActivity)
+            intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+            setContentIntent(PendingIntent.getActivity(this@MarksIntentService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
+        }
+        notificationManager.notify(NOTIFICATION_ID, completeNotificationBuilder.build())
     }
 }

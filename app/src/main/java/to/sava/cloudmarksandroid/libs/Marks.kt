@@ -119,6 +119,7 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
         }
         val children = getMarkChildren(bookmark)
         if (remote.type == MarkType.Folder && ! children.isEmpty()) {
+            Log.i("cma", remote.title)
             var rc = false
             for (i in children.indices) {
                 rc = applyRemote(remote.children[i], children[i]!!) || rc
@@ -168,8 +169,8 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
         }
         // children の比較は個数まで，中身の比較は他ループに任せる
         if (remote.type == MarkType.Folder) {
-            val children = getMarkChildren(bookmark)
-            if (children.isEmpty() || remote.children.size != children.size) {
+            val childrenCount = countMarkChildren(bookmark)
+            if (remote.children.size.toLong() != childrenCount) {
                 return true
             }
         }
@@ -182,5 +183,13 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
                 .equalTo("parent.id", parent.id)
                 .sort("order")
                 .findAll()
+    }
+
+    private fun countMarkChildren(parent: MarkNode): Long {
+        return realm
+                .where<MarkNode>()
+                .equalTo("parent.id", parent.id)
+                .sort("order")
+                .count()
     }
 }

@@ -12,11 +12,10 @@ import org.jetbrains.anko.*
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.fragments.MarksFragment
-import to.sava.cloudmarksandroid.libs.Marks
-import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.libs.Settings
+import to.sava.cloudmarksandroid.services.MarksIntentService
 
 
 class MainActivity : AppCompatActivity(),
@@ -90,35 +89,7 @@ class MainActivity : AppCompatActivity(),
                 startActivity<SettingsActivity>()
             }
             R.id.main_menu_load -> {
-                toast("クラウドから読込みます")
-                doAsync {
-                    Realm.getDefaultInstance().use {
-                        val marks = Marks(it)
-                        try {
-                            marks.load()
-                            uiThread {
-                                toast("読んだ")
-                                startActivity<MainActivity>()
-                            }
-                        } catch (ex: ServiceAuthenticationException) {
-                            uiThread {
-                                alert("認証エラーが発生しました。クラウド接続設定をご確認ください。") {
-                                    yesButton {
-                                        startActivity<SettingsActivity>()
-                                    }
-                                }.show()
-                            }
-                        } catch (ex: Exception) {
-                            uiThread {
-                                alert("エラーが発生しました： ${ex.message}") {
-                                    yesButton {
-                                        startActivity<MainActivity>()
-                                    }
-                                }.show()
-                            }
-                        }
-                    }
-                }
+                MarksIntentService.startActionLoad(this)
             }
             R.id.main_menu_debug -> {
                 startActivity<DebugActivity>()

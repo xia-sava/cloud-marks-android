@@ -56,4 +56,9 @@
     <string name="connected_to_google_drive">Google Drive に接続しました</string>
     <string name="error_occurred_on_connecting">接続確認でエラーが発生しました</string>
 
+    <!-- MarksIntentService -->
+    <string name="service_auth_error_title">認証エラーが発生しました</string>
+    <string name="service_auth_error_text">認証処理でエラーが発生しました。\n設定画面から認証をやり直してみてください。</string>
+    <string name="service_error_title">何かエラーが発生しました</string>
+
 </resources>
