@@ -4,7 +4,6 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import io.realm.RealmRecyclerViewAdapter
 import io.realm.RealmResults
@@ -16,13 +15,8 @@ import to.sava.cloudmarksandroid.models.MarkType
 import java.util.*
 
 
-/**
- * [RecyclerView.Adapter] that can display a [MarkNode] and makes a call to the
- * specified [OnListItemClickedListener].
- * TODO: Replace the implementation with code for your data type.
- */
 class MarksRecyclerViewAdapter(
-        private val value: RealmResults<MarkNode>,
+        value: RealmResults<MarkNode>,
         private val itemClickedListener: OnListItemClickedListener?)
     : RealmRecyclerViewAdapter<MarkNode, MarksRecyclerViewAdapter.MarksViewHolder>(value, true) {
 
@@ -31,8 +25,6 @@ class MarksRecyclerViewAdapter(
     init {
         onClickListener = View.OnClickListener { v ->
             val item = v.tag as MarkNode
-            // Notify the active callbacks interface (the activity, if the fragment is attached to
-            // one) that an item has been selected.
             itemClickedListener?.onListItemClicked(item)
         }
         setHasStableIds(true)
@@ -55,11 +47,10 @@ class MarksRecyclerViewAdapter(
             holder.data = it
             holder.contentView.text = it.title
             val (icon, chevron) = when (it.type) {
-                MarkType.Folder -> Pair(R.drawable.ic_folder_open_black_24dp, View.VISIBLE)
-                MarkType.Bookmark -> Pair(R.drawable.ic_bookmark_border_black_24dp, View.INVISIBLE)
+                MarkType.Folder -> Pair(R.drawable.ic_folder_open_black_24dp, R.drawable.ic_chevron_right_black_24dp)
+                MarkType.Bookmark -> Pair(R.drawable.ic_bookmark_border_black_24dp, 0)
             }
-            holder.contentView.setCompoundDrawablesWithIntrinsicBounds(icon, 0, 0, 0)
-            holder.rightChevron.visibility = chevron
+            holder.contentView.setCompoundDrawablesWithIntrinsicBounds(icon, 0, chevron, 0)
         }
     }
 
@@ -74,7 +65,6 @@ class MarksRecyclerViewAdapter(
     inner class MarksViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val marksView: View = view.marks
         val contentView: TextView = view.content
-        val rightChevron: ImageView = view.rightChevron
-        lateinit var data: MarkNode
+       lateinit var data: MarkNode
     }
 }
