@@ -13,6 +13,7 @@ import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.activities.MainActivity
 import to.sava.cloudmarksandroid.libs.Marks
+import to.sava.cloudmarksandroid.libs.Settings
 
 
 internal enum class Action {
@@ -101,8 +102,8 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
         // TODO: 開始時に，既に何か notification が表示されていたらそれを消したい
 
         val startNotification = NotificationCompat.Builder(this).apply {
-            setContentTitle(params.startNotificationTitle)
             setSmallIcon(params.startNotificationIcon)
+            setContentTitle(params.startNotificationTitle)
             setProgress(0, 0, true)
         }.build()
 
@@ -110,13 +111,11 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
 
         when (action) {
             Action.LOAD -> {
+                Settings().context.loading = true
                 Realm.getDefaultInstance().use {realm ->
                     Marks(realm).load()
                 }
-//                (0..5).map {
-//                    Thread.sleep(1000)
-//                    Log.i("cma", "$it")
-//                }
+                Settings().context.loading = false
             }
             else -> {}
         }
@@ -124,8 +123,8 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
         stopForeground(true)
 
         val completeNotification = NotificationCompat.Builder(this).apply {
-            setContentTitle(params.completeNotificationTitle)
             setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
+            setContentTitle(params.completeNotificationTitle)
             val intentMain = intentFor<MainActivity>()
             intentMain.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             setContentIntent(PendingIntent.getActivity(this@MarksIntentService, 1, intentMain, PendingIntent.FLAG_ONE_SHOT))

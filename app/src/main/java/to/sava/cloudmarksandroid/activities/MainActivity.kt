@@ -9,6 +9,7 @@ import android.view.MenuItem
 import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.*
+import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.fragments.MarksFragment
 import to.sava.cloudmarksandroid.libs.Marks
@@ -71,6 +72,15 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        val marksMenuEnabled = (
+                Settings().googleConnected &&
+                        !CloudMarksAndroidApplication.instance.loading
+                )
+        menu?.findItem(R.id.main_menu_load)?.isEnabled = marksMenuEnabled
+        return super.onPrepareOptionsMenu(menu)
+    }
+
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             android.R.id.home -> {
@@ -116,12 +126,6 @@ class MainActivity : AppCompatActivity(),
             else -> return super.onOptionsItemSelected(item)
         }
         return true
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        val marksMenuEnabled = Settings().googleConnected
-        menu?.findItem(R.id.main_menu_load)?.isEnabled = marksMenuEnabled
-        return super.onPrepareOptionsMenu(menu)
     }
 
     private fun transitionMarksFragment(markId: String) {

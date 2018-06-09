@@ -9,6 +9,8 @@ class Settings {
     val context = CloudMarksAndroidApplication.instance
     private val pref = PreferenceManager.getDefaultSharedPreferences(CloudMarksAndroidApplication.instance)
 
+    // アプリ設定
+
     var folderName: String
         get() {
             return pref.getString(context.getString(R.string.pref_key_app_folder_name),
@@ -39,6 +41,9 @@ class Settings {
                     .putLong(context.getString(R.string.pref_key_app_last_bookmark_modify), value)
                     .apply()
         }
+
+
+    // サービス設定
 
     var currentService: Services = Services.Gdrive
 
