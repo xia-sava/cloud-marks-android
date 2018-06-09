@@ -22,7 +22,7 @@ enum class Services(rawvalue: Int) {
 
 class FileInfo(var filename: String, var fileObject: Map<String, String> = mutableMapOf()) {
     val isEmpty: Boolean
-        get() = filename != ""
+        get() = filename == ""
 }
 
 
