@@ -14,22 +14,27 @@ import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.models.MarkNode
 
-class MarksFragment : Fragment() {
-
+class MarksFragment : Fragment(),
+        MarksRecyclerViewAdapter.OnClickListener,
+        MarksRecyclerViewAdapter.OnLongClickListener {
     private var mark: MarkNode? = null
 
     private lateinit var realm: Realm
 
-    private var listItemClickedListener: OnListItemClickedListener? = null
-    private var listItemChangedListener: OnListItemChangedListener? = null
+    private var onListItemClickListener: OnListItemClickListener? = null
+    private var onListItemLongClickListener: OnListItemLongClickListener? = null
+    private var onListItemChangeListener: OnListItemChangListener? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        if (context is OnListItemClickedListener) {
-            listItemClickedListener = context
+        if (context is OnListItemClickListener) {
+            onListItemClickListener = context
         }
-        if (context is OnListItemChangedListener) {
-            listItemChangedListener = context
+        if (context is OnListItemLongClickListener) {
+            onListItemLongClickListener = context
+        }
+        if (context is OnListItemChangListener) {
+            onListItemChangeListener = context
         }
     }
 
@@ -47,11 +52,11 @@ class MarksFragment : Fragment() {
         }
         val view = inflater.inflate(layout, container, false)
 
-        if (mark != null && view is RecyclerView) {
-            with(view) {
-                layoutManager = LinearLayoutManager(context)
-                val marks = Marks(realm).getMarkChildren(mark!!)
-                adapter = MarksRecyclerViewAdapter(marks, listItemClickedListener)
+        if (view is RecyclerView) {
+            mark?.let {
+                view.layoutManager = LinearLayoutManager(context)
+                val marks = Marks(realm).getMarkChildren(it)
+                view.adapter = MarksRecyclerViewAdapter(marks, this, this)
             }
         }
         return view
@@ -59,7 +64,7 @@ class MarksFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        listItemChangedListener?.onListItemChanged(mark)
+        onListItemChangeListener?.onListItemChange(mark)
     }
 
     override fun onDestroy() {
@@ -67,12 +72,24 @@ class MarksFragment : Fragment() {
         realm.close()
     }
 
-    interface OnListItemClickedListener {
-        fun onListItemClicked(mark: MarkNode?)
+    override fun onClick(mark: MarkNode) {
+        onListItemClickListener?.onListItemClick(mark)
     }
 
-    interface OnListItemChangedListener {
-        fun onListItemChanged(mark: MarkNode?)
+    override fun onLongClick(mark: MarkNode): Boolean {
+        return onListItemLongClickListener?.onListItemLongClick(mark) ?: false
+    }
+
+    interface OnListItemClickListener {
+        fun onListItemClick(mark: MarkNode)
+    }
+
+    interface OnListItemLongClickListener {
+        fun onListItemLongClick(mark: MarkNode): Boolean
+    }
+
+    interface OnListItemChangListener {
+        fun onListItemChange(mark: MarkNode?)
     }
 
     companion object {

@@ -19,7 +19,9 @@ import to.sava.cloudmarksandroid.services.MarksIntentService
 
 
 class MainActivity : AppCompatActivity(),
-        MarksFragment.OnListItemClickedListener, MarksFragment.OnListItemChangedListener {
+        MarksFragment.OnListItemClickListener,
+        MarksFragment.OnListItemLongClickListener,
+        MarksFragment.OnListItemChangListener {
 
     private lateinit var realm: Realm
 
@@ -47,7 +49,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onListItemChanged(mark: MarkNode?) {
+    override fun onListItemChange(mark: MarkNode?) {
         val backCount = supportFragmentManager.backStackEntryCount
         toolbar.title =
                 if (backCount == 1) getString(R.string.app_name)
@@ -55,8 +57,8 @@ class MainActivity : AppCompatActivity(),
         supportActionBar?.setDisplayHomeAsUpEnabled(backCount > 1)
     }
 
-    override fun onListItemClicked(mark: MarkNode?) {
-        when (mark?.type) {
+    override fun onListItemClick(mark: MarkNode) {
+        when (mark.type) {
             MarkType.Folder -> {
                 transitionMarksFragment(mark.id)
             }
@@ -64,6 +66,11 @@ class MainActivity : AppCompatActivity(),
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(mark.url)))
             }
         }
+    }
+
+    override fun onListItemLongClick(mark: MarkNode): Boolean {
+        toast(mark.title)
+        return true
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

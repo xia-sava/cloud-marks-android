@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import io.realm.RealmRecyclerViewAdapter
 import io.realm.RealmResults
-import to.sava.cloudmarksandroid.fragments.MarksFragment.OnListItemClickedListener
 import kotlinx.android.synthetic.main.fragment_marks.view.*
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.models.MarkNode
@@ -15,31 +14,38 @@ import to.sava.cloudmarksandroid.models.MarkType
 import java.util.*
 
 
-class MarksRecyclerViewAdapter(
-        value: RealmResults<MarkNode>,
-        private val itemClickedListener: OnListItemClickedListener?)
+class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>,
+                               private val onClickListener: OnClickListener? = null,
+                               private val onLongClickListener: OnLongClickListener? = null)
     : RealmRecyclerViewAdapter<MarkNode, MarksRecyclerViewAdapter.MarksViewHolder>(value, true) {
 
-    private val onClickListener: View.OnClickListener
+    interface OnClickListener {
+        fun onClick(mark: MarkNode)
+    }
+
+    interface OnLongClickListener {
+        fun onLongClick(mark: MarkNode): Boolean
+    }
 
     init {
-        onClickListener = View.OnClickListener { v ->
-            val item = v.tag as MarkNode
-            itemClickedListener?.onListItemClicked(item)
-        }
         setHasStableIds(true)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MarksViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.fragment_marks, parent, false)
-        val holder = MarksViewHolder(view)
-        holder.marksView.setOnClickListener {
-            val mark = getItem(holder.adapterPosition)
-            mark?.let {
-                itemClickedListener?.onListItemClicked(mark)
+        val viewHolder = MarksViewHolder(view)
+
+        viewHolder.marksView.setOnClickListener {
+            getItem(viewHolder.adapterPosition)?.let { mark ->
+                onClickListener?.onClick(mark)
             }
         }
-        return holder
+        viewHolder.marksView.setOnLongClickListener {
+            getItem(viewHolder.adapterPosition)?.let { mark ->
+                onLongClickListener?.onLongClick(mark)
+            } ?: false
+        }
+        return viewHolder
     }
 
     override fun onBindViewHolder(holder: MarksViewHolder, position: Int) {
