@@ -1,11 +1,14 @@
 package to.sava.cloudmarksandroid.services
 
-import android.app.IntentService
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.Context
+import android.os.Build
 import android.os.Handler
+import android.support.v4.app.JobIntentService
 import android.support.v4.app.NotificationCompat
 import io.realm.Realm
 import org.jetbrains.anko.notificationManager
@@ -23,8 +26,7 @@ internal enum class Action {
     MERGE,
 }
 
-class MarksIntentService : IntentService("CloudMarksIntentService") {
-
+class MarksIntentService : JobIntentService() {
     companion object {
         @JvmStatic
         fun startActionLoad(context: Context) {
@@ -45,17 +47,19 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
             val intent = Intent(context, MarksIntentService::class.java).apply {
                 this.action = action.toString()
             }
-            context.startService(intent)
+            enqueueWork(context, MarksIntentService::class.java, JOB_ID, intent)
         }
 
+        private const val JOB_ID = 1001
         const val NOTIFICATION_ID = 1001
-        const val NOTIFICATION_CHANNEL = ""
+        const val NOTIFICATION_CHANNEL_ID = "CMA_PROGRESS"
+        const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
     }
 
     private val handler = Handler()
 
-    override fun onHandleIntent(intent: Intent?) {
-        intent?.action?.let {
+    override fun onHandleWork(intent: Intent) {
+        intent.action.let {
             val action = Action.valueOf(it)
             val rc = handleAction(action)
 
@@ -68,6 +72,11 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
     }
 
     private fun handleAction(action: Action): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW)
+            notificationManager.createNotificationChannel(channel)
+        }
+
         var completeNotification: Notification? = null
         var rc = false
         try {
@@ -75,7 +84,7 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
                 Action.LOAD -> {
                     CloudMarksAndroidApplication.instance.loading = true
 
-                    val progressNotificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL).apply {
+                    val progressNotificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                         setOngoing(true)
                         setSmallIcon(R.drawable.ic_cloud_download_black_24dp)
                         setContentTitle(getString(R.string.service_progress_notification_title, getString(R.string.service_action_load_title)))
@@ -99,7 +108,7 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
             rc = true
         }
         catch (authEx: ServiceAuthenticationException) {
-            completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL).apply {
+            completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                 setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
                 setContentTitle(getString(R.string.service_auth_error_title))
                 NotificationCompat.BigTextStyle(this).bigText(getString(R.string.service_auth_error_text))
@@ -109,7 +118,7 @@ class MarksIntentService : IntentService("CloudMarksIntentService") {
             }.build()
         }
         catch (ex: Exception) {
-            completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL).apply {
+            completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                 setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
                 setContentTitle(getString(R.string.service_error_title))
                 NotificationCompat.BigTextStyle(this).bigText(ex.message)
