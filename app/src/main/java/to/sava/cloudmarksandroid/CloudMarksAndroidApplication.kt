@@ -12,7 +12,16 @@ class CloudMarksAndroidApplication : Application() {
     }
 
     var loading: Boolean = false
+//    var saving: Boolean = false
+//    var merging: Boolean = false
 
+    var processing: Boolean
+        get() = loading // || saving || merging
+        set(value) {
+            loading = value
+//            saving = value
+//            merging = value
+        }
 
     override fun onCreate() {
         super.onCreate()
@@ -25,4 +34,3 @@ class CloudMarksAndroidApplication : Application() {
         instance = this
     }
 }
-

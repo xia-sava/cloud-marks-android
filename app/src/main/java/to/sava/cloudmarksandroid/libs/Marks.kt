@@ -101,8 +101,8 @@ class Marks (private val realm: Realm) {
 class MarksManipulator(private val realm: Realm): AutoCloseable {
 
     var progressListener: ((folder: String, percent: Int) -> Unit)? = null
-    var folderCount = 0
-    var currentFolderNum = 0
+    private var folderCount = 0
+    private var currentFolderNum = 0
 
     init {
         realm.beginTransaction()
