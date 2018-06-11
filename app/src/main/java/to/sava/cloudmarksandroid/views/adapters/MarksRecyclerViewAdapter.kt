@@ -1,9 +1,8 @@
 package to.sava.cloudmarksandroid.views.adapters
 
 import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import android.view.ContextMenu.ContextMenuInfo
 import android.widget.TextView
 import io.realm.RealmRecyclerViewAdapter
 import io.realm.RealmResults
@@ -14,17 +13,11 @@ import to.sava.cloudmarksandroid.models.MarkType
 import java.util.*
 
 
-class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>,
-                               private val onClickListener: OnClickListener? = null,
-                               private val onLongClickListener: OnLongClickListener? = null)
+class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>, private val onClickListener: OnClickListener? = null)
     : RealmRecyclerViewAdapter<MarkNode, MarksRecyclerViewAdapter.MarksViewHolder>(value, true) {
 
     interface OnClickListener {
         fun onClick(mark: MarkNode)
-    }
-
-    interface OnLongClickListener {
-        fun onLongClick(mark: MarkNode): Boolean
     }
 
     init {
@@ -39,11 +32,6 @@ class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>,
             getItem(viewHolder.adapterPosition)?.let { mark ->
                 onClickListener?.onClick(mark)
             }
-        }
-        viewHolder.marksView.setOnLongClickListener {
-            getItem(viewHolder.adapterPosition)?.let { mark ->
-                onLongClickListener?.onLongClick(mark)
-            } ?: false
         }
         return viewHolder
     }
@@ -68,9 +56,27 @@ class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>,
         }
     }
 
-    inner class MarksViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
+    inner class MarksViewHolder(val view: View) : RecyclerView.ViewHolder(view), View.OnCreateContextMenuListener {
         val marksView: View = view.marks
         val contentView: TextView = view.content
        lateinit var data: MarkNode
+
+        init {
+            view.setOnCreateContextMenuListener(this)
+        }
+
+        override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenuInfo?) {
+            menu?.apply {
+                add(adapterPosition, R.id.mark_menu_open, Menu.NONE, R.string.mark_menu_open)
+                add(adapterPosition, R.id.mark_menu_share_to, Menu.NONE, R.string.mark_menu_share_to)
+                add(adapterPosition, R.id.mark_menu_copy_url, Menu.NONE, R.string.mark_menu_copy_url)
+                add(adapterPosition, R.id.mark_menu_copy_title, Menu.NONE, R.string.mark_menu_copy_title)
+                if (data.type == MarkType.Folder) {
+                    getItem(0).isEnabled = false
+                    getItem(1).isEnabled = false
+                    getItem(2).isEnabled = false
+                }
+            }
+        }
     }
 }

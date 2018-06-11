@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/mark_menu_open"
+        android:title="@string/mark_menu_open" />
+    <item
+        android:id="@+id/mark_menu_share_to"
+        android:title="@string/mark_menu_share_to" />
+    <item
+        android:id="@+id/mark_menu_copy_url"
+        android:title="@string/mark_menu_copy_url" />
+    <item
+        android:id="@+id/mark_menu_copy_title"
+        android:title="@string/mark_menu_copy_url" />
+</menu>

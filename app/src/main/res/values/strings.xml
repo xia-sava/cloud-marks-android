@@ -9,6 +9,14 @@
     <!-- Main View -->
     <string name="marks_folder_chevron"><![CDATA[>]]></string>
 
+    <string name="mark_menu_open">Open</string>
+    <string name="mark_menu_share_to">Share to…</string>
+    <string name="mark_menu_copy_url">Copy URL</string>
+    <string name="mark_menu_copy_title">Copy Title</string>
+
+    <string name="mark_toast_copy_url">URLをクリップボードにコピーしました。</string>
+    <string name="mark_toast_copy_title">タイトルをクリップボードにコピーしました。</string>
+
     <!-- Mark not found View -->
     <string name="mark_not_found">ブックマークが見つかりませんでした。\nメニューからロードし直してみてください。</string>
 

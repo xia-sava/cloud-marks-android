@@ -1,5 +1,6 @@
 package to.sava.cloudmarksandroid.activities
 
+import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
@@ -20,7 +21,6 @@ import to.sava.cloudmarksandroid.services.MarksIntentService
 
 class MainActivity : AppCompatActivity(),
         MarksFragment.OnListItemClickListener,
-        MarksFragment.OnListItemLongClickListener,
         MarksFragment.OnListItemChangListener {
 
     private lateinit var realm: Realm
@@ -57,23 +57,58 @@ class MainActivity : AppCompatActivity(),
         supportActionBar?.setDisplayHomeAsUpEnabled(backCount > 1)
     }
 
-    override fun onListItemClick(mark: MarkNode) {
+    private fun onListItemClick(mark: MarkNode, choiceApp: Boolean) {
         when (mark.type) {
             MarkType.Folder -> {
                 transitionMarksFragment(mark.id)
             }
             MarkType.Bookmark -> {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(mark.url)))
+                var intent = Intent(Intent.ACTION_VIEW, Uri.parse(mark.url))
+                if (choiceApp) {
+                    intent = Intent.createChooser(intent, getString(R.string.mark_menu_share_to))
+                }
+                startActivity(intent)
             }
         }
     }
 
-    override fun onListItemLongClick(mark: MarkNode): Boolean {
-        toast(mark.title)
-        return true
+    override fun onListItemClick(mark: MarkNode) {
+        return onListItemClick(mark, false)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onContextItemSelected(item: MenuItem?): Boolean {
+        val fragment = supportFragmentManager.fragments.last()
+        if (fragment is MarksFragment) {
+            item?.groupId?.let {
+                fragment.adapter?.getItem(it)?.let { mark ->
+                    when (item.itemId) {
+                        R.id.mark_menu_open -> {
+                            onListItemClick(mark)
+                            return true
+                        }
+                        R.id.mark_menu_share_to -> {
+                            onListItemClick(mark, true)
+                            return true
+                        }
+                        R.id.mark_menu_copy_url -> {
+                            clipboardManager.primaryClip = ClipData.newRawUri("", Uri.parse(mark.url))
+                            toast(R.string.mark_toast_copy_url)
+                            return true
+                        }
+                        R.id.mark_menu_copy_title -> {
+                            clipboardManager.primaryClip = ClipData.newPlainText("", mark.title)
+                            toast(R.string.mark_toast_copy_title)
+                            return true
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+        override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
     }
