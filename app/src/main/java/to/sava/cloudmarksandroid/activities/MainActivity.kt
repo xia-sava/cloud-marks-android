@@ -133,9 +133,6 @@ class MainActivity : AppCompatActivity(),
             R.id.main_menu_load -> {
                 MarksIntentService.startActionLoad(this)
             }
-            R.id.main_menu_debug -> {
-                startActivity<DebugActivity>()
-            }
             else -> return super.onOptionsItemSelected(item)
         }
         return true

@@ -1,6 +1,6 @@
 package to.sava.cloudmarksandroid.libs
 
-import android.util.Log
+//import android.util.Log
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import io.realm.Realm
 import io.realm.RealmResults
@@ -149,7 +149,7 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
     }
 
     private fun createBookmark(parent: MarkNode, mark: MarkNodeJson, markOrder: Int = 0): MarkNode {
-        Log.d("cma:createBookmark", "${parent.title}[$markOrder]/${mark.title}")
+        // Log.d("cma:createBookmark", "${parent.title}[$markOrder]/${mark.title}")
         val added = realm.createObject<MarkNode>(MarkNode.newKey()).apply {
             type = mark.type
             title = mark.title
@@ -164,7 +164,7 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
     }
 
     private fun removeBookmark(target: MarkNode) {
-        Log.d("cma:removeBookmark", target.title)
+        // Log.d("cma:removeBookmark", target.title)
         if (target.type == MarkType.Folder) {
             for (child in getMarkChildren(target)) {
                 removeBookmark(child)
@@ -174,7 +174,7 @@ class MarksManipulator(private val realm: Realm): AutoCloseable {
     }
 
     private fun updateBookmark(target: MarkNode, modify: MarkNodeJson) {
-        Log.d("cma:updateBookmark", "${target.title} = ${modify.title}")
+        // Log.d("cma:updateBookmark", "${target.title} = ${modify.title}")
         target.title = modify.title
         target.url = modify.url
     }

@@ -26,7 +26,7 @@ class FileInfo(var filename: String, var fileObject: Map<String, String> = mutab
 }
 
 
-class JsonContainer(val version: String, val hash: String, val contents: Any)
+//class JsonContainer(val version: String, val hash: String, val contents: Any)
 class MarksJsonContainer(val version: String, val hash: String, val contents: MarkNodeJson)
 
 
@@ -76,7 +76,7 @@ abstract class Storage(val settings: Settings) {
         }
     }
 
-    protected fun hashContents(contents: Any): String {
+    private fun hashContents(contents: Any): String {
         val json = gson.toJson(contents).trim()
         return MessageDigest.getInstance("SHA-256").digest(json.toByteArray()).joinToString("") {
             String.format("%02x", it)
