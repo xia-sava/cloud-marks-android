@@ -38,9 +38,6 @@
             android:exported="false">
         </service>
 
-
-        <activity android:name=".activities.DebugActivity" />
-
     </application>
 
 </manifest>
