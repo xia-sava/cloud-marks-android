@@ -7,7 +7,7 @@ import to.sava.cloudmarksandroid.R
 
 class Settings {
     val context = CloudMarksAndroidApplication.instance
-    private val pref = PreferenceManager.getDefaultSharedPreferences(CloudMarksAndroidApplication.instance)
+    val pref = PreferenceManager.getDefaultSharedPreferences(CloudMarksAndroidApplication.instance)!!
 
     // アプリ設定
 

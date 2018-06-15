@@ -1,6 +1,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <EditTextPreference
+        android:id="@+id/pref_app_folder_name"
         android:capitalize="none"
         android:defaultValue="@string/pref_default_app_folder_name"
         android:inputType="text"

@@ -24,44 +24,23 @@ import to.sava.cloudmarksandroid.libs.GoogleDriveStorage
 import to.sava.cloudmarksandroid.libs.Settings
 import java.io.IOException
 
-/**
- * A [PreferenceActivity] that presents a set of application settings. On
- * handset devices, settings are presented as a single list. On tablets,
- * settings are split by category, with category headers shown to the left of
- * the list of settings.
- *
- * See [Android Design: Settings](http://developer.android.com/design/patterns/settings.html)
- * for design guidelines and the [Settings API Guide](http://developer.android.com/guide/topics/ui/settings.html)
- * for more information on developing a Settings UI.
- */
 class SettingsActivity : PreferenceActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         actionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
-    /**
-     * {@inheritDoc}
-     */
     override fun onIsMultiPane(): Boolean {
         return this.resources.configuration.screenLayout and
                 Configuration.SCREENLAYOUT_SIZE_MASK >= Configuration.SCREENLAYOUT_SIZE_XLARGE
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     override fun onBuildHeaders(target: List<PreferenceActivity.Header>) {
         loadHeadersFromResource(R.xml.pref_headers, target)
     }
 
-    /**
-     * This method stops fragment injection in malicious applications.
-     * Make sure to deny any unknown fragments here.
-     */
     override fun isValidFragment(fragmentName: String): Boolean {
         return PreferenceFragment::class.java.name == fragmentName
                 || ApplicationPreferenceFragment::class.java.name == fragmentName
@@ -77,42 +56,37 @@ class SettingsActivity : PreferenceActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    /**
-     * This fragment shows general preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    class ApplicationPreferenceFragment : PreferenceFragment(), Preference.OnPreferenceClickListener {
+    class ApplicationPreferenceFragment : PreferenceFragment(),
+            Preference.OnPreferenceChangeListener {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             addPreferencesFromResource(R.xml.pref_application)
             setHasOptionsMenu(true)
 
-            findPreference(getString(R.string.pref_key_app_folder_name)).onPreferenceClickListener = this
-            findPreference(getString(R.string.pref_key_app_autosync)).onPreferenceClickListener = this
+            val sharedPrefs = Settings().pref
+            val ids = listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync)
+            for (id in ids) {
+                val pref = findPreference(getString(id))
+                pref.onPreferenceChangeListener = this
+                onPreferenceChange(pref, sharedPrefs.getString(pref.key, ""))
+            }
         }
 
-        override fun onPreferenceClick(preference: Preference): Boolean {
-            val value = PreferenceManager
-                    .getDefaultSharedPreferences(preference.context)
-                    .getString(preference.key, "")
+        override fun onPreferenceChange(preference: Preference?, newValue: Any?): Boolean {
             when (preference) {
                 is ListPreference -> {
-                    val index = preference.findIndexOfValue(value)
+                    val index = preference.findIndexOfValue(newValue as String)
                     preference.summary = if (index >= 0) preference.entries[index] else null
                 }
                 else -> {
-                    preference.summary = value
+                    preference?.summary = newValue as String
                 }
             }
             return true
         }
     }
 
-    /**
-     * This fragment shows notification preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     class GoogleDrivePreferenceFragment : PreferenceFragment(),
             Preference.OnPreferenceClickListener {
