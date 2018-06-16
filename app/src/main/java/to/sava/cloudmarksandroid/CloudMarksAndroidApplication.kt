@@ -27,6 +27,7 @@ class CloudMarksAndroidApplication : Application() {
         super.onCreate()
         Realm.init(this)
         val config = RealmConfiguration.Builder()
+                .directory(this.cacheDir)
                 .deleteRealmIfMigrationNeeded()
                 .build()
         Realm.setDefaultConfiguration(config)
