@@ -21,7 +21,8 @@ import to.sava.cloudmarksandroid.services.MarksIntentService
 
 class MainActivity : AppCompatActivity(),
         MarksFragment.OnListItemClickListener,
-        MarksFragment.OnListItemChangListener {
+        MarksFragment.OnListItemChangListener,
+        MarksIntentService.OnMarksServiceCompleteListener {
 
     private lateinit var realm: Realm
 
@@ -108,7 +109,7 @@ class MainActivity : AppCompatActivity(),
         return false
     }
 
-        override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
     }
@@ -136,6 +137,42 @@ class MainActivity : AppCompatActivity(),
             else -> return super.onOptionsItemSelected(item)
         }
         return true
+    }
+
+    private var pendingActions: ArrayList<Runnable>? = null
+
+    override fun onPause() {
+        super.onPause()
+        pendingActions = ArrayList()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        pendingActions?.let { list ->
+            for (routine in list) {
+                routine.run()
+            }
+        }
+        pendingActions = null
+    }
+
+    private fun runOrAddPendingActions(routine: Runnable) {
+        pendingActions?.also { it.add(routine) } ?: routine.run()
+    }
+
+    override fun onMarksServiceComplete() {
+        runOrAddPendingActions(Runnable {
+            val fm  = supportFragmentManager
+            val markId = fm.getBackStackEntryAt(fm.backStackEntryCount - 1).name
+            replaceMarksFragment(markId)
+        })
+    }
+
+    private fun replaceMarksFragment(markId: String) {
+        supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.main_view_wrapper, MarksFragment.newInstance(markId))
+                .commit()
     }
 
     private fun transitionMarksFragment(markId: String) {

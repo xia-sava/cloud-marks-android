@@ -11,6 +11,7 @@ import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.models.MarkNode
+import to.sava.cloudmarksandroid.models.MarkType
 
 class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
     private var mark: MarkNode? = null
@@ -36,20 +37,30 @@ class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
 
         realm = Realm.getDefaultInstance()
 
+        val marks = Marks(realm)
         val markId = arguments?.getString(ARG_MARK_ID) ?: MarkNode.ROOT_ID
-        mark = Marks(realm).getMark(markId)
+        mark = marks.getMark(markId)
 
         val layout = when(mark) {
             null -> R.layout.fragment_mark_not_found
-            else -> R.layout.fragment_marks_list
+            else -> {
+                mark?.let {
+                    if (it.type == MarkType.Folder && marks.getMarkChildren(it).isEmpty()) {
+                        R.layout.fragment_empty_folder
+                    } else {
+                        null
+                    }
+                }
+                ?: R.layout.fragment_marks_list
+            }
         }
         val view = inflater.inflate(layout, container, false)
 
         if (view is RecyclerView) {
             mark?.let {
                 view.layoutManager = LinearLayoutManager(context)
-                val marks = Marks(realm).getMarkChildren(it)
-                adapter = MarksRecyclerViewAdapter(marks, this)
+                val children = marks.getMarkChildren(it)
+                adapter = MarksRecyclerViewAdapter(children, this)
                 view.adapter = adapter
             }
         }

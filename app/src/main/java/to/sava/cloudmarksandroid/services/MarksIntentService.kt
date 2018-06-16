@@ -28,6 +28,8 @@ internal enum class Action {
 
 class MarksIntentService : JobIntentService() {
     companion object {
+        var onMarksServiceCompleteListener: OnMarksServiceCompleteListener? = null
+
         @JvmStatic
         fun startActionLoad(context: Context) {
             startAction(context, Action.LOAD)
@@ -44,6 +46,9 @@ class MarksIntentService : JobIntentService() {
 //        }
 
         private fun startAction(context: Context, action: Action) {
+            if (context is OnMarksServiceCompleteListener) {
+                this.onMarksServiceCompleteListener = context
+            }
             val intent = Intent(context, MarksIntentService::class.java).apply {
                 this.action = action.toString()
             }
@@ -54,6 +59,10 @@ class MarksIntentService : JobIntentService() {
         const val NOTIFICATION_ID = 1001
         const val NOTIFICATION_CHANNEL_ID = "CMA_PROGRESS"
         const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
+    }
+
+    interface OnMarksServiceCompleteListener {
+        fun onMarksServiceComplete()
     }
 
     private val handler = Handler()
@@ -136,6 +145,8 @@ class MarksIntentService : JobIntentService() {
         completeNotification?.let {
             notificationManager.notify(NOTIFICATION_ID, it)
         }
+
+        onMarksServiceCompleteListener?.onMarksServiceComplete()
 
         return rc
     }

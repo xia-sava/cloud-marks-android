@@ -18,7 +18,8 @@
     <string name="mark_toast_copy_title">タイトルをクリップボードにコピーしました。</string>
 
     <!-- Mark not found View -->
-    <string name="mark_not_found">ブックマークが見つかりませんでした。\nメニューからロードし直してみてください。</string>
+    <string name="mark_not_found">ブックマークが存在しません。</string>
+    <string name="mark_empty_folder">空のブックマークフォルダです。</string>
 
     <!-- Settings / CloudMarksAndroidApplication -->
     <string name="pref_header_application">Application Settings</string>
