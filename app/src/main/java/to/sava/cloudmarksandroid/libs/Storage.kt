@@ -106,7 +106,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
     companion object {
         val SCOPES: List<String> = Arrays.asList("https://www.googleapis.com/auth/drive")
         val SCOPES_STR: String
-            get() = "oauth2${SCOPES.joinToString(" ")}"
+            get() = "oauth2 ${SCOPES.joinToString(" ")}"
     }
 
     override fun lsFile(filename: String, parent: FileInfo): FileInfo {
