@@ -42,6 +42,15 @@ class Settings {
                     .apply()
         }
 
+    var lastOpenedMarkId: String
+        get() {
+            return pref.getString(context.getString(R.string.pref_key_app_last_opened_mark_id), "")
+        }
+        set(value) {
+            pref.edit()
+                    .putString(context.getString(R.string.pref_key_app_last_opened_mark_id), value)
+                    .apply()
+        }
 
     // サービス設定
 

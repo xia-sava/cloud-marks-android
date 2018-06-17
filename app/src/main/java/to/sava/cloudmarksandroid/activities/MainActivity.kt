@@ -13,6 +13,7 @@ import org.jetbrains.anko.*
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.fragments.MarksFragment
+import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.libs.Settings
@@ -31,11 +32,16 @@ class MainActivity : AppCompatActivity(),
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        if (savedInstanceState == null) {
-            transitionMarksFragment(MarkNode.ROOT_ID)
-        }
-
         realm = Realm.getDefaultInstance()
+
+        if (savedInstanceState == null) {
+            val marks = Marks(realm)
+            marks.getMark(Settings().lastOpenedMarkId)?.let { lastMark ->
+                for (mark in marks.getMarkPath(lastMark)) {
+                    transitionMarksFragment(mark.id)
+                }
+            } ?: transitionMarksFragment(MarkNode.ROOT_ID)
+        }
     }
 
     override fun onDestroy() {
@@ -56,6 +62,7 @@ class MainActivity : AppCompatActivity(),
                 if (backCount == 1) getString(R.string.app_name)
                 else mark?.title ?: "ブックマークが見つかりません"
         supportActionBar?.setDisplayHomeAsUpEnabled(backCount > 1)
+        Settings().lastOpenedMarkId = mark?.id ?: MarkNode.ROOT_ID
     }
 
     private fun onListItemClick(mark: MarkNode, choiceApp: Boolean) {

@@ -96,6 +96,14 @@ class Marks (private val realm: Realm) {
                 .sort("order")
                 .findAll()
     }
+
+    fun getMarkPath(child: MarkNode): ArrayList<MarkNode> {
+        return child.parent?.let { parent ->
+            val list = getMarkPath(parent)
+            list.add(child)
+            list
+        } ?: arrayListOf(child)
+    }
 }
 
 class MarksManipulator(private val realm: Realm): AutoCloseable {
