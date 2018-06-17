@@ -170,7 +170,7 @@ class SettingsActivity : PreferenceActivity() {
                 } catch (playEx: GooglePlayServicesAvailabilityException) {
                     // Google Play サービス自体が使えない？
                     GoogleApiAvailability.getInstance().getErrorDialog(
-                            activity, playEx.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG)
+                            activity, playEx.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG).show()
                 } catch (userAuthEx: UserRecoverableAuthException) {
                     // ユーザの許可を得るためのダイアログを表示する
                     startActivityForResult(userAuthEx.intent, REQUEST_AUTHENTICATE)
@@ -184,6 +184,11 @@ class SettingsActivity : PreferenceActivity() {
                         doCheck = true
                     } else {
                         uiThread { toast(authEx.message ?: "") }
+                    }
+                } catch (ex: RuntimeException) {
+                    // その他もう何だかわからないけどおかしい
+                    uiThread {
+                        toast(ex.message!!)
                     }
                 }
                 if (doCheck) {
