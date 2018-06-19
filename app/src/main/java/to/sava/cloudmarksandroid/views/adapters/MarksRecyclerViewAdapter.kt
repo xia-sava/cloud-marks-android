@@ -1,15 +1,25 @@
 package to.sava.cloudmarksandroid.views.adapters
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
 import android.support.v7.widget.RecyclerView
+import android.util.DisplayMetrics
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
 import android.widget.TextView
 import io.realm.RealmRecyclerViewAdapter
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_marks.view.*
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.uiThread
+import org.jetbrains.anko.windowManager
+import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
+import java.net.URL
 import java.util.*
 
 
@@ -24,7 +34,10 @@ class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>, private val onClic
         setHasStableIds(true)
     }
 
+    private lateinit var context: Context
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MarksViewHolder {
+        context = parent.context
         val view = LayoutInflater.from(parent.context).inflate(R.layout.fragment_marks, parent, false)
         val viewHolder = MarksViewHolder(view)
 
@@ -40,11 +53,35 @@ class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>, private val onClic
         getItem(position)?.let {
             holder.data = it
             holder.contentView.text = it.title
-            val (icon, chevron) = when (it.type) {
-                MarkType.Folder -> Pair(R.drawable.ic_folder_open_black_24dp, R.drawable.ic_chevron_right_black_24dp)
-                MarkType.Bookmark -> Pair(R.drawable.ic_bookmark_border_black_24dp, 0)
+            when (it.type) {
+                MarkType.Folder -> {
+                    holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
+                            R.drawable.ic_folder_open_black_24dp, 0, R.drawable.ic_chevron_right_black_24dp, 0)
+                }
+                MarkType.Bookmark -> {
+//                    val faviconUrl = it.faviconUrl
+//                    doAsync {
+//                        try {
+//                            val binary = URL(faviconUrl).openStream()
+//                            val bitmap = BitmapFactory.decodeStream(binary)
+//                            val metrics = DisplayMetrics()
+//                            context.windowManager.defaultDisplay.getMetrics(metrics)
+//                            val size = (24.0 * metrics.density).toInt()
+//                            val scaled = Bitmap.createScaledBitmap(bitmap, size, size, false)
+//                            val icon = BitmapDrawable(context.resources, scaled)
+//                            uiThread {
+//                                holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
+//                                        icon, null, null, null)
+//                            }
+//                        } catch (ex: RuntimeException) {
+//                            uiThread {
+                                holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
+                                        R.drawable.ic_bookmark_border_black_24dp, 0, 0, 0)
+//                            }
+//                        }
+//                    }
+                }
             }
-            holder.contentView.setCompoundDrawablesWithIntrinsicBounds(icon, 0, chevron, 0)
         }
     }
 
