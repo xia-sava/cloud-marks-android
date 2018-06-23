@@ -26,7 +26,7 @@ internal enum class Action {
     MERGE,
 }
 
-class MarksIntentService : JobIntentService() {
+class MarksService : JobIntentService() {
     companion object {
         var onMarksServiceCompleteListener: OnMarksServiceCompleteListener? = null
 
@@ -49,10 +49,10 @@ class MarksIntentService : JobIntentService() {
             if (context is OnMarksServiceCompleteListener) {
                 this.onMarksServiceCompleteListener = context
             }
-            val intent = Intent(context, MarksIntentService::class.java).apply {
+            val intent = Intent(context, MarksService::class.java).apply {
                 this.action = action.toString()
             }
-            enqueueWork(context, MarksIntentService::class.java, JOB_ID, intent)
+            enqueueWork(context, MarksService::class.java, JOB_ID, intent)
         }
 
         private const val JOB_ID = 1001
@@ -74,7 +74,7 @@ class MarksIntentService : JobIntentService() {
 
             if (rc) {
                 handler.post {
-                    toast(R.string.service_action_done)
+                    toast(R.string.marks_service_action_done)
                 }
             }
         }
@@ -96,7 +96,7 @@ class MarksIntentService : JobIntentService() {
                     val progressNotificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                         setOngoing(true)
                         setSmallIcon(R.drawable.ic_cloud_download_black_24dp)
-                        setContentTitle(getString(R.string.service_progress_notification_title, getString(R.string.service_action_load_title)))
+                        setContentTitle(getString(R.string.marks_service_progress_notification_title, getString(R.string.marks_service_action_load_title)))
                         setProgress(100, 0, true)
                     }
                     startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
@@ -105,7 +105,7 @@ class MarksIntentService : JobIntentService() {
                         val marks = Marks(realm)
                         marks.progressListener = {folder: String, percent: Int ->
                             NotificationCompat.BigTextStyle(progressNotificationBuilder).bigText(
-                                    getString(R.string.service_progress_folder, folder))
+                                    getString(R.string.marks_service_progress_folder, folder))
                             progressNotificationBuilder.setProgress(100, percent, false)
                             startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
                         }
@@ -119,21 +119,21 @@ class MarksIntentService : JobIntentService() {
         catch (authEx: ServiceAuthenticationException) {
             completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                 setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
-                setContentTitle(getString(R.string.service_auth_error_title))
-                NotificationCompat.BigTextStyle(this).bigText(getString(R.string.service_auth_error_text))
-                val intentNext = Intent(this@MarksIntentService, SettingsActivity::class.java)
+                setContentTitle(getString(R.string.marks_service_auth_error_title))
+                NotificationCompat.BigTextStyle(this).bigText(getString(R.string.marks_service_auth_error_text))
+                val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
                 intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                setContentIntent(PendingIntent.getActivity(this@MarksIntentService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
+                setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
             }.build()
         }
         catch (ex: Exception) {
             completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                 setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
-                setContentTitle(getString(R.string.service_error_title))
+                setContentTitle(getString(R.string.marks_service_error_title))
                 NotificationCompat.BigTextStyle(this).bigText(ex.message)
-                val intentNext = Intent(this@MarksIntentService, SettingsActivity::class.java)
+                val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
                 intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                setContentIntent(PendingIntent.getActivity(this@MarksIntentService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
+                setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
             }.build()
         }
         finally {

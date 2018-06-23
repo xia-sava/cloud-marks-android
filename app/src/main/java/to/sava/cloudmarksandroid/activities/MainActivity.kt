@@ -17,13 +17,13 @@ import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.libs.Settings
-import to.sava.cloudmarksandroid.services.MarksIntentService
+import to.sava.cloudmarksandroid.services.MarksService
 
 
 class MainActivity : AppCompatActivity(),
         MarksFragment.OnListItemClickListener,
         MarksFragment.OnListItemChangListener,
-        MarksIntentService.OnMarksServiceCompleteListener {
+        MarksService.OnMarksServiceCompleteListener {
 
     private lateinit var realm: Realm
 
@@ -139,7 +139,7 @@ class MainActivity : AppCompatActivity(),
                 startActivity<SettingsActivity>()
             }
             R.id.main_menu_load -> {
-                MarksIntentService.startActionLoad(this)
+                MarksService.startActionLoad(this)
             }
             else -> return super.onOptionsItemSelected(item)
         }
