@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.preference.*
 import android.view.MenuItem
+import com.crashlytics.android.Crashlytics
 import com.google.android.gms.auth.GoogleAuthException
 import com.google.android.gms.auth.GoogleAuthUtil
 import com.google.android.gms.auth.GooglePlayServicesAvailabilityException
@@ -190,12 +191,13 @@ class SettingsActivity : PreferenceActivity() {
                         uiThread { toast(authEx.message ?: "") }
                     }
                 }
-//                catch (ex: RuntimeException) {
-//                    // その他もう何だかわからないけどおかしい
-//                    uiThread {
-//                        toast(ex.message!!)
-//                    }
-//                }
+                catch (ex: RuntimeException) {
+                    Crashlytics.logException(ex)
+                    // その他もう何だかわからないけどおかしい
+                    uiThread {
+                        toast(ex.message!!)
+                    }
+                }
                 if (doCheck) {
                     try {
                         val accessOk = storage.checkAccessibility()
@@ -220,12 +222,13 @@ class SettingsActivity : PreferenceActivity() {
                             toast(illArgEx.message!!)
                         }
                     }
-//                    catch (ex: RuntimeException) {
-//                        // その他もう何だかわからないけどおかしい
-//                        uiThread {
-//                            toast(ex.message!!)
-//                        }
-//                    }
+                    catch (ex: RuntimeException) {
+                        Crashlytics.logException(ex)
+                        // その他もう何だかわからないけどおかしい
+                        uiThread {
+                            toast(ex.message!!)
+                        }
+                    }
                 }
             }
         }

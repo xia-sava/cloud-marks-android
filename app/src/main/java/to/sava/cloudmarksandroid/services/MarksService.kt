@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Handler
 import android.support.v4.app.JobIntentService
 import android.support.v4.app.NotificationCompat
+import com.crashlytics.android.Crashlytics
 import io.realm.Realm
 import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.toast
@@ -126,16 +127,17 @@ class MarksService : JobIntentService() {
                 setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
             }.build()
         }
-//        catch (ex: Exception) {
-//            completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
-//                setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
-//                setContentTitle(getString(R.string.marks_service_error_title))
-//                NotificationCompat.BigTextStyle(this).bigText("${ex::class.java.name}\n${ex.message}")
-//                val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
-//                intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-//                setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
-//            }.build()
-//        }
+        catch (ex: Exception) {
+            Crashlytics.logException(ex)
+            completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
+                setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
+                setContentTitle(getString(R.string.marks_service_error_title))
+                NotificationCompat.BigTextStyle(this).bigText("${ex::class.java.name}\n${ex.message}")
+                val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
+                intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
+            }.build()
+        }
         finally {
             CloudMarksAndroidApplication.instance.processing = false
         }

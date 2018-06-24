@@ -1,6 +1,7 @@
 package to.sava.cloudmarksandroid.libs
 
 import android.accounts.Account
+import com.crashlytics.android.Crashlytics
 import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.json.gson.GsonFactory
@@ -89,12 +90,13 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
     val credential: GoogleAccountCredential by lazy {
         val cred = GoogleAccountCredential.usingOAuth2(settings.context, SCOPES)
         if (settings.googleAccount != "") {
-//            try {
+            try {
                 cred.selectedAccount = Account(settings.googleAccount, "com.google")
-//            }
-//            catch (ex: IllegalArgumentException) {
-//                // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
-//            }
+            }
+            catch (ex: IllegalArgumentException) {
+                // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
+                Crashlytics.logException(ex)
+            }
         }
         cred
     }
