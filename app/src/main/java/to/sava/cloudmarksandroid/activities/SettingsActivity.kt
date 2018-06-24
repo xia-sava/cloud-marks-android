@@ -167,17 +167,21 @@ class SettingsActivity : PreferenceActivity() {
                 try {
                     GoogleAuthUtil.getToken(activity, account, GoogleDriveStorage.SCOPES_STR)
                     doCheck = true
-                } catch (playEx: GooglePlayServicesAvailabilityException) {
+                }
+                catch (playEx: GooglePlayServicesAvailabilityException) {
                     // Google Play サービス自体が使えない？
                     GoogleApiAvailability.getInstance().getErrorDialog(
                             activity, playEx.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG).show()
-                } catch (userAuthEx: UserRecoverableAuthException) {
+                }
+                catch (userAuthEx: UserRecoverableAuthException) {
                     // ユーザの許可を得るためのダイアログを表示する
                     startActivityForResult(userAuthEx.intent, REQUEST_AUTHENTICATE)
-                } catch (transientEx: IOException) {
+                }
+                catch (transientEx: IOException) {
                     // ネットワークエラーとかか？
                     uiThread { toast(transientEx.message ?: "") }
-                } catch (authEx: GoogleAuthException) {
+                }
+                catch (authEx: GoogleAuthException) {
                     // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
                     if (authEx.message == "Unknown") {
                         // そういう時はひとまず認証が通ったと思ってアクセスチェックをしてみる
@@ -185,12 +189,13 @@ class SettingsActivity : PreferenceActivity() {
                     } else {
                         uiThread { toast(authEx.message ?: "") }
                     }
-                } catch (ex: RuntimeException) {
-                    // その他もう何だかわからないけどおかしい
-                    uiThread {
-                        toast(ex.message!!)
-                    }
                 }
+//                catch (ex: RuntimeException) {
+//                    // その他もう何だかわからないけどおかしい
+//                    uiThread {
+//                        toast(ex.message!!)
+//                    }
+//                }
                 if (doCheck) {
                     try {
                         val accessOk = storage.checkAccessibility()
@@ -204,20 +209,23 @@ class SettingsActivity : PreferenceActivity() {
                                 toast(getString(R.string.error_occurred_on_connecting))
                             }
                         }
-                    } catch (userAuthIoEx: UserRecoverableAuthIOException) {
+                    }
+                    catch (userAuthIoEx: UserRecoverableAuthIOException) {
                         // ユーザの許可を得るためのダイアログを表示する
                         startActivityForResult(userAuthIoEx.intent, REQUEST_AUTHENTICATE)
-                    } catch (illArgEx: IllegalArgumentException) {
+                    }
+                    catch (illArgEx: IllegalArgumentException) {
                         // 持っていた credential がなぜかおかしい
                         uiThread {
                             toast(illArgEx.message!!)
                         }
-                    } catch (ex: RuntimeException) {
-                        // その他もう何だかわからないけどおかしい
-                        uiThread {
-                            toast(ex.message!!)
-                        }
                     }
+//                    catch (ex: RuntimeException) {
+//                        // その他もう何だかわからないけどおかしい
+//                        uiThread {
+//                            toast(ex.message!!)
+//                        }
+//                    }
                 }
             }
         }
