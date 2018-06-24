@@ -89,12 +89,12 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
     val credential: GoogleAccountCredential by lazy {
         val cred = GoogleAccountCredential.usingOAuth2(settings.context, SCOPES)
         if (settings.googleAccount != "") {
-            try {
+//            try {
                 cred.selectedAccount = Account(settings.googleAccount, "com.google")
-            }
-            catch (ex: IllegalArgumentException) {
-                // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
-            }
+//            }
+//            catch (ex: IllegalArgumentException) {
+//                // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
+//            }
         }
         cred
     }
