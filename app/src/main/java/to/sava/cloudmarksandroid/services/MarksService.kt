@@ -128,7 +128,6 @@ class MarksService : JobIntentService() {
             }.build()
         }
         catch (ex: Exception) {
-            Crashlytics.logException(ex)
             completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                 setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
                 setContentTitle(getString(R.string.marks_service_error_title))
@@ -137,6 +136,7 @@ class MarksService : JobIntentService() {
                 intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                 setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
             }.build()
+            Crashlytics.logException(ex)
         }
         finally {
             CloudMarksAndroidApplication.instance.processing = false

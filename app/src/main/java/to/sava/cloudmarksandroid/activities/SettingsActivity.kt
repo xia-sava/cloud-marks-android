@@ -17,9 +17,11 @@ import com.google.android.gms.auth.GooglePlayServicesAvailabilityException
 import com.google.android.gms.auth.UserRecoverableAuthException
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
+import org.jetbrains.anko.bundleOf
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.toast
 import org.jetbrains.anko.uiThread
+import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.GoogleDriveStorage
 import to.sava.cloudmarksandroid.libs.Settings
@@ -122,6 +124,7 @@ class SettingsActivity : PreferenceActivity() {
                         true -> {
                             // 接続処理をする
                             toast(getString(R.string.connect_to_google_drive))
+                            Crashlytics.log("SettingsActivity.onPreferenceClick.startActivityForResult")
                             startActivityForResult(storage.credential.newChooseAccountIntent(), REQUEST_PICK_ACCOUNT)
                         }
                         false -> {
@@ -138,11 +141,14 @@ class SettingsActivity : PreferenceActivity() {
         }
 
         override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+            Crashlytics.log("SettingsActivity.onActivityResult")
             super.onActivityResult(requestCode, resultCode, data)
             when (requestCode) {
                 REQUEST_PICK_ACCOUNT -> {
+                    Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT")
                     if (resultCode == Activity.RESULT_OK && data?.extras != null) {
                         val name = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+                        Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '$name'")
                         if (name != null) {
                             storage.credential.selectedAccount = Account(name, "com.google")
                             tryAuthenticate()
@@ -152,37 +158,48 @@ class SettingsActivity : PreferenceActivity() {
                     }
                 }
                 REQUEST_AUTHENTICATE -> {
+                    Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_AUTHENTICATE")
                     if (resultCode == Activity.RESULT_OK) {
                         tryAuthenticate()
                     } else {
                         toast(getString(R.string.connecting_google_drive_denied))
                     }
                 }
+                else -> {
+                    Crashlytics.log("SettingsActivity.onActivityResult.else")
+                    throw RuntimeException("requestCode: $requestCode resultCode: $resultCode")
+                }
             }
         }
 
         private fun tryAuthenticate() {
             val account = storage.credential.selectedAccount
+            Crashlytics.log("SettingsActivity.tryAuthenticate / account:'${account.name}")
             doAsync {
                 var doCheck = false
                 try {
+                    Crashlytics.log("SettingsActivity.tryAuthenticate.getToken")
                     GoogleAuthUtil.getToken(activity, account, GoogleDriveStorage.SCOPES_STR)
                     doCheck = true
                 }
                 catch (playEx: GooglePlayServicesAvailabilityException) {
                     // Google Play サービス自体が使えない？
+                    Crashlytics.log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
                     GoogleApiAvailability.getInstance().getErrorDialog(
                             activity, playEx.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG).show()
                 }
                 catch (userAuthEx: UserRecoverableAuthException) {
                     // ユーザの許可を得るためのダイアログを表示する
+                    Crashlytics.log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
                     startActivityForResult(userAuthEx.intent, REQUEST_AUTHENTICATE)
                 }
                 catch (transientEx: IOException) {
                     // ネットワークエラーとかか？
+                    Crashlytics.log("SettingsActivity.tryAuthenticate.IOException")
                     uiThread { toast(transientEx.message ?: "") }
                 }
                 catch (authEx: GoogleAuthException) {
+                    Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthException / message:'${authEx.message}")
                     // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
                     if (authEx.message == "Unknown") {
                         // そういう時はひとまず認証が通ったと思ってアクセスチェックをしてみる
@@ -192,11 +209,11 @@ class SettingsActivity : PreferenceActivity() {
                     }
                 }
                 catch (ex: RuntimeException) {
-                    Crashlytics.logException(ex)
                     // その他もう何だかわからないけどおかしい
                     uiThread {
                         toast(ex.message!!)
                     }
+                    Crashlytics.logException(ex)
                 }
                 if (doCheck) {
                     try {
@@ -223,11 +240,11 @@ class SettingsActivity : PreferenceActivity() {
                         }
                     }
                     catch (ex: RuntimeException) {
-                        Crashlytics.logException(ex)
                         // その他もう何だかわからないけどおかしい
                         uiThread {
                             toast(ex.message!!)
                         }
+                        Crashlytics.logException(ex)
                     }
                 }
             }
