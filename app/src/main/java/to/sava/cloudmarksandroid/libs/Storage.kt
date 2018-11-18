@@ -6,6 +6,7 @@ import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
+import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import com.google.gson.*
 import org.apache.commons.io.IOUtils
@@ -106,9 +107,9 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
     }
 
     companion object {
-        val SCOPES: List<String> = Arrays.asList("https://www.googleapis.com/auth/drive")
+        val SCOPES: List<String> = Arrays.asList(DriveScopes.DRIVE)
         val SCOPES_STR: String
-            get() = "oauth2 ${SCOPES.joinToString(" ")}"
+            get() = "oauth2: ${SCOPES.joinToString(" ")}"
     }
 
     override fun lsFile(filename: String, parent: FileInfo): FileInfo {
