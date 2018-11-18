@@ -170,8 +170,9 @@ class MainActivity : AppCompatActivity(),
     override fun onMarksServiceComplete() {
         runOrAddPendingActions(Runnable {
             val fm  = supportFragmentManager
-            val markId = fm.getBackStackEntryAt(fm.backStackEntryCount - 1).name
-            replaceMarksFragment(markId)
+            fm.getBackStackEntryAt(fm.backStackEntryCount - 1).name?.let {
+                replaceMarksFragment(it)
+            }
         })
     }
 
