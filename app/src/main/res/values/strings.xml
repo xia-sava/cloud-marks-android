@@ -4,6 +4,7 @@
 
     <string name="main_menu_settings">Settings</string>
     <string name="main_menu_load">Load</string>
+    <string name="main_menu_about">About…</string>
 
 
     <!-- Main View -->

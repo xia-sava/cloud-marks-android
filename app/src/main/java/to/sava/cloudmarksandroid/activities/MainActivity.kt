@@ -20,8 +20,7 @@ import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.services.MarksService
 import android.content.pm.PackageManager
 import android.os.Build
-
-
+import android.support.v7.app.AlertDialog
 
 
 class MainActivity : AppCompatActivity(),
@@ -199,6 +198,14 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.main_menu_load -> {
                 MarksService.startActionLoad(this)
+            }
+            R.id.main_menu_about -> {
+                val version = packageManager.getPackageInfo(packageName, 0).versionName
+                AlertDialog.Builder(this).apply {
+                    setTitle(R.string.app_name)
+                    setMessage("Version: $version")
+                    setPositiveButton("OK") {_, _ -> }
+                }.show()
             }
             else -> return super.onOptionsItemSelected(item)
         }

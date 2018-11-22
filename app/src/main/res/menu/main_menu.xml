@@ -9,4 +9,7 @@
         android:id="@+id/main_menu_load"
         android:icon="@drawable/ic_cloud_download_black_24dp"
         android:title="@string/main_menu_load" />
+    <item
+        android:id="@+id/main_menu_about"
+        android:title="@string/main_menu_about" />
 </menu>
