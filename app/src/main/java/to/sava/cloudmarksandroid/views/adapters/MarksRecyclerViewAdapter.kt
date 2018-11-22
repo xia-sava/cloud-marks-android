@@ -5,8 +5,8 @@ import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
 import android.widget.TextView
+import io.realm.OrderedRealmCollection
 import io.realm.RealmRecyclerViewAdapter
-import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_marks.view.*
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.models.MarkNode
@@ -14,7 +14,7 @@ import to.sava.cloudmarksandroid.models.MarkType
 import java.util.*
 
 
-class MarksRecyclerViewAdapter(value: RealmResults<MarkNode>, private val onClickListener: OnClickListener? = null)
+class MarksRecyclerViewAdapter(value: OrderedRealmCollection<MarkNode>, private val onClickListener: OnClickListener? = null)
     : RealmRecyclerViewAdapter<MarkNode, MarksRecyclerViewAdapter.MarksViewHolder>(value, true) {
 
     interface OnClickListener {
