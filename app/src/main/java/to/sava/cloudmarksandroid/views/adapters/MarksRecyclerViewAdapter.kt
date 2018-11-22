@@ -1,25 +1,16 @@
 package to.sava.cloudmarksandroid.views.adapters
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
 import android.support.v7.widget.RecyclerView
-import android.util.DisplayMetrics
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
 import android.widget.TextView
 import io.realm.RealmRecyclerViewAdapter
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_marks.view.*
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.uiThread
-import org.jetbrains.anko.windowManager
-import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
-import java.net.URL
 import java.util.*
 
 

@@ -10,7 +10,7 @@ import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import com.google.gson.*
 import org.apache.commons.io.IOUtils
-import to.sava.cloudmarksandroid.models.MarkNodeJson
+import to.sava.cloudmarksandroid.models.MarkTreeNode
 import to.sava.cloudmarksandroid.models.MarkType
 import java.nio.charset.Charset
 import java.security.MessageDigest
@@ -28,8 +28,8 @@ class FileInfo(var filename: String, var fileObject: Map<String, String> = mutab
 }
 
 
-//class JsonContainer(val version: String, val hash: String, val contents: Any)
-class MarksJsonContainer(val version: String, val hash: String, val contents: MarkNodeJson)
+class JsonContainer(val version: Int, val hash: String, val contents: Any)
+class MarksJsonContainer(val version: Int, val hash: String, val contents: MarkTreeNode)
 
 
 abstract class Storage(val settings: Settings) {
@@ -48,9 +48,6 @@ abstract class Storage(val settings: Settings) {
                 .registerTypeAdapter(MarkType::class.java, JsonDeserializer<MarkType> { json, _, _->
                     MarkType.values().first { it.rawValue == json.asInt }
                 })
-                .registerTypeAdapter(MarkNodeJson::class.java, JsonSerializer<MarkNodeJson> { src, typeOfSrc, context ->
-                    MarkNodeJson.jsonSerialize(src, typeOfSrc, context)
-                })
                 .create()
     }
 
@@ -63,19 +60,29 @@ abstract class Storage(val settings: Settings) {
     abstract fun lsFile(filename: String): FileInfo
     abstract fun read(fileInfo: FileInfo): String
 
-    fun readMarks(file: FileInfo): MarkNodeJson {
+    /**
+     * JSONをMarksツリーとして読み込む．
+     *
+     * readContents()みたく汎用の読み込みルーチンにしたかったけど，
+     * gsonの入出力を共に外から与えるのが困難すぎて断念．
+     */
+    fun readMarksContents(file: FileInfo): MarkTreeNode {
         val jsonStr = read(file)
+        val container: MarksJsonContainer
         try {
-            // コール側から Container を指定できるようにしたかったけどやり方全然ワカンネ
-            val container = gson.fromJson(jsonStr, MarksJsonContainer::class.java)
-            if (container.hash != hashContents(container.contents)) {
-                throw InvalidJsonException("読込みデータの整合性エラーです")
-            }
-            return container.contents
+            container = gson.fromJson(jsonStr, MarksJsonContainer::class.java)
         }
         catch (jsonEx: JsonParseException) {
             throw InvalidJsonException("読込みデータの形式が不正です")
         }
+        when (container.version) {
+            1 -> {
+                if (container.hash != hashContents(container.contents)) {
+                    throw InvalidJsonException("読込みデータの整合性エラーです")
+                }
+            }
+        }
+        return container.contents
     }
 
     private fun hashContents(contents: Any): String {

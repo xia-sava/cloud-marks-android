@@ -27,6 +27,11 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var realm: Realm
 
+    // region Android Activity Lifecycle まわり
+
+    /**
+     * アプリ起動時の処理．
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -34,21 +39,24 @@ class MainActivity : AppCompatActivity(),
 
         realm = Realm.getDefaultInstance()
 
+        // Activity復元でなく完全な初回起動の時は，
+        // 前回開いていたフォルダまで移動してやる．
         if (savedInstanceState == null) {
-            val marks = Marks(realm)
-            marks.getMark(Settings().lastOpenedMarkId)?.let { lastMark ->
-                for (mark in marks.getMarkPath(lastMark)) {
-                    transitionMarksFragment(mark.id)
-                }
-            } ?: transitionMarksFragment(MarkNode.ROOT_ID)
+            reTransitLastOpenedMarksFragment()
         }
     }
 
+    /**
+     * アプリ終了時の処理．珍しいことは何もしていない．
+     */
     override fun onDestroy() {
         super.onDestroy()
         realm.close()
     }
 
+    /**
+     * バックボタンの処理．最上階で押されたらアプリ終了．
+     */
     override fun onBackPressed() {
         super.onBackPressed()
         if (supportFragmentManager.backStackEntryCount == 0) {
@@ -56,6 +64,15 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    // endregion
+
+    // region 一覧画面のUI処理まわり
+
+    /**
+     * 一覧に表示しているフォルダが変更された時にコールされる処理．
+     * 一覧のタイトルを表示フォルダ名に合わせたり，
+     * バックボタンアイコンを表示したりする．
+     */
     override fun onListItemChange(mark: MarkNode?) {
         val backCount = supportFragmentManager.backStackEntryCount
         toolbar.title =
@@ -65,6 +82,10 @@ class MainActivity : AppCompatActivity(),
         Settings().lastOpenedMarkId = mark?.id ?: MarkNode.ROOT_ID
     }
 
+    /**
+     * 一覧のフォルダやブックマークがタップされた時の処理．
+     * フォルダ遷移するか，あるいはブックマークを開く．
+     */
     private fun onListItemClick(mark: MarkNode, choiceApp: Boolean) {
         when (mark.type) {
             MarkType.Folder -> {
@@ -80,10 +101,16 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    /**
+     * @see onListItemClick
+     */
     override fun onListItemClick(mark: MarkNode) {
         return onListItemClick(mark, false)
     }
 
+    /**
+     * 一覧のアイテム長押しメニューの処理．
+     */
     override fun onContextItemSelected(item: MenuItem?): Boolean {
         val fragment = supportFragmentManager.fragments.last()
         if (fragment is MarksFragment) {
@@ -116,12 +143,23 @@ class MainActivity : AppCompatActivity(),
         return false
     }
 
+    // endregion
+
+    // region 右上メニューボタンまわり
+
+    /**
+     * 右上メニューボタン作成
+     */
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
     }
 
+    /**
+     * 右上メニューボタンの状態をセット
+     */
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        // 接続未設定およびロード中は Load メニューを disable
         val marksMenuEnabled = (
                 Settings().googleConnected &&
                         !CloudMarksAndroidApplication.instance.loading
@@ -130,8 +168,12 @@ class MainActivity : AppCompatActivity(),
         return super.onPrepareOptionsMenu(menu)
     }
 
+    /**
+     * 右上メニューそれぞれの処理
+     */
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
+            // 右上といいつつ実は左上のバックボタンの処理もここなのだ
             android.R.id.home -> {
                 onBackPressed()
             }
@@ -146,43 +188,32 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
-    private var pendingActions: ArrayList<Runnable>? = null
+    // endregion
 
-    override fun onPause() {
-        super.onPause()
-        pendingActions = ArrayList()
+    // region フォルダ遷移まわり
+
+    /**
+     * 最後に開いていたフォルダを開き直す
+     */
+    private fun reTransitLastOpenedMarksFragment() {
+        reTransitMarksFragmentTo(Settings().lastOpenedMarkId)
     }
 
-    override fun onResume() {
-        super.onResume()
-        pendingActions?.let { list ->
-            for (routine in list) {
-                routine.run()
+    /**
+     * Marks一覧を最初から指定フォルダまで遷移しなおす．
+     */
+    private fun reTransitMarksFragmentTo(markId: String) {
+        val marks = Marks(realm)
+        marks.getMark(markId)?.let { lastMark ->
+            for (mark in marks.getMarkPath(lastMark)) {
+                transitionMarksFragment(mark.id)
             }
-        }
-        pendingActions = null
+        } ?: transitionMarksFragment(MarkNode.ROOT_ID)
     }
 
-    private fun runOrAddPendingActions(routine: Runnable) {
-        pendingActions?.also { it.add(routine) } ?: routine.run()
-    }
-
-    override fun onMarksServiceComplete() {
-        runOrAddPendingActions(Runnable {
-            val fm  = supportFragmentManager
-            fm.getBackStackEntryAt(fm.backStackEntryCount - 1).name?.let {
-                replaceMarksFragment(it)
-            }
-        })
-    }
-
-    private fun replaceMarksFragment(markId: String) {
-        supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.main_view_wrapper, MarksFragment.newInstance(markId))
-                .commit()
-    }
-
+    /**
+     * Marks一覧を指定フォルダへ遷移する．
+     */
     private fun transitionMarksFragment(markId: String) {
         supportFragmentManager
                 .beginTransaction()
@@ -190,4 +221,54 @@ class MainActivity : AppCompatActivity(),
                 .addToBackStack(markId)
                 .commit()
     }
+
+    // endregion
+
+    // region サービス処理の終了連絡対応まわり
+
+    /**
+     * Activityのフォーカスがなくなった時とかにやっときたい作業を保持する．
+     * これが null の間は pause してないので即時実行でOK
+     */
+    private var pendingActions: ArrayList<Runnable>? = null
+
+    /**
+     * pause状態に入る時に，タスクの入れ物を用意する．
+     */
+    override fun onPause() {
+        super.onPause()
+        pendingActions = ArrayList()
+    }
+
+    /**
+     * pauseから脱する時に，タスクが積まれてたら全部実行して，入れ物はnullに．
+     */
+    override fun onResume() {
+        super.onResume()
+        pendingActions?.map { it.run() }
+        pendingActions = null
+    }
+
+    /**
+     * pause状態かどうかは気にせずとにかくタスクを積む．
+     */
+    private fun runOrAddPendingActions(routine: Runnable) {
+        pendingActions?.apply {
+            add(routine)
+        } ?: runOnUiThread {
+            routine.run()
+        }
+    }
+
+    /**
+     * MarksServiceがload処理とかを終えた後にListener経由でコールされる処理．
+     *
+     */
+    override fun onMarksServiceComplete() {
+        runOrAddPendingActions(Runnable {
+            reTransitLastOpenedMarksFragment()
+        })
+    }
+
+    // endregion
 }

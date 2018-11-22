@@ -1,10 +1,7 @@
 package to.sava.cloudmarksandroid.models
 
-import com.google.gson.JsonObject
-import com.google.gson.JsonSerializationContext
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import java.lang.reflect.Type
 import java.util.*
 
 
@@ -13,7 +10,11 @@ enum class MarkType(val rawValue: Int) {
     Bookmark(1),
 }
 
-
+/**
+ * ブックマークツリーを内部的に保持する用のクラス．ノードと呼ぼう．
+ * ツリー構造は親へのリンクだけ持つ．
+ * Realm DBに保存される形式もこちら．
+ */
 open class MarkNode (@PrimaryKey open var id: String = newKey(),
                      open var typeValue: Int = MarkType.Bookmark.rawValue,
                      open var title: String = "",
@@ -34,16 +35,27 @@ open class MarkNode (@PrimaryKey open var id: String = newKey(),
         }
 }
 
-class MarkNodeJson(val type: MarkType, val title: String, val url: String, val children: List<MarkNodeJson>) {
-    companion object {
-        fun jsonSerialize(mark: MarkNodeJson, typeOfSrc: Type, context: JsonSerializationContext): JsonObject {
-            // ブラウザ側に合わせてプロパティ順序を保存しつつシリアライズするやつ
-            return JsonObject().apply {
-                addProperty("type", mark.type.rawValue)
-                addProperty("title", mark.title)
-                addProperty("url", mark.url)
-                add("children", context.serialize(mark.children))
-            }
-        }
+/**
+ * JSONから変換されたデータをMarkTreeNodeとほぼ同じ形式で保持する用のクラス．
+ * Androidではこちらが内部処理のメインのMarksツリー．
+ * ツリー構造は再帰して持つ．
+ */
+class MarkTreeNode(val type: MarkType,
+                   val title: String,
+                   val url: String,
+                   val children: List<MarkTreeNode>) {
+
+    /**
+     * ツリー構造を辿ってアイテム数カウントする．
+     */
+    fun countChildren(filter: MarkType? = null): Long {
+        return when {
+            filter == null -> 1
+            type == filter -> 1
+            else -> 0
+        } + if (type == MarkType.Folder)
+            children.map { it.countChildren(type) }.sum()
+        else
+            0
     }
 }

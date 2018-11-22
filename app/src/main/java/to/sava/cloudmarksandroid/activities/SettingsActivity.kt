@@ -17,11 +17,7 @@ import com.google.android.gms.auth.GooglePlayServicesAvailabilityException
 import com.google.android.gms.auth.UserRecoverableAuthException
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import org.jetbrains.anko.bundleOf
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.toast
-import org.jetbrains.anko.uiThread
-import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
+import org.jetbrains.anko.*
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.GoogleDriveStorage
 import to.sava.cloudmarksandroid.libs.Settings
