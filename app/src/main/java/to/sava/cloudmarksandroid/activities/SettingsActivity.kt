@@ -8,7 +8,11 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.preference.*
+import android.preference.PreferenceActivity
+import android.support.v14.preference.PreferenceFragment
+import android.support.v14.preference.SwitchPreference
+import android.support.v7.preference.ListPreference
+import android.support.v7.preference.Preference
 import android.view.MenuItem
 import com.crashlytics.android.Crashlytics
 import com.google.android.gms.auth.GoogleAuthException
@@ -58,14 +62,13 @@ class SettingsActivity : PreferenceActivity() {
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     class ApplicationPreferenceFragment : PreferenceFragment(),
             Preference.OnPreferenceChangeListener {
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
+
+        override fun onCreatePreferences(bundle: Bundle?, s: String?) {
             addPreferencesFromResource(R.xml.pref_application)
             setHasOptionsMenu(true)
 
             val sharedPrefs = Settings().pref
-            val ids = listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync)
-            for (id in ids) {
+            listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync).map {id ->
                 val pref = findPreference(getString(id))
                 pref.onPreferenceChangeListener = this
                 onPreferenceChange(pref, sharedPrefs.getString(pref.key, ""))
@@ -103,8 +106,7 @@ class SettingsActivity : PreferenceActivity() {
             const val REQUEST_GMS_ERROR_DIALOG = 3
         }
 
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
+        override fun onCreatePreferences(bundle: Bundle?, s: String?) {
             addPreferencesFromResource(R.xml.pref_google_drive)
             setHasOptionsMenu(true)
 
