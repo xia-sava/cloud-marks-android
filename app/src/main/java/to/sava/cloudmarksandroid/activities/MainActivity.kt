@@ -18,6 +18,10 @@ import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.services.MarksService
+import android.content.pm.PackageManager
+import android.os.Build
+
+
 
 
 class MainActivity : AppCompatActivity(),
@@ -92,11 +96,24 @@ class MainActivity : AppCompatActivity(),
                 transitionMarksFragment(mark.id)
             }
             MarkType.Bookmark -> {
-                var intent = Intent(Intent.ACTION_VIEW, Uri.parse(mark.url))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(mark.url))
                 if (choiceApp) {
-                    intent = Intent.createChooser(intent, getString(R.string.mark_menu_share_to))
+                    // URLを選択するダイアログを出すのになんでこんな色々と……
+                    val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                        PackageManager.MATCH_ALL
+                    else
+                        PackageManager.MATCH_DEFAULT_ONLY
+                    val intents =
+                            packageManager.queryIntentActivities(intent, flag).map {
+                                Intent(intent).setPackage(it.activityInfo.packageName)
+                            }.toMutableList()
+                    val chooser = Intent.createChooser(intents.removeAt(0), getString(R.string.mark_menu_share_to)) // *1
+                    chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, intents.toTypedArray()) // *1
+                    startActivity(chooser)
+                } else {
+                    // 自動Intent起動
+                    startActivity(intent)
                 }
-                startActivity(intent)
             }
         }
     }
