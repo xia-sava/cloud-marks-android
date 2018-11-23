@@ -269,7 +269,7 @@ class MainActivity : AppCompatActivity(),
      */
     override fun onResume() {
         super.onResume()
-        pendingActions?.map { it.run() }
+        pendingActions?.forEach { it.run() }
         pendingActions = null
     }
 

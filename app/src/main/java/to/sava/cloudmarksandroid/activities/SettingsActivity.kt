@@ -68,7 +68,7 @@ class SettingsActivity : PreferenceActivity() {
             setHasOptionsMenu(true)
 
             val sharedPrefs = Settings().pref
-            listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync).map {id ->
+            listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync).forEach {id ->
                 val pref = findPreference(getString(id))
                 pref.onPreferenceChangeListener = this
                 onPreferenceChange(pref, sharedPrefs.getString(pref.key, ""))
