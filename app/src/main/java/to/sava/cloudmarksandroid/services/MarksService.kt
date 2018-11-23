@@ -69,7 +69,7 @@ class MarksService : JobIntentService() {
     private val handler = Handler()
 
     override fun onHandleWork(intent: Intent) {
-        intent.action.let {
+        intent.action?.let {
             val action = Action.valueOf(it)
             val rc = handleAction(action)
 

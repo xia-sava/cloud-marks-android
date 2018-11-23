@@ -13,8 +13,8 @@ class Settings {
 
     var folderName: String
         get() {
-            return pref.getString(context.getString(R.string.pref_key_app_folder_name),
-                    context.getString(R.string.pref_default_app_folder_name))
+            return pref.getString(context.getString(R.string.pref_key_app_folder_name), null)
+                    ?: context.getString(R.string.pref_default_app_folder_name)
         }
         set(value) {
             pref.edit()
@@ -44,7 +44,7 @@ class Settings {
 
     var lastOpenedMarkId: String
         get() {
-            return pref.getString(context.getString(R.string.pref_key_app_last_opened_mark_id), "")
+            return pref.getString(context.getString(R.string.pref_key_app_last_opened_mark_id), null) ?: ""
         }
         set(value) {
             pref.edit()
@@ -58,7 +58,7 @@ class Settings {
 
     var googleAccount: String
         get() {
-            return pref.getString(context.getString(R.string.pref_key_google_drive_account), "")
+            return pref.getString(context.getString(R.string.pref_key_google_drive_account), null) ?: ""
         }
         set(value) {
             pref.edit()

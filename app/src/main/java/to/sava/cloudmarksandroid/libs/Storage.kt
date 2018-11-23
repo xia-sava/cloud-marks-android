@@ -17,8 +17,8 @@ import java.security.MessageDigest
 import java.util.*
 
 
-enum class Services(rawvalue: Int) {
-    Gdrive(0)
+enum class Services {
+    Gdrive
 }
 
 
@@ -28,7 +28,7 @@ class FileInfo(var filename: String, var fileObject: Map<String, String> = mutab
 }
 
 
-class JsonContainer(val version: Int, val hash: String, val contents: Any)
+//class JsonContainer(val version: Int, val hash: String, val contents: Any)
 class MarksJsonContainer(val version: Int, val hash: String, val contents: MarkTreeNode)
 
 
