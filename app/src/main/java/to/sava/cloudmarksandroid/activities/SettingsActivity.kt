@@ -249,3 +249,6 @@ class SettingsActivity : PreferenceActivity() {
         }
     }
 }
+
+private fun PreferenceFragment.toast(message: CharSequence) = activity.toast(message)
+
