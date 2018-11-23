@@ -237,6 +237,12 @@ class SettingsActivity : PreferenceActivity() {
                             toast(illArgEx.message!!)
                         }
                     }
+                    catch (authEx: GoogleAuthException) {
+                        // ここで Unknown のが起きる時あるっぽいんだけど全然原因がわかんない……
+                        uiThread {
+                            toast(authEx.message!!)
+                        }
+                    }
                     catch (ex: RuntimeException) {
                         // その他もう何だかわからないけどおかしい
                         uiThread {
