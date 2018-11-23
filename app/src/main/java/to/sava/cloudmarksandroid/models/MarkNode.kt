@@ -1,5 +1,6 @@
 package to.sava.cloudmarksandroid.models
 
+import android.net.Uri
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.*
@@ -27,6 +28,9 @@ open class MarkNode (@PrimaryKey open var id: String = newKey(),
 
         fun newKey() = UUID.randomUUID().toString()
     }
+
+    val domain: String
+        get() = Uri.parse(url).host ?: ""
 
     open var type: MarkType
         get() = MarkType.values().first { it.rawValue == typeValue }

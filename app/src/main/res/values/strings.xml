@@ -14,9 +14,12 @@
     <string name="mark_menu_share_to">Share to…</string>
     <string name="mark_menu_copy_url">Copy URL</string>
     <string name="mark_menu_copy_title">Copy Title</string>
+    <string name="mark_menu_fetch_favicon">Fetch Favicon</string>
 
     <string name="mark_toast_copy_url">URLをクリップボードにコピーしました。</string>
     <string name="mark_toast_copy_title">タイトルをクリップボードにコピーしました。</string>
+    <string name="mark_toast_fetch_favicon">Faviconを取得しました。</string>
+    <string name="mark_toast_fetch_favicon_error">Faviconの取得に失敗、あるいはFaviconが存在しませんでした。</string>
 
     <!-- Mark not found View -->
     <string name="mark_not_found">ブックマークが存在しません。</string>

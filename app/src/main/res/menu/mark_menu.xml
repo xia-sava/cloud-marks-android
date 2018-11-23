@@ -12,5 +12,8 @@
         android:title="@string/mark_menu_copy_url" />
     <item
         android:id="@+id/mark_menu_copy_title"
-        android:title="@string/mark_menu_copy_url" />
+        android:title="@string/mark_menu_copy_title" />
+    <item
+        android:id="@+id/mark_menu_fetch_favicon"
+        android:title="@string/mark_menu_fetch_favicon" />
 </menu>

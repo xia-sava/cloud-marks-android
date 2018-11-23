@@ -21,6 +21,7 @@ class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
 
     private var onListItemClickListener: OnListItemClickListener? = null
     private var onListItemChangeListener: OnListItemChangListener? = null
+    private var faviconFinder: MarksRecyclerViewAdapter.FaviconFinder? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -29,6 +30,9 @@ class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
         }
         if (context is OnListItemChangListener) {
             onListItemChangeListener = context
+        }
+        if (context is MarksRecyclerViewAdapter.FaviconFinder) {
+            faviconFinder = context
         }
     }
 
@@ -60,7 +64,7 @@ class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
             mark?.let {
                 view.layoutManager = LinearLayoutManager(context)
                 val children = marks.getMarkChildren(it)
-                adapter = MarksRecyclerViewAdapter(children, this)
+                adapter = MarksRecyclerViewAdapter(children, faviconFinder, this)
                 view.adapter = adapter
             }
         }

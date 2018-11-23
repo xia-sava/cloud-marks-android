@@ -19,16 +19,23 @@ import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.services.MarksService
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.os.Build
+import android.support.v4.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import android.support.v7.app.AlertDialog
+import to.sava.cloudmarksandroid.libs.FaviconLibrary
+import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 
 
 class MainActivity : AppCompatActivity(),
         MarksFragment.OnListItemClickListener,
         MarksFragment.OnListItemChangListener,
-        MarksService.OnMarksServiceCompleteListener {
+        MarksService.OnMarksServiceCompleteListener,
+        MarksRecyclerViewAdapter.FaviconFinder {
 
     private lateinit var realm: Realm
+
+    private lateinit var faviconLibrary: FaviconLibrary
 
     // region Android Activity Lifecycle まわり
 
@@ -41,6 +48,7 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(toolbar)
 
         realm = Realm.getDefaultInstance()
+        faviconLibrary = FaviconLibrary(realm, this)
 
         // Activity復元でなく完全な初回起動の時は，
         // 前回開いていたフォルダまで移動してやる．
@@ -151,6 +159,12 @@ class MainActivity : AppCompatActivity(),
                             toast(R.string.mark_toast_copy_title)
                             return true
                         }
+                        R.id.mark_menu_fetch_favicon -> {
+                            val rc = fetchFavicon(mark)
+                            toast(if (rc) R.string.mark_toast_fetch_favicon
+                                  else R.string.mark_toast_fetch_favicon_error)
+                            return true
+                        }
                         else -> Unit
                     }
                 }
@@ -227,6 +241,12 @@ class MainActivity : AppCompatActivity(),
      * Marks一覧を最初から指定フォルダまで遷移しなおす．
      */
     private fun reTransitMarksFragmentTo(markId: String) {
+        // 既にバックスタックがある場合は先頭まで戻してから遷移する
+        supportFragmentManager.let {
+            if (it.backStackEntryCount > 0) {
+                it.popBackStack(it.getBackStackEntryAt(0).id, POP_BACK_STACK_INCLUSIVE)
+            }
+        }
         val marks = Marks(realm)
         marks.getMark(markId)?.let { lastMark ->
             for (mark in marks.getMarkPath(lastMark)) {
@@ -292,6 +312,30 @@ class MainActivity : AppCompatActivity(),
         runOrAddPendingActions(Runnable {
             reTransitLastOpenedMarksFragment()
         })
+    }
+
+    // endregion
+
+    // region ブックマークアイコンまわり
+
+    /**
+     * 登録済みのFaviconをRealmから取得する．
+     */
+    override fun findFavicon(mark: MarkNode): Drawable? {
+        return faviconLibrary.find(mark)
+    }
+
+    /**
+     * FaviconをWebから取得して，画面を再描画する．
+     */
+    private fun fetchFavicon(mark: MarkNode): Boolean {
+        return try {
+            faviconLibrary.register(mark)
+            reTransitLastOpenedMarksFragment()
+            true
+        } catch (ex: Exception) {
+            false
+        }
     }
 
     // endregion

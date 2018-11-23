@@ -1,6 +1,7 @@
 package to.sava.cloudmarksandroid.views.adapters
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
@@ -14,7 +15,7 @@ import to.sava.cloudmarksandroid.models.MarkType
 import java.util.*
 
 
-class MarksRecyclerViewAdapter(value: OrderedRealmCollection<MarkNode>, private val onClickListener: OnClickListener? = null)
+class MarksRecyclerViewAdapter(value: OrderedRealmCollection<MarkNode>, private val faviconFinder: FaviconFinder?, private val onClickListener: OnClickListener? = null)
     : RealmRecyclerViewAdapter<MarkNode, MarksRecyclerViewAdapter.MarksViewHolder>(value, true) {
 
     interface OnClickListener {
@@ -41,36 +42,26 @@ class MarksRecyclerViewAdapter(value: OrderedRealmCollection<MarkNode>, private 
     }
 
     override fun onBindViewHolder(holder: MarksViewHolder, position: Int) {
-        getItem(position)?.let {
-            holder.data = it
-            holder.contentView.text = it.title
-            when (it.type) {
+        getItem(position)?.let { markNode ->
+            holder.data = markNode
+            holder.contentView.text = markNode.title
+            when (markNode.type) {
                 MarkType.Folder -> {
                     holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
                             R.drawable.ic_folder_open_black_24dp, 0, R.drawable.ic_chevron_right_black_24dp, 0)
                 }
                 MarkType.Bookmark -> {
-//                    val faviconUrl = it.faviconUrl
-//                    doAsync {
-//                        try {
-//                            val binary = URL(faviconUrl).openStream()
-//                            val bitmap = BitmapFactory.decodeStream(binary)
-//                            val metrics = DisplayMetrics()
-//                            context.windowManager.defaultDisplay.getMetrics(metrics)
-//                            val size = (24.0 * metrics.density).toInt()
-//                            val scaled = Bitmap.createScaledBitmap(bitmap, size, size, false)
-//                            val icon = BitmapDrawable(context.resources, scaled)
-//                            uiThread {
-//                                holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
-//                                        icon, null, null, null)
-//                            }
-//                        } catch (ex: RuntimeException) {
-//                            uiThread {
-                                holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
-                                        R.drawable.ic_bookmark_border_black_24dp, 0, 0, 0)
-//                            }
-//                        }
-//                    }
+                    val did = faviconFinder?.let {finder ->
+                        finder.findFavicon(markNode)?.let {drawable ->
+                            holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
+                                    drawable, null, null, null)
+                            true
+                        }
+                    }
+                    if (did != true) {
+                        holder.contentView.setCompoundDrawablesWithIntrinsicBounds(
+                                R.drawable.ic_bookmark_border_black_24dp, 0, 0, 0)
+                    }
                 }
             }
         }
@@ -99,12 +90,18 @@ class MarksRecyclerViewAdapter(value: OrderedRealmCollection<MarkNode>, private 
                 add(adapterPosition, R.id.mark_menu_share_to, Menu.NONE, R.string.mark_menu_share_to)
                 add(adapterPosition, R.id.mark_menu_copy_url, Menu.NONE, R.string.mark_menu_copy_url)
                 add(adapterPosition, R.id.mark_menu_copy_title, Menu.NONE, R.string.mark_menu_copy_title)
+                add(adapterPosition, R.id.mark_menu_fetch_favicon, Menu.NONE, R.string.mark_menu_fetch_favicon)
                 if (data.type == MarkType.Folder) {
                     getItem(0).isEnabled = false
                     getItem(1).isEnabled = false
                     getItem(2).isEnabled = false
+                    getItem(4).isEnabled = false
                 }
             }
         }
+    }
+
+    interface FaviconFinder {
+        fun findFavicon(mark: MarkNode): Drawable?
     }
 }
