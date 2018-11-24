@@ -20,6 +20,7 @@ import com.google.android.gms.auth.GoogleAuthUtil
 import com.google.android.gms.auth.GooglePlayServicesAvailabilityException
 import com.google.android.gms.auth.UserRecoverableAuthException
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import org.jetbrains.anko.*
 import to.sava.cloudmarksandroid.R
@@ -199,6 +200,8 @@ class SettingsActivity : PreferenceActivity() {
                 catch (authEx: GoogleAuthException) {
                     Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthException / message:'${authEx.message}")
                     // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
+                    // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
+                    // 次にこれ発生したら調べるけどホントこれ再現性ない
                     if (authEx.message == "Unknown") {
                         // そういう時はひとまず認証が通ったと思ってアクセスチェックをしてみる
                         doCheck = true
@@ -237,7 +240,7 @@ class SettingsActivity : PreferenceActivity() {
                             toast(illArgEx.message!!)
                         }
                     }
-                    catch (authEx: GoogleAuthException) {
+                    catch (authEx: GoogleAuthIOException) {
                         // ここで Unknown のが起きる時あるっぽいんだけど全然原因がわかんない……
                         uiThread {
                             toast(authEx.message!!)
