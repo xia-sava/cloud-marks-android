@@ -11,6 +11,8 @@ import android.os.Handler
 import android.support.v4.app.JobIntentService
 import android.support.v4.app.NotificationCompat
 import com.crashlytics.android.Crashlytics
+import com.google.android.gms.auth.GoogleAuthException
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import io.realm.Realm
 import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.toast
@@ -117,26 +119,28 @@ class MarksService : JobIntentService() {
             }
             rc = true
         }
-        catch (authEx: ServiceAuthenticationException) {
-            completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
-                setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
-                setContentTitle(getString(R.string.marks_service_auth_error_title))
-                NotificationCompat.BigTextStyle(this).bigText(getString(R.string.marks_service_auth_error_text))
-                val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
-                intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
-            }.build()
-        }
         catch (ex: Exception) {
+            val contentTitle: String
+            val contentText: String
+            when (ex) {
+                is ServiceAuthenticationException, is GoogleAuthException, is GoogleAuthIOException -> {
+                    contentTitle = getString(R.string.marks_service_auth_error_title)
+                    contentText = getString(R.string.marks_service_auth_error_text)
+                }
+                else -> {
+                    contentTitle = getString(R.string.marks_service_error_title)
+                    contentText = "${ex::class.java.name}\n${ex.message}"
+                    Crashlytics.logException(ex)
+                }
+            }
             completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                 setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
-                setContentTitle(getString(R.string.marks_service_error_title))
-                NotificationCompat.BigTextStyle(this).bigText("${ex::class.java.name}\n${ex.message}")
+                setContentTitle(contentTitle)
+                NotificationCompat.BigTextStyle(this).bigText(contentText)
                 val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
                 intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                 setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
             }.build()
-            Crashlytics.logException(ex)
         }
         finally {
             CloudMarksAndroidApplication.instance.processing = false

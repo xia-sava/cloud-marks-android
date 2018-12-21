@@ -27,6 +27,7 @@ import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.GoogleDriveStorage
 import to.sava.cloudmarksandroid.libs.Settings
 import java.io.IOException
+import java.lang.Exception
 
 class SettingsActivity : PreferenceActivity() {
 
@@ -69,7 +70,7 @@ class SettingsActivity : PreferenceActivity() {
             setHasOptionsMenu(true)
 
             val sharedPrefs = Settings().pref
-            listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync).forEach {id ->
+            listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync).forEach { id ->
                 val pref = findPreference(getString(id))
                 pref.onPreferenceChangeListener = this
                 onPreferenceChange(pref, sharedPrefs.getString(pref.key, ""))
@@ -113,7 +114,10 @@ class SettingsActivity : PreferenceActivity() {
 
             connectionPref.onPreferenceClickListener = this
             val account = storage.settings.googleAccount
-            connectionPref.summary = when (account) { "" -> "未接続" else -> account}
+            connectionPref.summary = when (account) {
+                "" -> "未接続"
+                else -> account
+            }
         }
 
         override fun onPreferenceClick(preference: Preference): Boolean {
@@ -180,41 +184,49 @@ class SettingsActivity : PreferenceActivity() {
                     Crashlytics.log("SettingsActivity.tryAuthenticate.getToken")
                     GoogleAuthUtil.getToken(activity, account, GoogleDriveStorage.SCOPES_STR)
                     doCheck = true
-                }
-                catch (playEx: GooglePlayServicesAvailabilityException) {
-                    // Google Play サービス自体が使えない？
-                    Crashlytics.log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
-                    GoogleApiAvailability.getInstance().getErrorDialog(
-                            activity, playEx.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG).show()
-                }
-                catch (userAuthEx: UserRecoverableAuthException) {
-                    // ユーザの許可を得るためのダイアログを表示する
-                    Crashlytics.log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
-                    startActivityForResult(userAuthEx.intent, REQUEST_AUTHENTICATE)
-                }
-                catch (transientEx: IOException) {
-                    // ネットワークエラーとかか？
-                    Crashlytics.log("SettingsActivity.tryAuthenticate.IOException")
-                    uiThread { toast(transientEx.message ?: "") }
-                }
-                catch (authEx: GoogleAuthException) {
-                    Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthException / message:'${authEx.message}")
-                    // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
-                    // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
-                    // 次にこれ発生したら調べるけどホントこれ再現性ない
-                    if (authEx.message == "Unknown") {
-                        // そういう時はひとまず認証が通ったと思ってアクセスチェックをしてみる
-                        doCheck = true
-                    } else {
-                        uiThread { toast(authEx.message ?: "") }
+                } catch (ex: Exception) {
+                    when (ex) {
+                        is GooglePlayServicesAvailabilityException -> {
+                            // Google Play サービス自体が使えない？
+                            Crashlytics.log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
+                            uiThread {
+                                GoogleApiAvailability.getInstance().getErrorDialog(
+                                        activity, ex.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG).show()
+                            }
+                        }
+                        is UserRecoverableAuthException -> {
+                            // ユーザの許可を得るためのダイアログを表示する
+                            Crashlytics.log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
+                            uiThread {
+                                startActivityForResult(ex.intent, REQUEST_AUTHENTICATE)
+                            }
+                        }
+                        is IOException -> {
+                            // ネットワークエラーとかか？
+                            Crashlytics.log("SettingsActivity.tryAuthenticate.IOException")
+                            uiThread { toast("tryAuthenticate: IOException: " + ex.message) }
+                        }
+                        is GoogleAuthException -> {
+                            Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthException / message:'${ex.message}")
+                            // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
+                            // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
+                            // 次にこれ発生したら調べるけどホントこれ再現性ない
+                            if (ex.message == "Unknown") {
+                                // そういう時はひとまず認証が通ったと思ってアクセスチェックをしてみる
+                                doCheck = true
+                            } else {
+                                uiThread { toast("tryAuthenticate: GoogleAuthException: " + ex.message) }
+                            }
+                        }
+                        is RuntimeException -> {
+                            // その他もう何だかわからないけどおかしい
+                            uiThread { toast("tryAuthenticate: RuntimeException: " + ex.message) }
+                            Crashlytics.logException(ex)
+                        }
+                        else -> {
+                            throw ex
+                        }
                     }
-                }
-                catch (ex: RuntimeException) {
-                    // その他もう何だかわからないけどおかしい
-                    uiThread {
-                        toast(ex.message!!)
-                    }
-                    Crashlytics.logException(ex)
                 }
                 if (doCheck) {
                     try {
@@ -229,30 +241,31 @@ class SettingsActivity : PreferenceActivity() {
                                 toast(getString(R.string.error_occurred_on_connecting))
                             }
                         }
-                    }
-                    catch (userAuthIoEx: UserRecoverableAuthIOException) {
-                        // ユーザの許可を得るためのダイアログを表示する
-                        startActivityForResult(userAuthIoEx.intent, REQUEST_AUTHENTICATE)
-                    }
-                    catch (illArgEx: IllegalArgumentException) {
-                        // 持っていた credential がなぜかおかしい
-                        uiThread {
-                            toast(illArgEx.message!!)
+                    } catch (ex: Exception) {
+                        when (ex) {
+                            is UserRecoverableAuthIOException -> {
+                                // ユーザの許可を得るためのダイアログを表示する
+                                uiThread {
+                                    startActivityForResult(ex.intent, REQUEST_AUTHENTICATE)
+                                }
+                            }
+                            is GoogleAuthIOException -> {
+                                // ここで Unknown のが起きる時あるっぽいんだけど全然原因がわかんない……
+                                Crashlytics.logException(ex)
+                                uiThread { toast("checkAccessibility: GoogleAuthIOException: " + ex.message) }
+                            }
+                            is IllegalArgumentException, is java.lang.RuntimeException -> {
+                                // 持っていた credential がなぜかおかしい
+                                uiThread { toast("checkAccessibility: IllegalArgumentException: " + ex.message) }
+                                Crashlytics.logException(ex)
+                            }
+                            else -> {
+                                throw ex
+                            }
                         }
                     }
-                    catch (authEx: GoogleAuthIOException) {
-                        // ここで Unknown のが起きる時あるっぽいんだけど全然原因がわかんない……
-                        uiThread {
-                            toast(authEx.message!!)
-                        }
-                    }
-                    catch (ex: RuntimeException) {
-                        // その他もう何だかわからないけどおかしい
-                        uiThread {
-                            toast(ex.message!!)
-                        }
-                        Crashlytics.logException(ex)
-                    }
+                } else {
+                    uiThread { toast("checkAccessibility: notChecked: " + getString(R.string.error_occurred_on_connecting)) }
                 }
             }
         }
