@@ -211,11 +211,19 @@ class SettingsActivity : PreferenceActivity() {
                             // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
                             // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
                             // 次にこれ発生したら調べるけどホントこれ再現性ない
-                            if (ex.message == "Unknown") {
-                                // そういう時はひとまず認証が通ったと思ってアクセスチェックをしてみる
-                                doCheck = true
+                            val cause = ex.cause
+                            if (cause is UserRecoverableAuthException) {
+                                // ひょっとしたら cause が UserRecoverable かもしれない
+                                uiThread {
+                                    startActivityForResult(cause.intent, REQUEST_AUTHENTICATE)
+                                }
                             } else {
-                                uiThread { toast("tryAuthenticate: GoogleAuthException: " + ex.message) }
+                                if (ex.message == "Unknown") {
+                                    // ひとまず認証が通ったと思ってアクセスチェックをしてみる
+                                    doCheck = true
+                                } else {
+                                    uiThread { toast("tryAuthenticate: GoogleAuthException: " + ex.message) }
+                                }
                             }
                         }
                         is RuntimeException -> {
