@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity(),
         MarksService.OnMarksServiceCompleteListener,
         MarksRecyclerViewAdapter.FaviconFinder {
 
+    private lateinit var marks: Marks
     private lateinit var realm: Realm
 
     private lateinit var faviconLibrary: FaviconLibrary
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(toolbar)
 
         realm = Realm.getDefaultInstance()
+        marks = Marks(realm)
         faviconLibrary = FaviconLibrary(realm, this)
 
         // Activity復元でなく完全な初回起動の時は，
@@ -162,7 +164,13 @@ class MainActivity : AppCompatActivity(),
                         R.id.mark_menu_fetch_favicon -> {
                             val rc = fetchFavicon(mark)
                             toast(if (rc) R.string.mark_toast_fetch_favicon
-                                  else R.string.mark_toast_fetch_favicon_error)
+                            else R.string.mark_toast_fetch_favicon_error)
+                            return true
+                        }
+                        R.id.mark_menu_fetch_favicon_in_this_folder -> {
+                            val rc = fetchFaviconInFolder(mark)
+                            toast(if (rc) R.string.mark_toast_fetch_favicon
+                            else R.string.mark_toast_fetch_favicon_error)
                             return true
                         }
                         else -> Unit
@@ -218,7 +226,7 @@ class MainActivity : AppCompatActivity(),
                 AlertDialog.Builder(this).apply {
                     setTitle(R.string.app_name)
                     setMessage("Version: $version")
-                    setPositiveButton("OK") {_, _ -> }
+                    setPositiveButton("OK") { _, _ -> }
                 }.show()
             }
             else -> return super.onOptionsItemSelected(item)
@@ -330,7 +338,24 @@ class MainActivity : AppCompatActivity(),
      */
     private fun fetchFavicon(mark: MarkNode): Boolean {
         return try {
-            faviconLibrary.register(mark)
+            faviconLibrary.register(listOf(mark.url))
+            reTransitLastOpenedMarksFragment()
+            true
+        } catch (ex: Exception) {
+            false
+        }
+    }
+
+    /**
+     * FaviconをWebから取得して，画面を再描画する．
+     */
+    private fun fetchFaviconInFolder(folder: MarkNode): Boolean {
+        return try {
+            val urls = mutableMapOf<String, String>()
+            marks.getMarkChildren(folder).forEach { mark ->
+                urls[mark.domain] = mark.url
+            }
+            faviconLibrary.register(urls.values.toList())
             reTransitLastOpenedMarksFragment()
             true
         } catch (ex: Exception) {

@@ -86,16 +86,18 @@ class MarksRecyclerViewAdapter(value: OrderedRealmCollection<MarkNode>, private 
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenuInfo?) {
             menu?.apply {
-                add(adapterPosition, R.id.mark_menu_open, Menu.NONE, R.string.mark_menu_open)
-                add(adapterPosition, R.id.mark_menu_share_to, Menu.NONE, R.string.mark_menu_share_to)
-                add(adapterPosition, R.id.mark_menu_copy_url, Menu.NONE, R.string.mark_menu_copy_url)
-                add(adapterPosition, R.id.mark_menu_copy_title, Menu.NONE, R.string.mark_menu_copy_title)
-                add(adapterPosition, R.id.mark_menu_fetch_favicon, Menu.NONE, R.string.mark_menu_fetch_favicon)
-                if (data.type == MarkType.Folder) {
-                    getItem(0).isEnabled = false
-                    getItem(1).isEnabled = false
-                    getItem(2).isEnabled = false
-                    getItem(4).isEnabled = false
+                when (data.type) {
+                    MarkType.Bookmark -> {
+                        add(adapterPosition, R.id.mark_menu_open, Menu.NONE, R.string.mark_menu_open)
+                        add(adapterPosition, R.id.mark_menu_share_to, Menu.NONE, R.string.mark_menu_share_to)
+                        add(adapterPosition, R.id.mark_menu_copy_url, Menu.NONE, R.string.mark_menu_copy_url)
+                        add(adapterPosition, R.id.mark_menu_copy_title, Menu.NONE, R.string.mark_menu_copy_title)
+                        add(adapterPosition, R.id.mark_menu_fetch_favicon, Menu.NONE, R.string.mark_menu_fetch_favicon)
+                    }
+                    MarkType.Folder -> {
+                        add(adapterPosition, R.id.mark_menu_copy_title, Menu.NONE, R.string.mark_menu_copy_title)
+                        add(adapterPosition, R.id.mark_menu_fetch_favicon_in_this_folder, Menu.NONE, R.string.mark_menu_fetch_favicon_in_this_folder)
+                    }
                 }
             }
         }

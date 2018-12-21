@@ -8,12 +8,13 @@ import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import io.realm.Realm
 import io.realm.kotlin.where
-import org.jetbrains.anko.doAsyncResult
+import kotlinx.coroutines.*
 import org.jetbrains.anko.windowManager
 import to.sava.cloudmarksandroid.models.Favicon
 import java.net.URL
 import to.sava.cloudmarksandroid.models.MarkNode
 import java.nio.ByteBuffer
+import java.util.concurrent.Executors
 
 
 class FaviconLibrary(val realm: Realm, val context: Context) {
@@ -22,7 +23,7 @@ class FaviconLibrary(val realm: Realm, val context: Context) {
         return realm
                 .where<Favicon>()
                 .equalTo("domain", mark.domain)
-                .findFirst()?.let {favicon ->
+                .findFirst()?.let { favicon ->
                     val bitmap = Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888)
                     bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))
                     BitmapDrawable(context.resources, bitmap)
@@ -34,15 +35,18 @@ class FaviconLibrary(val realm: Realm, val context: Context) {
      * realm トランザクションを生成するため，
      * このメソッドは UI Thread 以外で動かすと例外発生となるので注意．
      */
-    fun register(mark: MarkNode): Favicon {
-        val markStandAlone = realm.copyFromRealm(mark)
-        val faviconStandalone = context.doAsyncResult {
-            fetchFavicon(markStandAlone)
-        }.get()
-        realm.executeTransaction {
-            it.copyToRealmOrUpdate(faviconStandalone)
+    fun register(urls: List<String>) = runBlocking {
+        val faviconAsyncs = urls.map { url ->
+            async(Executors.newSingleThreadExecutor().asCoroutineDispatcher()) {
+                fetchFavicon(url)
+            }
         }
-        return faviconStandalone
+        val standAloneFavicons = awaitAll(deferreds = *(faviconAsyncs.toTypedArray()))
+        standAloneFavicons.forEach { standAloneFavicon ->
+            realm.executeTransaction { realm ->
+                realm.copyToRealmOrUpdate(standAloneFavicon)
+            }
+        }
     }
 
     /**
@@ -50,9 +54,9 @@ class FaviconLibrary(val realm: Realm, val context: Context) {
      * Uri fetch を行なうため，
      * このメソッドは UI Thread で動かすと例外発生となるので注意．
      */
-    private fun fetchFavicon(mark: MarkNode): Favicon {
-        val url = faviconUrl(mark.url)
-        val binary = URL(url).openStream()
+    private fun fetchFavicon(siteUrl: String): Favicon {
+        val faviconUrl = faviconUrl(siteUrl)
+        val binary = URL(faviconUrl).openStream()
         val bitmap = BitmapFactory.decodeStream(binary)
         val metrics = DisplayMetrics()
         context.windowManager.defaultDisplay.getMetrics(metrics)
@@ -60,7 +64,7 @@ class FaviconLibrary(val realm: Realm, val context: Context) {
         val scaled = Bitmap.createScaledBitmap(bitmap, size, size, false)
         val bytes = ByteBuffer.allocate(scaled.byteCount)
         scaled.copyPixelsToBuffer(bytes)
-        return Favicon(mark.domain, bytes.array(), size)
+        return Favicon(MarkNode.parseDomain(siteUrl), bytes.array(), size)
     }
 
     /**

@@ -27,10 +27,12 @@ open class MarkNode (@PrimaryKey open var id: String = newKey(),
         const val ROOT_ID = "root________"
 
         fun newKey() = UUID.randomUUID().toString()
+
+        fun parseDomain(url: String): String = Uri.parse(url).host ?: ""
     }
 
     val domain: String
-        get() = Uri.parse(url).host ?: ""
+        get() = parseDomain(url)
 
     open var type: MarkType
         get() = MarkType.values().first { it.rawValue == typeValue }

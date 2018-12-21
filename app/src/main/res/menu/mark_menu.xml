@@ -16,4 +16,7 @@
     <item
         android:id="@+id/mark_menu_fetch_favicon"
         android:title="@string/mark_menu_fetch_favicon" />
+    <item
+        android:id="@+id/mark_menu_fetch_favicon_in_this_folder"
+        android:title="@string/mark_menu_fetch_favicon_in_this_folder" />
 </menu>
