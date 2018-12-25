@@ -135,6 +135,7 @@ class MarksService : JobIntentService() {
             }
             completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
                 setSmallIcon(R.drawable.ic_cloud_circle_black_24dp)
+                setAutoCancel(true)
                 setContentTitle(contentTitle)
                 NotificationCompat.BigTextStyle(this).bigText(contentText)
                 val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
