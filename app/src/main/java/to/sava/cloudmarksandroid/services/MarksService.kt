@@ -11,7 +11,6 @@ import android.os.Handler
 import android.support.v4.app.JobIntentService
 import android.support.v4.app.NotificationCompat
 import com.crashlytics.android.Crashlytics
-import com.google.android.gms.auth.GoogleAuthException
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import io.realm.Realm
 import org.jetbrains.anko.notificationManager
@@ -123,7 +122,7 @@ class MarksService : JobIntentService() {
             val contentTitle: String
             val contentText: String
             when (ex) {
-                is ServiceAuthenticationException, is GoogleAuthException, is GoogleAuthIOException -> {
+                is ServiceAuthenticationException, is GoogleAuthIOException -> {
                     contentTitle = getString(R.string.marks_service_auth_error_title)
                     contentText = getString(R.string.marks_service_auth_error_text)
                 }

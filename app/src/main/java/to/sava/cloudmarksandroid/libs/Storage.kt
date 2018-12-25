@@ -1,6 +1,5 @@
 package to.sava.cloudmarksandroid.libs
 
-import android.accounts.Account
 import com.crashlytics.android.Crashlytics
 import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
@@ -99,7 +98,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
         val cred = GoogleAccountCredential.usingOAuth2(settings.context, SCOPES)
         if (settings.googleAccount != "") {
             try {
-                cred.selectedAccount = Account(settings.googleAccount, "com.google")
+                cred.selectedAccountName = settings.googleAccount
             }
             catch (ex: IllegalArgumentException) {
                 // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
@@ -115,8 +114,6 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
 
     companion object {
         val SCOPES: List<String> = Arrays.asList(DriveScopes.DRIVE)
-        val SCOPES_STR: String
-            get() = "oauth2: ${SCOPES.joinToString(" ")}"
     }
 
     override fun lsFile(filename: String, parent: FileInfo): FileInfo {
