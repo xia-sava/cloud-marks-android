@@ -255,8 +255,14 @@ class SettingsActivity : PreferenceActivity() {
                                     startActivityForResult(cause.intent, REQUEST_AUTHENTICATE)
                                 }
                             } else {
-                                if (ex.message == "Unknown") {
-                                    // ひとまず認証が通ったと思ってアクセスチェックをしてみる
+                                if (ex.cause?.message == "Unknown") {
+                                    // ひとまず認証が通ったと思ってOKとしてみる
+                                    uiThread {
+                                        storage.settings.googleAccount = storage.credential.selectedAccountName
+                                        connectionPref.isChecked = true
+                                        connectionPref.summary = storage.settings.googleAccount
+                                        toast(getString(R.string.connected_to_google_drive_probably))
+                                    }
                                 } else {
                                     uiThread { toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}") }
                                 }

@@ -73,6 +73,7 @@
     <string name="cant_confirm_user_account">アカウントが確認できませんでした</string>
     <string name="connecting_google_drive_denied">Google Drive との接続が許可されませんでした</string>
     <string name="connected_to_google_drive">Google Drive に接続しました</string>
+    <string name="connected_to_google_drive_probably">Google Drive に接続したんじゃないかと思います</string>
     <string name="error_occurred_on_connecting">接続確認でエラーが発生しました</string>
 
     <!-- MarksService -->
