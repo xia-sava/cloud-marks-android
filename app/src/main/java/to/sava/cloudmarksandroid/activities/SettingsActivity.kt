@@ -1,15 +1,19 @@
 package to.sava.cloudmarksandroid.activities
 
+import android.Manifest
 import android.accounts.AccountManager
 import android.annotation.TargetApi
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.support.v14.preference.PreferenceFragment
 import android.support.v14.preference.SwitchPreference
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.Preference
 import android.view.MenuItem
@@ -59,6 +63,25 @@ class SettingsActivity : PreferenceActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    // GoogleDrivePreferenceFragment 内で行なっている requestPermissions の戻り先
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        if (requestCode == GoogleDrivePreferenceFragment.REQUEST_GRANT_PERMISSION) {
+            for ((i, perm) in permissions.withIndex()) {
+                val granted = grantResults[i]
+                when (perm) {
+                    Manifest.permission.GET_ACCOUNTS -> {
+                        if (granted != PackageManager.PERMISSION_GRANTED) {
+                            toast(getString(R.string.require_get_account_permission))
+                        } else {
+                            toast(getString(R.string.granted_get_account_permission))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     class ApplicationPreferenceFragment : PreferenceFragment(),
             Preference.OnPreferenceChangeListener {
@@ -104,6 +127,7 @@ class SettingsActivity : PreferenceActivity() {
             const val REQUEST_PICK_ACCOUNT = 1
             const val REQUEST_AUTHENTICATE = 2
             const val REQUEST_GMS_ERROR_DIALOG = 3
+            const val REQUEST_GRANT_PERMISSION = 4
         }
 
         override fun onCreatePreferences(bundle: Bundle?, s: String?) {
@@ -124,9 +148,11 @@ class SettingsActivity : PreferenceActivity() {
                     when (connectionPref.isChecked) {
                         true -> {
                             // 接続処理をする
-                            toast(getString(R.string.connect_to_google_drive))
-                            Crashlytics.log("SettingsActivity.onPreferenceClick.startActivityForResult")
-                            startActivityForResult(storage.credential.newChooseAccountIntent(), REQUEST_PICK_ACCOUNT)
+                            if (checkPermission()) {
+                                toast(getString(R.string.connect_to_google_drive))
+                                Crashlytics.log("SettingsActivity.onPreferenceClick.startActivityForResult")
+                                startActivityForResult(storage.credential.newChooseAccountIntent(), REQUEST_PICK_ACCOUNT)
+                            }
                         }
                         false -> {
                             toast(getString(R.string.disconnect_from_google_drive))
@@ -141,6 +167,18 @@ class SettingsActivity : PreferenceActivity() {
             return false
         }
 
+        private fun checkPermission(): Boolean {
+            val context = storage.settings.context
+            val perm = Manifest.permission.GET_ACCOUNTS
+            if (ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED) {
+                return true
+            } else {
+                // onRequestPermissionsResult は activity 側に飛ぶ
+                ActivityCompat.requestPermissions(activity, arrayOf(perm), REQUEST_GRANT_PERMISSION)
+                return false
+            }
+        }
+
         override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
             Crashlytics.log("SettingsActivity.onActivityResult")
             super.onActivityResult(requestCode, resultCode, data)
@@ -151,8 +189,7 @@ class SettingsActivity : PreferenceActivity() {
                         val name = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
                         Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '$name'")
                         if (name != null) {
-                            storage.credential.selectedAccountName = name
-                            tryAuthenticate()
+                            tryAuthenticate(name)
                         }
                     } else {
                         toast(getString(R.string.cant_confirm_user_account))
@@ -161,7 +198,7 @@ class SettingsActivity : PreferenceActivity() {
                 REQUEST_AUTHENTICATE -> {
                     Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_AUTHENTICATE")
                     if (resultCode == Activity.RESULT_OK) {
-                        tryAuthenticate()
+                        tryAuthenticate(storage.settings.googleAccount)
                     } else {
                         toast(getString(R.string.connecting_google_drive_denied))
                     }
@@ -173,10 +210,11 @@ class SettingsActivity : PreferenceActivity() {
             }
         }
 
-        private fun tryAuthenticate() {
+        private fun tryAuthenticate(name: String) {
             doAsync {
                 try {
                     Crashlytics.log("SettingsActivity.tryAuthenticate.checkAccessibility")
+                    storage.credential.selectedAccountName = name
                     val accessOk = storage.checkAccessibility()
                     uiThread {
                         if (accessOk) {
