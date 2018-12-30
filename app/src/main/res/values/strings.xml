@@ -27,8 +27,13 @@
     <string name="mark_empty_folder">空のブックマークフォルダです。</string>
 
     <!-- Settings / CloudMarksAndroidApplication -->
+    <string name="pref_key_root">pref_root</string>
+
     <string name="pref_header_application">Application Settings</string>
+    <string name="pref_key_application">pref_application</string>
+
     <string name="pref_header_google_drive">Google Drive Settings</string>
+    <string name="pref_key_google_drive">pref_google_drive</string>
 
     <string name="pref_key_app_folder_name">pref_folder_name</string>
     <string name="pref_title_app_folder_name">Folder name on storage service</string>

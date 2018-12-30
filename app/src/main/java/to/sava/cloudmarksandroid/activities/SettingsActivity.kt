@@ -2,58 +2,54 @@ package to.sava.cloudmarksandroid.activities
 
 import android.Manifest
 import android.accounts.AccountManager
-import android.annotation.TargetApi
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
-import android.preference.PreferenceActivity
-import android.support.v14.preference.PreferenceFragment
 import android.support.v14.preference.SwitchPreference
-import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.support.v7.app.AppCompatActivity
 import android.support.v7.preference.ListPreference
 import android.support.v7.preference.Preference
+import android.support.v7.preference.PreferenceFragmentCompat
 import android.view.MenuItem
 import com.crashlytics.android.Crashlytics
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import org.jetbrains.anko.*
+import kotlinx.android.synthetic.main.activity_main.*
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.toast
+import org.jetbrains.anko.uiThread
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.GoogleDriveStorage
 import to.sava.cloudmarksandroid.libs.Settings
 import java.io.IOException
 import java.lang.Exception
+import java.security.InvalidParameterException
 
 
-
-class SettingsActivity : PreferenceActivity() {
+class SettingsActivity : AppCompatActivity(),
+        PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        actionBar?.setDisplayHomeAsUpEnabled(true)
+        setContentView(R.layout.activity_settings)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        if (savedInstanceState == null) {
+            supportFragmentManager
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, SettingsFragment())
+                    .commit()
+        }
     }
 
-    override fun onIsMultiPane(): Boolean {
-        return this.resources.configuration.screenLayout and
-                Configuration.SCREENLAYOUT_SIZE_MASK >= Configuration.SCREENLAYOUT_SIZE_XLARGE
-    }
-
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    override fun onBuildHeaders(target: List<PreferenceActivity.Header>) {
-        loadHeadersFromResource(R.xml.pref_headers, target)
-    }
-
-    override fun isValidFragment(fragmentName: String): Boolean {
-        return PreferenceFragment::class.java.name == fragmentName
-                || ApplicationPreferenceFragment::class.java.name == fragmentName
-                || GoogleDrivePreferenceFragment::class.java.name == fragmentName
-    }
-
+    /**
+     * バックボタンの処理．
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
         if (id == android.R.id.home) {
@@ -63,33 +59,62 @@ class SettingsActivity : PreferenceActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    // GoogleDrivePreferenceFragment 内で行なっている requestPermissions の戻り先
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        if (requestCode == GoogleDrivePreferenceFragment.REQUEST_GRANT_PERMISSION) {
-            for ((i, perm) in permissions.withIndex()) {
-                val granted = grantResults[i]
-                when (perm) {
-                    Manifest.permission.GET_ACCOUNTS -> {
-                        if (granted != PackageManager.PERMISSION_GRANTED) {
-                            toast(getString(R.string.require_get_account_permission))
-                        } else {
-                            toast(getString(R.string.granted_get_account_permission))
-                        }
-                    }
-                }
-            }
+    /**
+     * フラグメント生成処理．
+     * フラグメント名に応じてクラス生成してやる．
+     * バックボタンで前のフラグメントに戻る処理もやる．
+     */
+    override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat?, pref: Preference?): Boolean {
+        val fragment = when (pref?.fragment) {
+            SettingsFragment::class.java.name -> SettingsFragment()
+            ApplicationPreferenceFragment::class.java.name -> ApplicationPreferenceFragment()
+            GoogleDrivePreferenceFragment::class.java.name -> GoogleDrivePreferenceFragment()
+            else -> throw InvalidParameterException("Invalid fragment: ${pref?.fragment}")
         }
+        supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit()
+        return true
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    class ApplicationPreferenceFragment : PreferenceFragment(),
+    /**
+     * プリファレンスフラグメントの汎用のやつ
+     */
+    open class SettingsFragment : PreferenceFragmentCompat() {
+        /**
+         * プリファレンスが生成された時の処理．
+         * キーに応じた画面設定を読み込む．
+         * 画面ごとの個別設定なんかもここでやれる．
+         */
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            setPreferencesFromResource(R.xml.settings, rootKey)
+        }
+
+        fun toast(message: CharSequence) {
+            activity?.toast(message)
+        }
+        fun toast(message: Int) {
+            activity?.toast(message)
+        }
+    }
+
+    /**
+     * Application Settings フラグメント
+     */
+    class ApplicationPreferenceFragment : SettingsFragment(),
             Preference.OnPreferenceChangeListener {
 
-        override fun onCreatePreferences(bundle: Bundle?, s: String?) {
-            addPreferencesFromResource(R.xml.pref_application)
+        /**
+         * フラグメント初回生成処理
+         */
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            setPreferencesFromResource(R.xml.settings, getString(R.string.pref_key_application))
             setHasOptionsMenu(true)
 
+            // onCreate時に初回のonPreferenceChange相当をコールしとく
             val sharedPrefs = Settings().pref
             listOf(R.string.pref_key_app_folder_name, R.string.pref_key_app_autosync).forEach { id ->
                 val pref = findPreference(getString(id))
@@ -98,6 +123,9 @@ class SettingsActivity : PreferenceActivity() {
             }
         }
 
+        /**
+         * プリファレンスに何か変更があった時
+         */
         override fun onPreferenceChange(preference: Preference?, newValue: Any?): Boolean {
             when (preference) {
                 is ListPreference -> {
@@ -112,8 +140,10 @@ class SettingsActivity : PreferenceActivity() {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    class GoogleDrivePreferenceFragment : PreferenceFragment(),
+    /**
+     * Google Drive Settings フラグメント
+     */
+    class GoogleDrivePreferenceFragment : SettingsFragment(),
             Preference.OnPreferenceClickListener {
 
         private val storage: GoogleDriveStorage by lazy {
@@ -130,8 +160,11 @@ class SettingsActivity : PreferenceActivity() {
             const val REQUEST_GRANT_PERMISSION = 4
         }
 
-        override fun onCreatePreferences(bundle: Bundle?, s: String?) {
-            addPreferencesFromResource(R.xml.pref_google_drive)
+        /**
+         * フラグメント初回生成処理
+         */
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            setPreferencesFromResource(R.xml.settings, getString(R.string.pref_key_google_drive))
             setHasOptionsMenu(true)
 
             connectionPref.onPreferenceClickListener = this
@@ -142,6 +175,10 @@ class SettingsActivity : PreferenceActivity() {
             }
         }
 
+        /**
+         * プリファレンスに何か変更があった時
+         * Switch が変化する前に処理を走らせるので Change でなく Click の方．
+         */
         override fun onPreferenceClick(preference: Preference): Boolean {
             when (preference.key) {
                 getString(R.string.pref_key_google_drive_connection) -> {
@@ -149,13 +186,13 @@ class SettingsActivity : PreferenceActivity() {
                         true -> {
                             // 接続処理をする
                             if (checkPermission()) {
-                                toast(getString(R.string.connect_to_google_drive))
+                                toast(R.string.connect_to_google_drive)
                                 Crashlytics.log("SettingsActivity.onPreferenceClick.startActivityForResult")
                                 startActivityForResult(storage.credential.newChooseAccountIntent(), REQUEST_PICK_ACCOUNT)
                             }
                         }
                         false -> {
-                            toast(getString(R.string.disconnect_from_google_drive))
+                            toast(R.string.disconnect_from_google_drive)
                             storage.settings.googleAccount = ""
                             connectionPref.summary = "未接続"
                         }
@@ -167,18 +204,43 @@ class SettingsActivity : PreferenceActivity() {
             return false
         }
 
+        /**
+         * GET_ACCOUNT 権限チェックをして，権限がなければ requestPermission() する．
+         */
         private fun checkPermission(): Boolean {
             val context = storage.settings.context
             val perm = Manifest.permission.GET_ACCOUNTS
             if (ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED) {
                 return true
-            } else {
-                // onRequestPermissionsResult は activity 側に飛ぶ
-                ActivityCompat.requestPermissions(activity, arrayOf(perm), REQUEST_GRANT_PERMISSION)
-                return false
+            }
+            // onRequestPermissionsResult は activity 側に飛ぶ
+            requestPermissions(arrayOf(perm), REQUEST_GRANT_PERMISSION)
+            return false
+        }
+
+        /**
+         * requestPermissions の戻り先
+         */
+        override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+            if (requestCode == REQUEST_GRANT_PERMISSION) {
+                for ((i, perm) in permissions.withIndex()) {
+                    val granted = grantResults[i]
+                    when (perm) {
+                        Manifest.permission.GET_ACCOUNTS -> {
+                            if (granted != PackageManager.PERMISSION_GRANTED) {
+                                toast(R.string.require_get_account_permission)
+                            } else {
+                                toast(R.string.granted_get_account_permission)
+                            }
+                        }
+                    }
+                }
             }
         }
 
+        /**
+         * Google アカウントピックダイアログからの戻り先．
+         */
         override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
             Crashlytics.log("SettingsActivity.onActivityResult")
             super.onActivityResult(requestCode, resultCode, data)
@@ -192,7 +254,7 @@ class SettingsActivity : PreferenceActivity() {
                             tryAuthenticate(name)
                         }
                     } else {
-                        toast(getString(R.string.cant_confirm_user_account))
+                        toast(R.string.cant_confirm_user_account)
                     }
                 }
                 REQUEST_AUTHENTICATE -> {
@@ -200,7 +262,7 @@ class SettingsActivity : PreferenceActivity() {
                     if (resultCode == Activity.RESULT_OK) {
                         tryAuthenticate(storage.settings.googleAccount)
                     } else {
-                        toast(getString(R.string.connecting_google_drive_denied))
+                        toast(R.string.connecting_google_drive_denied)
                     }
                 }
                 else -> {
@@ -210,6 +272,9 @@ class SettingsActivity : PreferenceActivity() {
             }
         }
 
+        /**
+         * Google Drive アクセスチェック．
+         */
         private fun tryAuthenticate(name: String) {
             doAsync {
                 try {
@@ -221,9 +286,9 @@ class SettingsActivity : PreferenceActivity() {
                             storage.settings.googleAccount = storage.credential.selectedAccountName
                             connectionPref.isChecked = true
                             connectionPref.summary = storage.settings.googleAccount
-                            toast(getString(R.string.connected_to_google_drive))
+                            toast(R.string.connected_to_google_drive)
                         } else {
-                            toast(getString(R.string.error_occurred_on_connecting))
+                            toast(R.string.error_occurred_on_connecting)
                         }
                     }
                 } catch (ex: Exception) {
@@ -261,17 +326,19 @@ class SettingsActivity : PreferenceActivity() {
                                         storage.settings.googleAccount = storage.credential.selectedAccountName
                                         connectionPref.isChecked = true
                                         connectionPref.summary = storage.settings.googleAccount
-                                        toast(getString(R.string.connected_to_google_drive_probably))
+                                        toast(R.string.connected_to_google_drive_probably)
                                     }
                                 } else {
                                     uiThread { toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}") }
                                 }
                             }
+                            Crashlytics.logException(ex)
                         }
                         is IOException -> {
                             // ネットワークエラーとかか？
                             Crashlytics.log("SettingsActivity.tryAuthenticate.IOException")
                             uiThread { toast("tryAuthenticate: IOException: " + ex.message) }
+                            Crashlytics.logException(ex)
                         }
                         is RuntimeException -> {
                             // その他もう何だかわからないけどおかしい
@@ -287,6 +354,3 @@ class SettingsActivity : PreferenceActivity() {
         }
     }
 }
-
-private fun PreferenceFragment.toast(message: CharSequence) = activity.toast(message)
-

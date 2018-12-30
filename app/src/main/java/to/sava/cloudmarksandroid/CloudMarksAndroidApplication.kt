@@ -1,6 +1,8 @@
 package to.sava.cloudmarksandroid
 
 import android.app.Application
+import com.crashlytics.android.Crashlytics
+import io.fabric.sdk.android.Fabric
 import io.realm.Realm
 import io.realm.RealmConfiguration
 
@@ -31,6 +33,8 @@ class CloudMarksAndroidApplication : Application() {
                 .deleteRealmIfMigrationNeeded()
                 .build()
         Realm.setDefaultConfiguration(config)
+
+        Fabric.with(this, Crashlytics())
 
         instance = this
     }
