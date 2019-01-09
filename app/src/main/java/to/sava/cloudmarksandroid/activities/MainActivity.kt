@@ -60,6 +60,22 @@ class MainActivity : AppCompatActivity(),
     }
 
     /**
+     * pause状態から戻る時の処理．
+     */
+    override fun onResume() {
+        super.onResume()
+        runPendingActions()
+    }
+
+    /**
+     * pause状態に入る時の処理．
+     */
+    override fun onPause() {
+        super.onPause()
+        clearPendingActions()
+    }
+
+    /**
      * アプリ終了時の処理．珍しいことは何もしていない．
      */
     override fun onDestroy() {
@@ -287,16 +303,14 @@ class MainActivity : AppCompatActivity(),
     /**
      * pause状態に入る時に，タスクの入れ物を用意する．
      */
-    override fun onPause() {
-        super.onPause()
+    private fun clearPendingActions() {
         pendingActions = ArrayList()
     }
 
     /**
      * pauseから脱する時に，タスクが積まれてたら全部実行して，入れ物はnullに．
      */
-    override fun onResume() {
-        super.onResume()
+    private fun runPendingActions() {
         pendingActions?.forEach { it.run() }
         pendingActions = null
     }
