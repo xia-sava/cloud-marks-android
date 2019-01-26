@@ -3,7 +3,7 @@ package to.sava.cloudmarksandroid.activities
 import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -21,8 +21,8 @@ import to.sava.cloudmarksandroid.services.MarksService
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.support.v4.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import androidx.appcompat.app.AlertDialog
 import to.sava.cloudmarksandroid.libs.FaviconLibrary
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 

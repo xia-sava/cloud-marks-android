@@ -2,7 +2,7 @@ package to.sava.cloudmarksandroid.views.adapters
 
 import android.content.Context
 import android.graphics.drawable.Drawable
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
 import android.widget.TextView
@@ -71,11 +71,11 @@ class MarksRecyclerViewAdapter(value: OrderedRealmCollection<MarkNode>, private 
         val item = getItem(index)
         return when {
             item !== null -> UUID.fromString(item.id).leastSignificantBits
-            else -> RecyclerView.NO_ID
+            else -> androidx.recyclerview.widget.RecyclerView.NO_ID
         }
     }
 
-    inner class MarksViewHolder(val view: View) : RecyclerView.ViewHolder(view), View.OnCreateContextMenuListener {
+    inner class MarksViewHolder(val view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view), View.OnCreateContextMenuListener {
         val marksView: View = view.marks
         val contentView: TextView = view.content
        lateinit var data: MarkNode
