@@ -26,6 +26,7 @@ import androidx.appcompat.app.AlertDialog
 import dagger.android.AndroidInjection
 import to.sava.cloudmarksandroid.libs.FaviconLibrary
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
+import javax.inject.Inject
 
 
 class MainActivity : AppCompatActivity(),
@@ -37,7 +38,8 @@ class MainActivity : AppCompatActivity(),
     private lateinit var marks: Marks
     private lateinit var realm: Realm
 
-    private lateinit var faviconLibrary: FaviconLibrary
+    @Inject
+    internal lateinit var faviconLibrary: FaviconLibrary
 
     // region Android Activity Lifecycle まわり
 
@@ -53,7 +55,6 @@ class MainActivity : AppCompatActivity(),
 
         realm = Realm.getDefaultInstance()
         marks = Marks(realm)
-        faviconLibrary = FaviconLibrary(realm, this)
 
         // Activity復元でなく完全な初回起動の時は，
         // 前回開いていたフォルダまで移動してやる．

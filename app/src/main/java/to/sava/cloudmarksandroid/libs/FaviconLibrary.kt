@@ -15,9 +15,10 @@ import java.net.URL
 import to.sava.cloudmarksandroid.models.MarkNode
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
+import javax.inject.Inject
 
 
-class FaviconLibrary(val realm: Realm, val context: Context) {
+class FaviconLibrary @Inject constructor(private val context: Context, private val realm: Realm) {
 
     fun find(mark: MarkNode): Drawable? {
         return realm

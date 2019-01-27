@@ -7,8 +7,8 @@ import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 
 @Component(modules = [
     AndroidSupportInjectionModule::class,
-    RepositoryModule::class,
-    AndroidModule::class
+    AndroidModule::class,
+    RepositoryModule::class
 ])
 interface ApplicationComponent: AndroidInjector<CloudMarksAndroidApplication> {
     @Component.Builder
