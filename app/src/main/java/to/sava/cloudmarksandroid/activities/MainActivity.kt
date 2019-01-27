@@ -23,6 +23,7 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.appcompat.app.AlertDialog
+import dagger.android.AndroidInjection
 import to.sava.cloudmarksandroid.libs.FaviconLibrary
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 
@@ -44,6 +45,8 @@ class MainActivity : AppCompatActivity(),
      * アプリ起動時の処理．
      */
     override fun onCreate(savedInstanceState: Bundle?) {
+        AndroidInjection.inject(this)
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
