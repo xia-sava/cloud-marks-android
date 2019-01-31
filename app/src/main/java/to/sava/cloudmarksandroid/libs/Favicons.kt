@@ -6,29 +6,30 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
-import io.realm.Realm
-import io.realm.kotlin.where
 import kotlinx.coroutines.*
 import org.jetbrains.anko.windowManager
 import to.sava.cloudmarksandroid.models.Favicon
 import java.net.URL
 import to.sava.cloudmarksandroid.models.MarkNode
+import to.sava.cloudmarksandroid.repositories.FaviconRepository
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import javax.inject.Inject
 
 
-class FaviconLibrary @Inject constructor(private val context: Context, private val realm: Realm) {
+class Favicons @Inject constructor(
+        private val context: Context,
+        private val repo: FaviconRepository) {
 
     fun find(mark: MarkNode): Drawable? {
-        return realm
-                .where<Favicon>()
-                .equalTo("domain", mark.domain)
-                .findFirst()?.let { favicon ->
-                    val bitmap = Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888)
-                    bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))
-                    BitmapDrawable(context.resources, bitmap)
-                }
+        return repo.find {
+            it.equalTo("domain", mark.domain)
+              .findFirst()
+        }?.let { favicon ->
+            val bitmap = Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888)
+            bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))
+            BitmapDrawable(context.resources, bitmap)
+        }
     }
 
     /**
@@ -37,17 +38,12 @@ class FaviconLibrary @Inject constructor(private val context: Context, private v
      * このメソッドは UI Thread 以外で動かすと例外発生となるので注意．
      */
     fun register(urls: List<String>) = runBlocking {
-        val faviconAsyncs = urls.map { url ->
+        val favicons = urls.map { url ->
             async(Executors.newSingleThreadExecutor().asCoroutineDispatcher()) {
                 fetchFavicon(url)
             }
         }
-        val standAloneFavicons = awaitAll(deferreds = *(faviconAsyncs.toTypedArray()))
-        standAloneFavicons.forEach { standAloneFavicon ->
-            realm.executeTransaction { realm ->
-                realm.copyToRealmOrUpdate(standAloneFavicon)
-            }
-        }
+        repo.save(awaitAll(deferreds = *(favicons.toTypedArray())))
     }
 
     /**

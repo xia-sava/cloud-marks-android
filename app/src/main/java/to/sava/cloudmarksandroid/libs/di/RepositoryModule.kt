@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.Provides
 import io.realm.Realm
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
-import to.sava.cloudmarksandroid.libs.FaviconLibrary
+import to.sava.cloudmarksandroid.libs.Favicons
 import to.sava.cloudmarksandroid.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
 
@@ -25,5 +25,6 @@ class RepositoryModule {
     fun provideFaviconRepository() = FaviconRepository()
 
     @Provides
-    fun provideFaviconLibrary(context: Context, realm: Realm) = FaviconLibrary(context, realm)
+    fun provideFavicons(context: Context, faviconRepository: FaviconRepository)
+            = Favicons(context, faviconRepository)
 }

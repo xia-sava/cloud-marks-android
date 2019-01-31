@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.*
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
@@ -24,7 +23,8 @@ import android.os.Build
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.appcompat.app.AlertDialog
 import dagger.android.AndroidInjection
-import to.sava.cloudmarksandroid.libs.FaviconLibrary
+import to.sava.cloudmarksandroid.libs.Favicons
+import to.sava.cloudmarksandroid.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 import javax.inject.Inject
 
@@ -35,11 +35,14 @@ class MainActivity : AppCompatActivity(),
         MarksService.OnMarksServiceCompleteListener,
         MarksRecyclerViewAdapter.FaviconFinder {
 
-    private lateinit var marks: Marks
-    private lateinit var realm: Realm
+    @Inject
+    internal lateinit var marks: Marks
 
     @Inject
-    internal lateinit var faviconLibrary: FaviconLibrary
+    internal lateinit var favicons: Favicons
+
+    @Inject
+    internal lateinit var faviconRepository: FaviconRepository
 
     // region Android Activity Lifecycle まわり
 
@@ -52,9 +55,6 @@ class MainActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-
-        realm = Realm.getDefaultInstance()
-        marks = Marks(realm)
 
         // Activity復元でなく完全な初回起動の時は，
         // 前回開いていたフォルダまで移動してやる．
@@ -77,14 +77,6 @@ class MainActivity : AppCompatActivity(),
     override fun onPause() {
         super.onPause()
         clearPendingActions()
-    }
-
-    /**
-     * アプリ終了時の処理．珍しいことは何もしていない．
-     */
-    override fun onDestroy() {
-        super.onDestroy()
-        realm.close()
     }
 
     /**
@@ -275,7 +267,6 @@ class MainActivity : AppCompatActivity(),
                 it.popBackStack(it.getBackStackEntryAt(0).id, POP_BACK_STACK_INCLUSIVE)
             }
         }
-        val marks = Marks(realm)
         marks.getMark(markId)?.let { lastMark ->
             for (mark in marks.getMarkPath(lastMark)) {
                 transitionMarksFragment(mark.id)
@@ -345,10 +336,10 @@ class MainActivity : AppCompatActivity(),
     // region ブックマークアイコンまわり
 
     /**
-     * 登録済みのFaviconをRealmから取得する．
+     * 登録済みのFaviconを取得する．
      */
     override fun findFavicon(mark: MarkNode): Drawable? {
-        return faviconLibrary.find(mark)
+        return favicons.find(mark)
     }
 
     /**
@@ -356,7 +347,7 @@ class MainActivity : AppCompatActivity(),
      */
     private fun fetchFavicon(mark: MarkNode): Boolean {
         return try {
-            faviconLibrary.register(listOf(mark.url))
+            favicons.register(listOf(mark.url))
             reTransitLastOpenedMarksFragment()
             true
         } catch (ex: Exception) {
@@ -373,7 +364,7 @@ class MainActivity : AppCompatActivity(),
             marks.getMarkChildren(folder).forEach { mark ->
                 urls[mark.domain] = mark.url
             }
-            faviconLibrary.register(urls.values.toList())
+            favicons.register(urls.values.toList())
             reTransitLastOpenedMarksFragment()
             true
         } catch (ex: Exception) {

@@ -1,13 +1,13 @@
 package to.sava.cloudmarksandroid.libs
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
+import io.realm.OrderedRealmCollection
 import io.realm.Realm
-import io.realm.RealmResults
-import io.realm.kotlin.createObject
-import io.realm.kotlin.where
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkTreeNode
 import to.sava.cloudmarksandroid.models.MarkType
+import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
+import javax.inject.Inject
 
 
 /**
@@ -15,7 +15,8 @@ import to.sava.cloudmarksandroid.models.MarkType
  * cloud_marks形式JSONを保持するリモートストレージと，Marksツリーと，
  * Realm DBの仲介をする．
  */
-class Marks (private val realm: Realm) {
+class Marks @Inject constructor(
+        val repos: MarkNodeRepository) {
 
     private val settings: Settings by lazy {
         Settings()
@@ -35,7 +36,19 @@ class Marks (private val realm: Realm) {
     private var remoteFile: FileInfo? = null
     private var remoteFileCreated: Long? = null
 
+    /**
+     * 作業状況を外部へ伝えるためのリスナー
+     */
     var progressListener: ((folder: String, percent: Int) -> Unit)? = null
+
+    /**
+     * 処理対象フォルダ数
+     */
+    private var folderCount = -1L
+    /**
+     * いま何個目のフォルダを処理しているか
+     */
+    private var currentFolderNum = 0L
 
     /**
      * リモートJSONからRealm DBを上書きで取り込む．
@@ -49,10 +62,9 @@ class Marks (private val realm: Realm) {
         val remote = storage.readMarksContents(remoteFile)
 
         // 差分を取って適用
-        MarksManipulation(realm).use {manipulator ->
-            manipulator.progressListener = progressListener
+        repos.transaction {
             try {
-                manipulator.applyMarkTreeNodeToDB(remote, getMarkNodeRoot())
+                applyMarkTreeNodeToDB(remote, getMarkNodeRoot())
             } catch (userAuthIoEx: UserRecoverableAuthIOException) {
                 throw ServiceAuthenticationException(userAuthIoEx.message ?: "DB反映で何かのエラーです")
             }
@@ -94,59 +106,46 @@ class Marks (private val realm: Realm) {
         if (root != null) {
             return root
         }
-        return MarksOperation(realm).createBookmark(null, MarkType.Folder, markId = MarkNode.ROOT_ID)
+        return createBookmark(null, MarkType.Folder, markId = MarkNode.ROOT_ID)
     }
 
     /**
      * Realm DBから指定名のノードを取得する．
      */
     fun getMark(id: String): MarkNode? {
-        return MarksOperation(realm).getMarkNode(id)
+        return repos.getMarkNode(id)
     }
 
     /**
      * Realm DBから指定ノードの子ノードを取得する．
      */
-    fun getMarkChildren(parent: MarkNode): RealmResults<MarkNode> {
-        return MarksOperation(realm).getMarkNodeChildren(parent)
+    fun getMarkChildren(parent: MarkNode): List<MarkNode> {
+        return repos.getMarkNodeChildren(parent)
+    }
+
+    /**
+     * Realm DBから指定ノードの子ノードを managed で取得する．
+     */
+    fun getMarkChildrenManaged(realm: Realm, parent: MarkNode): OrderedRealmCollection<MarkNode> {
+        return repos.getMarkNodeChildrenManaged(realm, parent)
     }
 
     /**
      * ルートから指定ノードへ辿り着くための名前のリストを取得する．
      * 要するに path みたいな．/root/fooFolder/barMark とかそういう．
      */
-    fun getMarkPath(child: MarkNode): ArrayList<MarkNode> {
+    fun getMarkPath(child: MarkNode): MutableList<MarkNode> {
         return child.parent?.let { parent ->
             val list = getMarkPath(parent)
             list.add(child)
             list
-        } ?: arrayListOf(child)
+        } ?: mutableListOf(child)
     }
-}
-
-/**
- * Realm操作系をひとまとめに．
- * 更新系の処理を使う時は MarksManipulation の方で use {} してね．
- */
-open class MarksOperation(val realm: Realm) {
-
-    /**
-     * 作業状況を外部へ伝えるためのリスナー
-     */
-    var progressListener: ((folder: String, percent: Int) -> Unit)? = null
-    /**
-     * 処理対象フォルダ数
-     */
-    private var folderCount = -1L
-    /**
-     * いま何個目のフォルダを処理しているか
-     */
-    private var currentFolderNum = 0L
 
     /**
      * MarkTreeNodeをRealm DBへ反映する．
      */
-    fun applyMarkTreeNodeToDB(remote: MarkTreeNode, local: MarkNode): Boolean {
+    private fun applyMarkTreeNodeToDB(remote: MarkTreeNode, local: MarkNode): Boolean {
         if (remote.type == MarkType.Folder) {
             if (folderCount == -1L) {
                 folderCount = remote.countChildren(MarkType.Folder)
@@ -161,7 +160,7 @@ open class MarksOperation(val realm: Realm) {
             local.url = remote.url
             // フォルダの反映．いったん全消しして追加しなおす（乱暴）
             if (remote.type == MarkType.Folder) {
-                val children = getMarkNodeChildren(local)
+                val children = repos.getMarkNodeChildren(local)
                 for (child in children) {
                     removeBookmark(child)
                 }
@@ -173,11 +172,11 @@ open class MarksOperation(val realm: Realm) {
         }
         // ターゲットに差分がなさそうでも子階層は違うかもしれないので再帰チェックする
         if (remote.type == MarkType.Folder) {
-            val children = getMarkNodeChildren(local)
+            val children = repos.getMarkNodeChildren(local)
             if (!children.isEmpty()) {
                 var rc = false
                 for (i in children.indices) {
-                    rc = applyMarkTreeNodeToDB(remote.children[i], children[i]!!) || rc
+                    rc = applyMarkTreeNodeToDB(remote.children[i], children[i]) || rc
                 }
                 return rc
             }
@@ -198,7 +197,7 @@ open class MarksOperation(val realm: Realm) {
         }
         // children の比較は個数まで，中身の比較は他ループに任せる
         if (remote.type == MarkType.Folder) {
-            val childrenCount = getMarkNodeChildren(bookmark).count()
+            val childrenCount = repos.getMarkNodeChildren(bookmark).count()
             if (remote.children.size != childrenCount) {
                 return true
             }
@@ -209,8 +208,9 @@ open class MarksOperation(val realm: Realm) {
     /**
      * Realm DBにノードを新規に作成する．
      */
-    fun createBookmark(parentMark: MarkNode?, mark: MarkTreeNode, markOrder: Int = 0,
+    private fun createBookmark(parentMark: MarkNode?, mark: MarkTreeNode, markOrder: Int = 0,
                        markId: String = MarkNode.newKey()): MarkNode {
+
         return createBookmark(parentMark, mark.type, mark.title, mark.url, markOrder,
                 markId, mark.children)
     }
@@ -218,16 +218,18 @@ open class MarksOperation(val realm: Realm) {
     /**
      * Realm DBにノードを新規に作成する．
      */
-    fun createBookmark(parentMark: MarkNode?, markType: MarkType, markTitle: String = "",
+    private fun createBookmark(parentMark: MarkNode?, markType: MarkType, markTitle: String = "",
                        markUrl: String = "", markOrder: Int = 0, markId: String = MarkNode.newKey(),
                        markChildren: List<MarkTreeNode> = listOf()): MarkNode {
-        val added = realm.createObject<MarkNode>(markId).apply {
+
+        val added = repos.create(markId).apply {
             type = markType
             title = markTitle
             url = markUrl
             order = markOrder
             parent = parentMark
         }
+        repos.save(added)
         for ((order, child) in markChildren.withIndex()) {
             createBookmark(added, child, order)
         }
@@ -239,44 +241,10 @@ open class MarksOperation(val realm: Realm) {
      */
     private fun removeBookmark(target: MarkNode) {
         if (target.type == MarkType.Folder) {
-            for (child in getMarkNodeChildren(target)) {
+            for (child in repos.getMarkNodeChildren(target)) {
                 removeBookmark(child)
             }
         }
-        target.deleteFromRealm()
-    }
-
-    /**
-     * 指定名のMarkNodeを取得する．
-     */
-    fun getMarkNode(id: String): MarkNode? {
-        return realm
-                .where<MarkNode>()
-                .equalTo("id", id)
-                .findFirst()
-    }
-
-    /**
-     * MarkNodeの直接のchildrenを取得する．
-     */
-    fun getMarkNodeChildren(parent: MarkNode): RealmResults<MarkNode> {
-        return realm
-                .where<MarkNode>()
-                .equalTo("parent.id", parent.id)
-                .sort("order")
-                .findAll()
-    }
-}
-
-/**
- * MarksOperation を use {} で使えるようにしたやつ
- */
-class MarksManipulation(realm: Realm): MarksOperation(realm), AutoCloseable {
-    init {
-        realm.beginTransaction()
-    }
-
-    override fun close() {
-        realm.commitTransaction()
+        repos.remove(target)
     }
 }

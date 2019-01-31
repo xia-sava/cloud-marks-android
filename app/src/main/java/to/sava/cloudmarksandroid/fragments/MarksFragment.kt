@@ -6,24 +6,32 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.view.*
+import dagger.android.support.AndroidSupportInjection
 import io.realm.Realm
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
+import javax.inject.Inject
 
 class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
-    private var mark: MarkNode? = null
-    var adapter: MarksRecyclerViewAdapter? = null
+
+    @Inject
+    internal lateinit var marks: Marks
 
     private lateinit var realm: Realm
+
+    private var mark: MarkNode? = null
+    var adapter: MarksRecyclerViewAdapter? = null
 
     private var onListItemClickListener: OnListItemClickListener? = null
     private var onListItemChangeListener: OnListItemChangListener? = null
     private var faviconFinder: MarksRecyclerViewAdapter.FaviconFinder? = null
 
     override fun onAttach(context: Context) {
+        AndroidSupportInjection.inject(this)
+
         super.onAttach(context)
         if (context is OnListItemClickListener) {
             onListItemClickListener = context
@@ -39,11 +47,11 @@ class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
 
-        realm = Realm.getDefaultInstance()
-
-        val marks = Marks(realm)
         val markId = arguments?.getString(ARG_MARK_ID) ?: MarkNode.ROOT_ID
+
         mark = marks.getMark(markId)
+        // この realm インスタンスは onDestroyView で close する．
+        realm = marks.repos.getNewRealmInstance()
 
         val layout = when(mark) {
             null -> R.layout.fragment_mark_not_found
@@ -63,8 +71,8 @@ class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
         if (view is RecyclerView) {
             mark?.let {
                 view.layoutManager = LinearLayoutManager(context)
-                val children = marks.getMarkChildren(it)
-                adapter = MarksRecyclerViewAdapter(children, faviconFinder, this)
+                val marks = marks.getMarkChildrenManaged(realm, it)
+                adapter = MarksRecyclerViewAdapter(marks, faviconFinder, this)
                 view.adapter = adapter
             }
         }
@@ -76,9 +84,9 @@ class MarksFragment : Fragment(), MarksRecyclerViewAdapter.OnClickListener {
         onListItemChangeListener?.onListItemChange(mark)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onDestroyView() {
         realm.close()
+        super.onDestroyView()
     }
 
     override fun onClick(mark: MarkNode) {

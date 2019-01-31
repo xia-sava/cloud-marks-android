@@ -2,10 +2,12 @@ package to.sava.cloudmarksandroid
 
 import android.app.Activity
 import android.app.Application
+import android.app.Service
 import androidx.fragment.app.Fragment
 import com.crashlytics.android.Crashlytics
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasActivityInjector
+import dagger.android.HasServiceInjector
 import dagger.android.support.HasSupportFragmentInjector
 import io.fabric.sdk.android.Fabric
 import io.realm.Realm
@@ -15,16 +17,20 @@ import javax.inject.Inject
 
 
 class CloudMarksAndroidApplication : Application(),
-        HasActivityInjector, HasSupportFragmentInjector {
+        HasActivityInjector, HasSupportFragmentInjector, HasServiceInjector {
 
     @Inject
-    lateinit var dispatchingAndroidInjector: DispatchingAndroidInjector<Activity>
+    lateinit var dispatchingActivityInjector: DispatchingAndroidInjector<Activity>
 
     @Inject
     lateinit var dispatchingFragmentInjector: DispatchingAndroidInjector<Fragment>
 
-    override fun activityInjector() = dispatchingAndroidInjector
+    @Inject
+    lateinit var dispatchingServiceInjector: DispatchingAndroidInjector<Service>
+
+    override fun activityInjector() = dispatchingActivityInjector
     override fun supportFragmentInjector() = dispatchingFragmentInjector
+    override fun serviceInjector() = dispatchingServiceInjector
 
     companion object ApplicationInstance {
         lateinit var instance: CloudMarksAndroidApplication

@@ -12,7 +12,7 @@ import androidx.core.app.JobIntentService
 import androidx.core.app.NotificationCompat
 import com.crashlytics.android.Crashlytics
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
-import io.realm.Realm
+import dagger.android.AndroidInjection
 import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
@@ -20,6 +20,7 @@ import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.activities.SettingsActivity
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
+import javax.inject.Inject
 
 
 internal enum class Action {
@@ -67,7 +68,15 @@ class MarksService : JobIntentService() {
         fun onMarksServiceComplete()
     }
 
+    @Inject
+    internal lateinit var marks: Marks
+
     private val handler = Handler()
+
+    override fun onCreate() {
+        AndroidInjection.inject(this)
+        super.onCreate()
+    }
 
     override fun onHandleWork(intent: Intent) {
         intent.action?.let {
@@ -103,16 +112,13 @@ class MarksService : JobIntentService() {
                     }
                     startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
 
-                    Realm.getDefaultInstance().use { realm ->
-                        val marks = Marks(realm)
-                        marks.progressListener = {folder: String, percent: Int ->
-                            NotificationCompat.BigTextStyle(progressNotificationBuilder).bigText(
-                                    getString(R.string.marks_service_progress_folder, folder))
-                            progressNotificationBuilder.setProgress(100, percent, false)
-                            startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
-                        }
-                        marks.load()
+                    marks.progressListener = {folder: String, percent: Int ->
+                        NotificationCompat.BigTextStyle(progressNotificationBuilder).bigText(
+                                getString(R.string.marks_service_progress_folder, folder))
+                        progressNotificationBuilder.setProgress(100, percent, false)
+                        startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
                     }
+                    marks.load()
                 }
                 else -> {}
             }
