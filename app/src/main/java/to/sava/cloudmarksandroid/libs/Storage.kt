@@ -4,6 +4,7 @@ import com.crashlytics.android.Crashlytics
 import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.json.gson.GsonFactory
+import com.google.api.client.util.ExponentialBackOff
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
@@ -96,6 +97,7 @@ abstract class Storage(val settings: Settings) {
 class GoogleDriveStorage(settings: Settings): Storage(settings) {
     val credential: GoogleAccountCredential by lazy {
         val cred = GoogleAccountCredential.usingOAuth2(settings.context, SCOPES)
+        cred.backOff = ExponentialBackOff()
         if (settings.googleAccount != "") {
             try {
                 cred.selectedAccountName = settings.googleAccount
@@ -103,6 +105,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
             catch (ex: IllegalArgumentException) {
                 // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
                 Crashlytics.logException(ex)
+                throw ex
             }
         }
         cred
