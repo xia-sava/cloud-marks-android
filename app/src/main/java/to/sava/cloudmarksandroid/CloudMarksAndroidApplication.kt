@@ -14,6 +14,9 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 import to.sava.cloudmarksandroid.libs.di.DaggerApplicationComponent
 import javax.inject.Inject
+import com.crashlytics.android.core.CrashlyticsCore
+
+
 
 
 class CloudMarksAndroidApplication : Application(),
@@ -64,6 +67,7 @@ class CloudMarksAndroidApplication : Application(),
                 .build()
         Realm.setDefaultConfiguration(config)
 
-        Fabric.with(this, Crashlytics())
+        Fabric.with(this, Crashlytics.Builder().core(
+                CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build()).build())
     }
 }

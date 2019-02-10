@@ -142,3 +142,4 @@ app/google-services.json
 # Keystore files
 *.jks
 
+/app/releaseSigningConfigs.gradle

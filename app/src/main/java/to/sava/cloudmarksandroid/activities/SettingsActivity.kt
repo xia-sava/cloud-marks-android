@@ -298,6 +298,7 @@ class SettingsActivity : AppCompatActivity(),
                     when (ex) {
                         is GooglePlayServicesAvailabilityIOException -> {
                             // Google Play サービス自体が使えない？
+                            Crashlytics.logException(ex)
                             Crashlytics.log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
                             uiThread {
                                 GoogleApiAvailability.getInstance().getErrorDialog(
@@ -306,12 +307,14 @@ class SettingsActivity : AppCompatActivity(),
                         }
                         is UserRecoverableAuthIOException -> {
                             // ユーザの許可を得るためのダイアログを表示する
+                            Crashlytics.logException(ex)
                             Crashlytics.log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
                             uiThread {
                                 startActivityForResult(ex.intent, REQUEST_AUTHENTICATE)
                             }
                         }
                         is GoogleAuthIOException -> {
+                            Crashlytics.logException(ex)
                             Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
                             // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
                             // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
@@ -323,32 +326,24 @@ class SettingsActivity : AppCompatActivity(),
                                     startActivityForResult(cause.intent, REQUEST_AUTHENTICATE)
                                 }
                             } else {
-                                if (ex.cause?.message == "Unknown") {
-                                    // ひとまず認証が通ったと思ってOKとしてみる
-                                    uiThread {
-                                        storage.settings.googleAccount = storage.credential.selectedAccountName
-                                        connectionPref.isChecked = true
-                                        connectionPref.summary = storage.settings.googleAccount
-                                        toast(R.string.connected_to_google_drive_probably)
-                                    }
-                                } else {
-                                    uiThread { toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}") }
+                                uiThread {
+                                    toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}")
                                 }
                             }
-                            Crashlytics.logException(ex)
                         }
                         is IOException -> {
                             // ネットワークエラーとかか？
+                            Crashlytics.logException(ex)
                             Crashlytics.log("SettingsActivity.tryAuthenticate.IOException")
                             uiThread { toast("tryAuthenticate: IOException: " + ex.message) }
-                            Crashlytics.logException(ex)
                         }
                         is RuntimeException -> {
                             // その他もう何だかわからないけどおかしい
-                            uiThread { toast("tryAuthenticate: RuntimeException: " + ex.message) }
                             Crashlytics.logException(ex)
+                            uiThread { toast("tryAuthenticate: RuntimeException: " + ex.message) }
                         }
                         else -> {
+                            Crashlytics.logException(ex)
                             throw ex
                         }
                     }
