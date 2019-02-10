@@ -85,7 +85,7 @@ class MarksService : JobIntentService() {
 
             if (rc) {
                 handler.post {
-                    toast(R.string.marks_service_action_done)
+                    toast("${getString(R.string.app_name)}: ${getString(R.string.marks_service_action_load_title)}${getString(R.string.marks_service_action_done)}")
                 }
             }
         }
