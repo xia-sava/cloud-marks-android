@@ -18,22 +18,19 @@ import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.services.MarksService
 import android.content.pm.PackageManager
-import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.appcompat.app.AlertDialog
 import dagger.android.AndroidInjection
 import to.sava.cloudmarksandroid.libs.Favicons
 import to.sava.cloudmarksandroid.repositories.FaviconRepository
-import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 import javax.inject.Inject
 
 
 class MainActivity : AppCompatActivity(),
         MarksFragment.OnListItemClickListener,
         MarksFragment.OnListItemChangListener,
-        MarksService.OnMarksServiceCompleteListener,
-        MarksRecyclerViewAdapter.FaviconFinder {
+        MarksService.OnMarksServiceCompleteListener {
 
     @Inject
     internal lateinit var marks: Marks
@@ -334,13 +331,6 @@ class MainActivity : AppCompatActivity(),
     // endregion
 
     // region ブックマークアイコンまわり
-
-    /**
-     * 登録済みのFaviconを取得する．
-     */
-    override fun findFavicon(mark: MarkNode): Drawable? {
-        return favicons.find(mark)
-    }
 
     /**
      * FaviconをWebから取得して，画面を再描画する．

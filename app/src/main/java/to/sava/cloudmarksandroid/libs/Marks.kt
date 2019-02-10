@@ -1,12 +1,11 @@
 package to.sava.cloudmarksandroid.libs
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import io.realm.OrderedRealmCollection
-import io.realm.Realm
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkTreeNode
 import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
+import to.sava.cloudmarksandroid.repositories.RealmHelper
 import javax.inject.Inject
 
 
@@ -16,7 +15,7 @@ import javax.inject.Inject
  * Realm DBの仲介をする．
  */
 class Marks @Inject constructor(
-        val repos: MarkNodeRepository) {
+        private val repos: MarkNodeRepository) {
 
     private val settings: Settings by lazy {
         Settings()
@@ -62,7 +61,7 @@ class Marks @Inject constructor(
         val remote = storage.readMarksContents(remoteFile)
 
         // 差分を取って適用
-        repos.transaction {
+        RealmHelper.transaction {
             try {
                 applyMarkTreeNodeToDB(remote, getMarkNodeRoot())
             } catch (userAuthIoEx: UserRecoverableAuthIOException) {
@@ -121,13 +120,6 @@ class Marks @Inject constructor(
      */
     fun getMarkChildren(parent: MarkNode): List<MarkNode> {
         return repos.getMarkNodeChildren(parent)
-    }
-
-    /**
-     * Realm DBから指定ノードの子ノードを managed で取得する．
-     */
-    fun getMarkChildrenManaged(realm: Realm, parent: MarkNode): OrderedRealmCollection<MarkNode> {
-        return repos.getMarkNodeChildrenManaged(realm, parent)
     }
 
     /**

@@ -1,8 +1,9 @@
 package to.sava.cloudmarksandroid.repositories
 
+import io.realm.OrderedRealmCollection
 import to.sava.cloudmarksandroid.models.MarkNode
 
-class MarkNodeRepository : Repository<MarkNode>() {
+class MarkNodeManagedRepository : ManagedRepository<MarkNode>() {
     override val modelClass = MarkNode::class.java
 
 
@@ -16,9 +17,9 @@ class MarkNodeRepository : Repository<MarkNode>() {
     /**
      * MarkNodeの直接のchildrenを取得する．
      */
-    fun getMarkNodeChildren(parent: MarkNode): MutableList<MarkNode> {
-        return findAll {
-            it.equalTo("parent.id", parent.id)
+    fun getMarkNodeChildren(parent: MarkNode): OrderedRealmCollection<MarkNode> {
+        return findAll { query ->
+            query.equalTo("parent.id", parent.id)
                     .sort("order")
         }
     }
