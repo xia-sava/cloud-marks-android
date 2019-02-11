@@ -14,6 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import android.view.MenuItem
 import com.crashlytics.android.Crashlytics
+import com.google.android.gms.auth.UserRecoverableAuthException
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
@@ -315,17 +316,32 @@ class SettingsActivity : AppCompatActivity(),
                         }
                         is GoogleAuthIOException -> {
                             Crashlytics.logException(ex)
-                            Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
+                            Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}'")
                             // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
                             // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
                             // 次にこれ発生したら調べるけどホントこれ再現性ない
-                            val cause = ex.cause
-                            if (cause is UserRecoverableAuthIOException) {
+                            var handled = false
+                            var cause: Throwable? = ex.cause
+                            while (cause != null) {
+                                val c = cause
                                 // ひょっとしたら cause が UserRecoverable かもしれない
-                                uiThread {
-                                    startActivityForResult(cause.intent, REQUEST_AUTHENTICATE)
+                                if (c is UserRecoverableAuthIOException) {
+                                    uiThread {
+                                        startActivityForResult(c.intent, REQUEST_AUTHENTICATE)
+                                    }
+                                    handled = true
+                                    break
+                                } else if (c is UserRecoverableAuthException) {
+                                    uiThread {
+                                        startActivityForResult(c.intent, REQUEST_AUTHENTICATE)
+                                    }
+                                    handled = true
+                                    break
                                 }
-                            } else {
+                                cause = cause.cause
+                            }
+                            if (!handled) {
+                                Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
                                 uiThread {
                                     toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}")
                                 }
