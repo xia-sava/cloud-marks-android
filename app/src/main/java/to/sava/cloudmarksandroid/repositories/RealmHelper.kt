@@ -1,7 +1,11 @@
 package to.sava.cloudmarksandroid.repositories
 
-import io.realm.*
-import java.util.*
+import io.realm.Realm
+import io.realm.RealmObject
+import io.realm.RealmQuery
+import io.realm.RealmResults
+import java.util.Date
+
 
 /**
  * Realm ヘルパーの実装．
@@ -24,17 +28,27 @@ open class RealmHelper {
          */
         @JvmStatic
         fun execute(func: (Realm) -> Unit) {
-            RealmInstanceHelper().use {
+            return RealmInstanceHelper().use {
                 it.execute(func)
             }
         }
 
         /**
-         * singleExecute() の Java interface 向け実装．
+         * execute() の Java interface 向け実装．
          */
         @JvmStatic
         fun execute(func: Execute) {
-            execute(func::execute)
+            return execute(func::execute)
+        }
+
+        /**
+         * executeReturns() を単発処理で行なう．
+         */
+        @JvmStatic
+        fun <RT> executeReturns(func: (Realm) -> RT): RT {
+            return RealmInstanceHelper().use {
+                it.executeReturns(func)
+            }
         }
 
         /**
@@ -90,8 +104,15 @@ open class RealmInstanceHelper : AutoCloseable {
     /**
      * execute() の Java interface 向け実装．
      */
-    open fun execute(func: RealmHelper.Execute) {
+    fun execute(func: RealmHelper.Execute) {
         func.execute(realm)
+    }
+
+    /**
+     * Realmで自由にリード系操作をし値を返すラッパー．
+     */
+    open fun <RT> executeReturns(func: (Realm) -> RT): RT {
+        return func(realm)
     }
 
     /**
@@ -136,60 +157,72 @@ abstract class AbstractRepository<T : RealmObject>(realm: Realm? = null): AutoCl
      */
     open val realm: Realm = realm ?: RealmHelper.getNewRealmInstance()
 
+    private fun <P> inTransaction(operation: () -> P): P {
+        val ret: P
+        if (realm.isInTransaction) {
+            ret = operation()
+        } else {
+            realm.beginTransaction()
+            ret = operation()
+            realm.commitTransaction()
+        }
+        return ret
+    }
+
     /**
      * キー指定してオブジェクトを新規作成する．
      */
     open fun <P> create(id: P): T {
-        return realm.createObject(modelClass, id)
+        return inTransaction { realm.createObject(modelClass, id) }
     }
 
     /**
      * String のキー指定してオブジェクトを新規作成する．
      */
     open fun create(id: String): T {
-        return realm.createObject(modelClass, id)
+        return inTransaction { realm.createObject(modelClass, id) }
     }
 
     /**
      * String のキー指定してオブジェクトを新規作成する．
      */
     open fun create(id: Boolean): T {
-        return realm.createObject(modelClass, id)
+        return inTransaction { realm.createObject(modelClass, id) }
     }
 
     /**
      * Int のキー指定してオブジェクトを新規作成する．
      */
     open fun create(id: Int): T {
-        return realm.createObject(modelClass, id)
+        return inTransaction { realm.createObject(modelClass, id) }
     }
 
     /**
      * Long のキー指定してオブジェクトを新規作成する．
      */
     open fun create(id: Long): T {
-        return realm.createObject(modelClass, id)
+        return inTransaction { realm.createObject(modelClass, id) }
     }
 
     /**
      * Double のキー指定してオブジェクトを新規作成する．
      */
     open fun create(id: Double): T {
-        return realm.createObject(modelClass, id)
+        return inTransaction { realm.createObject(modelClass, id) }
     }
 
     /**
      * Date のキー指定してオブジェクトを新規作成する．
      */
     open fun create(id: Date): T {
-        return realm.createObject(modelClass, id)
+        return inTransaction { realm.createObject(modelClass, id) }
     }
 
     /**
      * オブジェクトを新規作成する．
      */
     open fun create(): T {
-        return realm.createObject(modelClass)
+        return inTransaction { realm.createObject(modelClass) }
     }
 
     /**
@@ -205,16 +238,9 @@ abstract class AbstractRepository<T : RealmObject>(realm: Realm? = null): AutoCl
      * 既に managed なオブジェクトには手を付けない．
      */
     open fun manage(standalones: Collection<T>): MutableList<T> {
-        val managed = mutableListOf<T>()
-        if (realm.isInTransaction) {
-            managed.addAll(realm.copyToRealmOrUpdate(standalones))
-        } else {
-
-            realm.executeTransaction {
-                managed.addAll(realm.copyToRealmOrUpdate(standalones))
-            }
+        return inTransaction {
+            realm.copyToRealmOrUpdate(standalones)
         }
-        return managed
     }
 
     /**
@@ -229,12 +255,8 @@ abstract class AbstractRepository<T : RealmObject>(realm: Realm? = null): AutoCl
      * トランザクション中でない場合は単発トランザクションを発行する．
      */
     open fun remove(instances: Collection<T>) {
-        if (realm.isInTransaction) {
+        inTransaction {
             manage(instances).forEach { it.deleteFromRealm() }
-        } else {
-            realm.executeTransaction {
-                manage(instances).forEach { it.deleteFromRealm() }
-            }
         }
     }
 
@@ -244,13 +266,6 @@ abstract class AbstractRepository<T : RealmObject>(realm: Realm? = null): AutoCl
      */
     open fun findAll(func: (RealmQuery<T>) -> RealmQuery<T>): MutableList<T> {
         return func(realm.where(modelClass)).findAll()
-    }
-
-    /**
-     * findAll() の Java interface 向け実装．
-     */
-    open fun findAll(func: Repository.FindAll<T>): MutableList<T> {
-        return findAll(func::execute)
     }
 
     /**
@@ -266,13 +281,6 @@ abstract class AbstractRepository<T : RealmObject>(realm: Realm? = null): AutoCl
      */
     open fun find(func: (RealmQuery<T>) -> RealmQuery<T>): T? {
         return func(realm.where(modelClass)).findFirst()
-    }
-
-    /**
-     * find(func) の Java interface 向け実装．
-     */
-    open fun find(func: Repository.Find<T>): T? {
-        return find(func::execute)
     }
 
     /**
@@ -333,13 +341,6 @@ abstract class AbstractRepository<T : RealmObject>(realm: Realm? = null): AutoCl
     }
 
     /**
-     * count() の Java interface 向け実装．
-     */
-    open fun count(func: Repository.Count<T>): Long {
-        return count(func::execute)
-    }
-
-    /**
      * count() の条件なし版．
      */
     open fun count(): Long {
@@ -351,13 +352,6 @@ abstract class AbstractRepository<T : RealmObject>(realm: Realm? = null): AutoCl
      */
     open fun query(func: (RealmQuery<T>) -> RealmResults<T>): MutableList<T> {
         return func(realm.where(modelClass))
-    }
-
-    /**
-     * query() の Java interface 向け実装．
-     */
-    open fun query(func: Repository.Query<T>): MutableList<T> {
-        return query(func::execute)
     }
 
     /**
@@ -416,13 +410,6 @@ abstract class ManagedRepository<T : RealmObject>(realm: Realm? = null): Abstrac
     }
 
     /**
-     * findAll() の Java interface 向け実装．
-     */
-    override fun findAll(func: Repository.FindAll<T>): RealmResults<T> {
-        return findAll(func::execute)
-    }
-
-    /**
      * findAll() の条件なし版．
      */
     override fun findAll(): RealmResults<T> {
@@ -434,13 +421,6 @@ abstract class ManagedRepository<T : RealmObject>(realm: Realm? = null): Abstrac
      */
     override fun query(func: (RealmQuery<T>) -> RealmResults<T>): RealmResults<T> {
         return super.query(func) as RealmResults<T>
-    }
-
-    /**
-     * query() の Java interface 向け実装．
-     */
-    override fun query(func: Repository.Query<T>): RealmResults<T> {
-        return query(func::execute)
     }
 }
 
@@ -644,33 +624,5 @@ abstract class Repository<T : RealmObject>: AbstractRepository<T>() {
         realm.use { realm ->
             return realm.copyFromRealm(repos(realm).query(func), copyFromRealmMaxDepth)
         }
-    }
-
-    /**
-     * findAll() の Java interface．
-     */
-    interface FindAll<T : RealmModel> {
-        fun execute(query: RealmQuery<T>): RealmQuery<T>
-    }
-
-    /**
-     * find() の Java interface．
-     */
-    interface Find<T : RealmModel> {
-        fun execute(query: RealmQuery<T>): RealmQuery<T>
-    }
-
-    /**
-     * count() の Java interface．
-     */
-    interface Count<T : RealmModel> {
-        fun execute(query: RealmQuery<T>): RealmQuery<T>
-    }
-
-    /**
-     * query() の Java interface．
-     */
-    interface Query<T : RealmModel> {
-        fun execute(query: RealmQuery<T>): RealmResults<T>
     }
 }
