@@ -1,7 +1,6 @@
 package to.sava.cloudmarksandroid.activities
 
 import android.Manifest
-import android.accounts.AccountManager
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,7 +14,14 @@ import androidx.preference.PreferenceFragmentCompat
 import android.view.MenuItem
 import com.crashlytics.android.Crashlytics
 import com.google.android.gms.auth.UserRecoverableAuthException
+import com.google.android.gms.auth.api.Auth
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.GoogleApiClient
+import com.google.android.gms.common.api.Scope
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
@@ -148,13 +154,25 @@ class SettingsActivity : AppCompatActivity(),
      * Google Drive Settings フラグメント
      */
     class GoogleDrivePreferenceFragment : SettingsFragment(),
-            Preference.OnPreferenceClickListener {
+            Preference.OnPreferenceClickListener, GoogleApiClient.OnConnectionFailedListener {
 
         private val storage: GoogleDriveStorage by lazy {
             GoogleDriveStorage(Settings())
         }
         private val connectionPref: SwitchPreference by lazy {
             findPreference(getString(R.string.pref_key_google_drive_connection)) as SwitchPreference
+        }
+
+        private val googleApiClient: GoogleApiClient by lazy {
+            GoogleApiClient.Builder(this.requireContext())
+                    .enableAutoManage(this.requireActivity(), this)
+                    .addApi(Auth.GOOGLE_SIGN_IN_API,
+                            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                                    .requestEmail()
+                                    .requestIdToken(getString(R.string.default_web_client_id))
+                                    .requestScopes(Scope(GoogleDriveStorage.SCOPES[0]))
+                                    .build())
+                    .build()
         }
 
         companion object {
@@ -192,7 +210,10 @@ class SettingsActivity : AppCompatActivity(),
                             if (checkPermission()) {
                                 toast(R.string.connect_to_google_drive)
                                 Crashlytics.log("SettingsActivity.onPreferenceClick.startActivityForResult")
-                                startActivityForResult(storage.credential.newChooseAccountIntent(), REQUEST_PICK_ACCOUNT)
+                                googleApiClient.connect()
+                                startActivityForResult(
+                                        Auth.GoogleSignInApi.getSignInIntent(googleApiClient),
+                                        REQUEST_PICK_ACCOUNT)
                             }
                         }
                         false -> {
@@ -251,12 +272,13 @@ class SettingsActivity : AppCompatActivity(),
             when (requestCode) {
                 REQUEST_PICK_ACCOUNT -> {
                     Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT")
-                    if (resultCode == Activity.RESULT_OK && data?.extras != null) {
-                        val name = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
-                        Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '$name'")
-                        if (name != null) {
-                            tryAuthenticate(name)
-                        }
+                    if (resultCode == Activity.RESULT_OK) {
+                        val account =
+                                GoogleSignIn.getSignedInAccountFromIntent(data)
+                                        .getResult(ApiException::class.java)
+                        Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '${account?.email!!}'")
+
+                        tryAuthenticate(account.email ?: "")
                     } else {
                         toast(R.string.cant_confirm_user_account)
                     }
@@ -365,6 +387,13 @@ class SettingsActivity : AppCompatActivity(),
                     }
                 }
             }
+        }
+
+        /**
+         * GoogleApiClient 接続エラー
+         */
+        override fun onConnectionFailed(p0: ConnectionResult) {
+            toast(R.string.connecting_google_drive_denied)
         }
     }
 }
