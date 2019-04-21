@@ -1,15 +1,15 @@
 package to.sava.cloudmarksandroid.libs
 
 import com.crashlytics.android.Crashlytics
-import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.ExponentialBackOff
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
+import com.google.common.io.ByteSource
 import com.google.gson.*
-import org.apache.commons.io.IOUtils
 import to.sava.cloudmarksandroid.models.MarkTreeNode
 import to.sava.cloudmarksandroid.models.MarkType
 import java.nio.charset.Charset
@@ -112,7 +112,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
     }
 
     private val api: Drive by lazy {
-        Drive.Builder(AndroidHttp.newCompatibleTransport(), GsonFactory(), credential).build()
+        Drive.Builder(NetHttpTransport(), GsonFactory(), credential).build()
     }
 
     companion object {
@@ -170,7 +170,9 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
         val response = api.files()
                 .get(fileInfo.fileObject["id"])
                 .executeMedia()
-        return IOUtils.toString(response.content, Charset.defaultCharset())
+        return object : ByteSource() {
+            override fun openStream() = response.content
+        }.asCharSource(Charset.defaultCharset()).read()
     }
 
 
