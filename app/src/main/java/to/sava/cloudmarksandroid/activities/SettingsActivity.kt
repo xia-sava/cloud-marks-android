@@ -272,15 +272,15 @@ class SettingsActivity : AppCompatActivity(),
             when (requestCode) {
                 REQUEST_PICK_ACCOUNT -> {
                     Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT")
-                    if (resultCode == Activity.RESULT_OK) {
+                    try {
                         val account =
                                 GoogleSignIn.getSignedInAccountFromIntent(data)
                                         .getResult(ApiException::class.java)
                         Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '${account?.email!!}'")
 
                         tryAuthenticate(account.email ?: "")
-                    } else {
-                        toast(R.string.cant_confirm_user_account)
+                    } catch (e: ApiException) {
+                        toast(getString(R.string.cant_confirm_user_account, e.statusCode))
                     }
                 }
                 REQUEST_AUTHENTICATE -> {
