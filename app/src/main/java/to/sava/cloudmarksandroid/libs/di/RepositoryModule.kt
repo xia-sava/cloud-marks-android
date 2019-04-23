@@ -7,7 +7,6 @@ import io.realm.Realm
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.libs.Favicons
 import to.sava.cloudmarksandroid.repositories.FaviconRepository
-import to.sava.cloudmarksandroid.repositories.MarkNodeManagedRepository
 import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
 
 @Module
@@ -21,9 +20,6 @@ class RepositoryModule {
 
     @Provides
     fun provideMarkNodeRepository() = MarkNodeRepository()
-
-    @Provides
-    fun provideMarkNodeManagedRepository() = MarkNodeManagedRepository()
 
     @Provides
     fun provideFaviconRepository() = FaviconRepository()

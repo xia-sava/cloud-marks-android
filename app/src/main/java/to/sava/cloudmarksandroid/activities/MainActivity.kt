@@ -23,7 +23,6 @@ import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.appcompat.app.AlertDialog
 import dagger.android.AndroidInjection
 import to.sava.cloudmarksandroid.libs.Favicons
-import to.sava.cloudmarksandroid.repositories.FaviconRepository
 import javax.inject.Inject
 
 
@@ -37,9 +36,6 @@ class MainActivity : AppCompatActivity(),
 
     @Inject
     internal lateinit var favicons: Favicons
-
-    @Inject
-    internal lateinit var faviconRepository: FaviconRepository
 
     // region Android Activity Lifecycle まわり
 

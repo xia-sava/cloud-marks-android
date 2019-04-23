@@ -5,7 +5,6 @@ import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkTreeNode
 import to.sava.cloudmarksandroid.models.MarkType
 import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
-import to.sava.cloudmarksandroid.repositories.RealmHelper
 import javax.inject.Inject
 
 
@@ -61,7 +60,7 @@ class Marks @Inject constructor(
         val remote = storage.readMarksContents(remoteFile)
 
         // 差分を取って適用
-        RealmHelper.transaction {
+        repos.transactionScope {
             try {
                 applyMarkTreeNodeToDB(remote, getMarkNodeRoot())
             } catch (userAuthIoEx: UserRecoverableAuthIOException) {
@@ -165,7 +164,7 @@ class Marks @Inject constructor(
         // ターゲットに差分がなさそうでも子階層は違うかもしれないので再帰チェックする
         if (remote.type == MarkType.Folder) {
             val children = repos.getMarkNodeChildren(local)
-            if (!children.isEmpty()) {
+            if (children.isNotEmpty()) {
                 var rc = false
                 for (i in children.indices) {
                     rc = applyMarkTreeNodeToDB(remote.children[i], children[i]) || rc
@@ -214,14 +213,14 @@ class Marks @Inject constructor(
                        markUrl: String = "", markOrder: Int = 0, markId: String = MarkNode.newKey(),
                        markChildren: List<MarkTreeNode> = listOf()): MarkNode {
 
-        val added = repos.create(markId).apply {
+        val added = repos.createMarkNode(markId).apply {
             type = markType
             title = markTitle
             url = markUrl
             order = markOrder
             parent = parentMark
         }
-        repos.save(added)
+        repos.saveMarkNode(added)
         for ((order, child) in markChildren.withIndex()) {
             createBookmark(added, child, order)
         }
@@ -237,6 +236,6 @@ class Marks @Inject constructor(
                 removeBookmark(child)
             }
         }
-        repos.remove(target)
+        repos.deleteMarkNode(target)
     }
 }

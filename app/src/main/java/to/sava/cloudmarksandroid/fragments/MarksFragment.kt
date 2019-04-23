@@ -13,7 +13,7 @@ import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.Favicons
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
-import to.sava.cloudmarksandroid.repositories.MarkNodeManagedRepository
+import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
 import javax.inject.Inject
 
 class MarksFragment : Fragment(),
@@ -21,7 +21,7 @@ class MarksFragment : Fragment(),
         MarksRecyclerViewAdapter.FaviconFinder {
 
     @Inject
-    internal lateinit var repos: MarkNodeManagedRepository
+    internal lateinit var repos: MarkNodeRepository
 
     @Inject
     internal lateinit var favicons: Favicons
@@ -49,13 +49,13 @@ class MarksFragment : Fragment(),
 
         val markId = arguments?.getString(ARG_MARK_ID) ?: MarkNode.ROOT_ID
 
-        val mark = repos.getMarkNode(markId)
+        val mark = repos.getManagedMarkNode(markId)
         this.mark = mark
 
         val layout = when {
             mark == null ->
                 R.layout.fragment_mark_not_found
-            (mark.type == MarkType.Folder && repos.getMarkNodeChildren(mark).isEmpty()) ->
+            (mark.type == MarkType.Folder && repos.getManagedMarkNodeChildren(mark).isEmpty()) ->
                 R.layout.fragment_empty_folder
             else ->
                 R.layout.fragment_marks_list
@@ -65,7 +65,7 @@ class MarksFragment : Fragment(),
         if (view is RecyclerView && mark != null) {
             view.layoutManager = LinearLayoutManager(context)
             adapter = MarksRecyclerViewAdapter(
-                    repos.getMarkNodeChildren(mark), this, this)
+                    repos.getManagedMarkNodeChildren(mark), this, this)
             view.adapter = adapter
         }
         return view
@@ -74,11 +74,6 @@ class MarksFragment : Fragment(),
     override fun onResume() {
         super.onResume()
         onListItemChangeListener?.onListItemChange(mark)
-    }
-
-    override fun onDestroyView() {
-        repos.realm.close()
-        super.onDestroyView()
     }
 
     override fun onClick(mark: MarkNode) {

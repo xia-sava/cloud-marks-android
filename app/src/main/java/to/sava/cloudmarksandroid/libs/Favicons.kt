@@ -22,7 +22,7 @@ class Favicons @Inject constructor(
         private val repos: FaviconRepository) {
 
     fun find(mark: MarkNode): Drawable? {
-        return repos.find("domain", mark.domain)?.let { favicon ->
+        return repos.findFavicon(mark.domain)?.let { favicon ->
             val bitmap = Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888)
             bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))
             BitmapDrawable(context.resources, bitmap)
@@ -40,7 +40,7 @@ class Favicons @Inject constructor(
                 fetchFavicon(url)
             }
         }
-        repos.save(awaitAll(deferreds = *(favicons.toTypedArray())))
+        repos.saveFavicons(awaitAll(deferreds = *(favicons.toTypedArray())))
     }
 
     /**
