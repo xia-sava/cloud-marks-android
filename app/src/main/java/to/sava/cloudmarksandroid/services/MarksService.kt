@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.crashlytics.android.Crashlytics
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import dagger.android.AndroidInjection
+import org.greenrobot.eventbus.EventBus
 import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
@@ -23,7 +24,7 @@ import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
 import javax.inject.Inject
 
 
-internal enum class Action {
+enum class Action {
     LOAD,
     SAVE,
     MERGE,
@@ -31,8 +32,6 @@ internal enum class Action {
 
 class MarksService : JobIntentService() {
     companion object {
-        var onMarksServiceCompleteListener: OnMarksServiceCompleteListener? = null
-
         @JvmStatic
         fun startActionLoad(context: Context) {
             startAction(context, Action.LOAD)
@@ -49,9 +48,6 @@ class MarksService : JobIntentService() {
 //        }
 
         private fun startAction(context: Context, action: Action) {
-            if (context is OnMarksServiceCompleteListener) {
-                this.onMarksServiceCompleteListener = context
-            }
             val intent = Intent(context, MarksService::class.java).apply {
                 this.action = action.toString()
             }
@@ -64,9 +60,7 @@ class MarksService : JobIntentService() {
         const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
     }
 
-    interface OnMarksServiceCompleteListener {
-        fun onMarksServiceComplete()
-    }
+    data class MarksServiceCompleteEvent(val action: Action)
 
     @Inject
     internal lateinit var marks: Marks
@@ -158,7 +152,8 @@ class MarksService : JobIntentService() {
             notificationManager.notify(NOTIFICATION_ID, it)
         }
 
-        onMarksServiceCompleteListener?.onMarksServiceComplete()
+        // 終了通知
+        EventBus.getDefault().postSticky(MarksServiceCompleteEvent(action))
 
         return rc
     }

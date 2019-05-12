@@ -22,14 +22,16 @@ import android.os.Build
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.appcompat.app.AlertDialog
 import dagger.android.AndroidInjection
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import to.sava.cloudmarksandroid.libs.Favicons
 import javax.inject.Inject
 
 
 class MainActivity : AppCompatActivity(),
         MarksFragment.OnListItemClickListener,
-        MarksFragment.OnListItemChangListener,
-        MarksService.OnMarksServiceCompleteListener {
+        MarksFragment.OnListItemChangListener {
 
     @Inject
     internal lateinit var marks: Marks
@@ -61,7 +63,7 @@ class MainActivity : AppCompatActivity(),
      */
     override fun onResume() {
         super.onResume()
-        runPendingActions()
+        EventBus.getDefault().register(this)
     }
 
     /**
@@ -69,7 +71,7 @@ class MainActivity : AppCompatActivity(),
      */
     override fun onPause() {
         super.onPause()
-        clearPendingActions()
+        EventBus.getDefault().unregister(this)
     }
 
     /**
@@ -283,45 +285,12 @@ class MainActivity : AppCompatActivity(),
     // region サービス処理の終了連絡対応まわり
 
     /**
-     * Activityのフォーカスがなくなった時とかにやっときたい作業を保持する．
-     * これが null の間は pause してないので即時実行でOK
+     * MarksServiceがload処理とかを終えた後にEventBus経由で通知される処理．
+     * stickyにより，pause中はペンディングされてresume時に飛んでくる．
      */
-    private var pendingActions: ArrayList<Runnable>? = null
-
-    /**
-     * pause状態に入る時に，タスクの入れ物を用意する．
-     */
-    private fun clearPendingActions() {
-        pendingActions = ArrayList()
-    }
-
-    /**
-     * pauseから脱する時に，タスクが積まれてたら全部実行して，入れ物はnullに．
-     */
-    private fun runPendingActions() {
-        pendingActions?.forEach { it.run() }
-        pendingActions = null
-    }
-
-    /**
-     * pause状態かどうかは気にせずとにかくタスクを積む．
-     */
-    private fun runOrAddPendingActions(routine: Runnable) {
-        pendingActions?.apply {
-            add(routine)
-        } ?: runOnUiThread {
-            routine.run()
-        }
-    }
-
-    /**
-     * MarksServiceがload処理とかを終えた後にListener経由でコールされる処理．
-     *
-     */
-    override fun onMarksServiceComplete() {
-        runOrAddPendingActions(Runnable {
-            reTransitLastOpenedMarksFragment()
-        })
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
+    fun onMarksServiceComplete(event: MarksService.MarksServiceCompleteEvent) {
+        reTransitLastOpenedMarksFragment()
     }
 
     // endregion
