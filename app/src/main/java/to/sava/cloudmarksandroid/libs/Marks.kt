@@ -155,8 +155,8 @@ class Marks @Inject constructor(
                 for (child in children) {
                     removeBookmark(child)
                 }
-                for (child in remote.children) {
-                    createBookmark(local, child)
+                for ((order, child) in remote.children.withIndex()) {
+                    createBookmark(local, child, order)
                 }
             }
             return true
@@ -199,7 +199,7 @@ class Marks @Inject constructor(
     /**
      * Realm DBにノードを新規に作成する．
      */
-    private fun createBookmark(parentMark: MarkNode?, mark: MarkTreeNode, markOrder: Int = 0,
+    private fun createBookmark(parentMark: MarkNode?, mark: MarkTreeNode, markOrder: Int,
                        markId: String = MarkNode.newKey()): MarkNode {
 
         return createBookmark(parentMark, mark.type, mark.title, mark.url, markOrder,
