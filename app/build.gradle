@@ -61,7 +61,7 @@ dependencies {
     implementation 'com.google.apis:google-api-services-drive:v3-rev160-1.25.0'
     implementation 'com.google.api-client:google-api-client:1.28.0'
     implementation 'com.google.api-client:google-api-client-android:1.28.0'
-    implementation 'com.google.http-client:google-http-client-gson:1.28.0'
+    implementation 'com.google.http-client:google-http-client-gson:1.28.0' // エラーになるのでひとまずこのバージョンで
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'io.realm:android-adapters:2.1.1'
     implementation 'com.crashlytics.sdk.android:crashlytics:2.10.0'
