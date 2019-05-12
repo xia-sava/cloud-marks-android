@@ -56,7 +56,7 @@ class CloudMarksAndroidApplication : Application(),
 
         instance = this
 
-        DaggerApplicationComponent.builder()
+        DaggerApplicationComponent.factory()
                 .create(this)
                 .inject(this)
 

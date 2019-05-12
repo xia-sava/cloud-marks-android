@@ -12,6 +12,6 @@ import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
     RepositoryModule::class
 ])
 interface ApplicationComponent: AndroidInjector<CloudMarksAndroidApplication> {
-    @Component.Builder
-    abstract class Builder: AndroidInjector.Builder<CloudMarksAndroidApplication>()
+    @Component.Factory
+    interface Factory: AndroidInjector.Factory<CloudMarksAndroidApplication>
 }
