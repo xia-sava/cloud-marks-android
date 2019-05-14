@@ -19,8 +19,6 @@
 
     <string name="mark_toast_copy_url">URLをクリップボードにコピーしました。</string>
     <string name="mark_toast_copy_title">タイトルをクリップボードにコピーしました。</string>
-    <string name="mark_toast_fetch_favicon">Faviconを取得しました。</string>
-    <string name="mark_toast_fetch_favicon_error">Faviconの取得に失敗、あるいはFaviconが存在しませんでした。</string>
 
     <!-- Mark not found View -->
     <string name="mark_not_found">ブックマークが存在しません。</string>
@@ -91,5 +89,10 @@
     <string name="marks_service_action_save_title">セーブ</string>
     <string name="marks_service_action_merge_title">マージ</string>
     <string name="marks_service_action_done">処理が完了しました</string>
+
+    <!-- FaviconService -->
+    <string name="favicon_toast_fetch">Faviconを取得しました。</string>
+    <string name="favicon_toast_fetch_error">Faviconの取得に失敗、あるいはFaviconが存在しませんでした。</string>
+    <string name="favicon_service_progress_notification_title">Faviconを取得しています</string>
 
 </resources>

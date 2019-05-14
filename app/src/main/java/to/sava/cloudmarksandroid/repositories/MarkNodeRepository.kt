@@ -2,6 +2,7 @@ package to.sava.cloudmarksandroid.repositories
 
 import io.realm.OrderedRealmCollection
 import to.sava.cloudmarksandroid.models.MarkNode
+import to.sava.cloudmarksandroid.models.MarkType
 
 class MarkNodeRepository {
     private val access by lazy { RealmAccess(MarkNode::class) }
@@ -40,6 +41,26 @@ class MarkNodeRepository {
                     .sort("order")
         } as OrderedRealmCollection<MarkNode>
     }
+
+    /**
+     * 指定idのMarkNodeのドメイン名ユニークリストを取得する．
+     * MarkNodeがFolderだった場合はその配下のBookmark全てのリストを作る．
+     */
+    fun getUniqueListOfFaviconDomains(id: String): List<String> {
+        val target = getMarkNode(id)
+        return target?.let { mark ->
+            when (mark.type) {
+                MarkType.Bookmark -> listOf(mark.domain)
+                MarkType.Folder -> {
+                    getMarkNodeChildren(mark)
+                            .filter { it.type == MarkType.Bookmark }
+                            .map { it.domain }
+                            .distinct()
+                }
+            }
+        } ?: listOf()
+    }
+
 
     fun createMarkNode(markId: String): MarkNode {
         return access.createEntity(markId)

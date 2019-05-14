@@ -10,9 +10,9 @@ import android.view.*
 import dagger.android.support.AndroidSupportInjection
 import to.sava.cloudmarksandroid.views.adapters.MarksRecyclerViewAdapter
 import to.sava.cloudmarksandroid.R
-import to.sava.cloudmarksandroid.libs.Favicons
 import to.sava.cloudmarksandroid.models.MarkNode
 import to.sava.cloudmarksandroid.models.MarkType
+import to.sava.cloudmarksandroid.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
 import javax.inject.Inject
 
@@ -21,10 +21,10 @@ class MarksFragment : Fragment(),
         MarksRecyclerViewAdapter.FaviconFinder {
 
     @Inject
-    internal lateinit var repos: MarkNodeRepository
+    internal lateinit var markRepos: MarkNodeRepository
 
     @Inject
-    internal lateinit var favicons: Favicons
+    internal lateinit var faviconRepos: FaviconRepository
 
     private var mark: MarkNode? = null
     var adapter: MarksRecyclerViewAdapter? = null
@@ -49,13 +49,13 @@ class MarksFragment : Fragment(),
 
         val markId = arguments?.getString(ARG_MARK_ID) ?: MarkNode.ROOT_ID
 
-        val mark = repos.getManagedMarkNode(markId)
+        val mark = markRepos.getManagedMarkNode(markId)
         this.mark = mark
 
         val layout = when {
             mark == null ->
                 R.layout.fragment_mark_not_found
-            (mark.type == MarkType.Folder && repos.getManagedMarkNodeChildren(mark).isEmpty()) ->
+            (mark.type == MarkType.Folder && markRepos.getManagedMarkNodeChildren(mark).isEmpty()) ->
                 R.layout.fragment_empty_folder
             else ->
                 R.layout.fragment_marks_list
@@ -65,7 +65,7 @@ class MarksFragment : Fragment(),
         if (view is RecyclerView && mark != null) {
             view.layoutManager = LinearLayoutManager(context)
             adapter = MarksRecyclerViewAdapter(
-                    repos.getManagedMarkNodeChildren(mark), this, this)
+                    markRepos.getManagedMarkNodeChildren(mark), this, this)
             view.adapter = adapter
         }
         return view
@@ -84,7 +84,7 @@ class MarksFragment : Fragment(),
      * 登録済みのFaviconを取得する．
      */
     override fun findFavicon(mark: MarkNode): Drawable? {
-        return favicons.find(mark)
+        return faviconRepos.findFaviconDrawable(mark.domain)
     }
 
     interface OnListItemClickListener {

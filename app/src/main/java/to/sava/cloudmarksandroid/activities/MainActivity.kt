@@ -25,7 +25,7 @@ import dagger.android.AndroidInjection
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import to.sava.cloudmarksandroid.libs.Favicons
+import to.sava.cloudmarksandroid.services.FaviconService
 import javax.inject.Inject
 
 
@@ -35,9 +35,6 @@ class MainActivity : AppCompatActivity(),
 
     @Inject
     internal lateinit var marks: Marks
-
-    @Inject
-    internal lateinit var favicons: Favicons
 
     // region Android Activity Lifecycle まわり
 
@@ -169,15 +166,11 @@ class MainActivity : AppCompatActivity(),
                             return true
                         }
                         R.id.mark_menu_fetch_favicon -> {
-                            val rc = fetchFavicon(mark)
-                            toast(if (rc) R.string.mark_toast_fetch_favicon
-                            else R.string.mark_toast_fetch_favicon_error)
+                            FaviconService.startAction(this, mark.id)
                             return true
                         }
                         R.id.mark_menu_fetch_favicon_in_this_folder -> {
-                            val rc = fetchFaviconInFolder(mark)
-                            toast(if (rc) R.string.mark_toast_fetch_favicon
-                            else R.string.mark_toast_fetch_favicon_error)
+                            FaviconService.startAction(this, mark.id)
                             return true
                         }
                         else -> Unit
@@ -298,33 +291,12 @@ class MainActivity : AppCompatActivity(),
     // region ブックマークアイコンまわり
 
     /**
-     * FaviconをWebから取得して，画面を再描画する．
+     * FaviconServiceが取得処理を終えた後にEventBus経由で通知される処理．
+     * stickyにより，pause中はペンディングされてresume時に飛んでくる．
      */
-    private fun fetchFavicon(mark: MarkNode): Boolean {
-        return try {
-            favicons.register(listOf(mark.url))
-            reTransitLastOpenedMarksFragment()
-            true
-        } catch (ex: Exception) {
-            false
-        }
-    }
-
-    /**
-     * FaviconをWebから取得して，画面を再描画する．
-     */
-    private fun fetchFaviconInFolder(folder: MarkNode): Boolean {
-        return try {
-            val urls = mutableMapOf<String, String>()
-            marks.getMarkChildren(folder).forEach { mark ->
-                urls[mark.domain] = mark.url
-            }
-            favicons.register(urls.values.toList())
-            reTransitLastOpenedMarksFragment()
-            true
-        } catch (ex: Exception) {
-            false
-        }
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
+    fun onFaviconServiceComplete(event: FaviconService.FaviconServiceCompleteEvent) {
+        reTransitLastOpenedMarksFragment()
     }
 
     // endregion

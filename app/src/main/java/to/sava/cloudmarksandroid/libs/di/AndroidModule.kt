@@ -5,6 +5,7 @@ import dagger.android.ContributesAndroidInjector
 import to.sava.cloudmarksandroid.activities.MainActivity
 import to.sava.cloudmarksandroid.activities.SettingsActivity
 import to.sava.cloudmarksandroid.fragments.MarksFragment
+import to.sava.cloudmarksandroid.services.FaviconService
 import to.sava.cloudmarksandroid.services.MarksService
 
 @Module
@@ -21,4 +22,7 @@ abstract class AndroidModule {
 
     @ContributesAndroidInjector
     abstract fun contributeMarksService(): MarksService
+
+    @ContributesAndroidInjector
+    abstract fun contributeFaviconService(): FaviconService
 }
