@@ -14,13 +14,14 @@ import androidx.core.app.NotificationCompat
 import dagger.android.AndroidInjection
 import kotlinx.coroutines.*
 import org.greenrobot.eventbus.EventBus
-import org.jetbrains.anko.notificationManager
-import org.jetbrains.anko.toast
-import org.jetbrains.anko.windowManager
 import to.sava.cloudmarksandroid.R
-import to.sava.cloudmarksandroid.models.Favicon
-import to.sava.cloudmarksandroid.repositories.FaviconRepository
-import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
+import to.sava.cloudmarksandroid.databases.models.Favicon
+import to.sava.cloudmarksandroid.databases.models.MarkNode
+import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
+import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
+import to.sava.cloudmarksandroid.libs.notificationManager
+import to.sava.cloudmarksandroid.libs.toast
+import to.sava.cloudmarksandroid.libs.windowManager
 import java.net.URL
 import java.nio.ByteBuffer
 import javax.inject.Inject
@@ -28,7 +29,7 @@ import javax.inject.Inject
 class FaviconService : JobIntentService() {
     companion object {
         @JvmStatic
-        fun startAction(context: Context, markId: String) {
+        fun startAction(context: Context, markId: Long) {
             val intent = Intent(context, FaviconService::class.java).apply {
                 this.putExtra("id", markId)
             }
@@ -69,7 +70,7 @@ class FaviconService : JobIntentService() {
         }
         startForeground(NOTIFICATION_ID, notificationBuilder.build())
 
-        val markId = intent.getStringExtra("id")
+        val markId = intent.getLongExtra("id", MarkNode.ROOT_ID)
         val domains = marksRepos.getUniqueListOfFaviconDomains(markId)
 
         val favicons = runBlocking {

@@ -5,13 +5,14 @@ import dagger.android.AndroidInjector
 import dagger.android.support.AndroidSupportInjectionModule
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 
-@Component(modules = [
-    AndroidSupportInjectionModule::class,
-    AndroidModule::class,
-    ApplicationModule::class,
-    RepositoryModule::class
-])
-interface ApplicationComponent: AndroidInjector<CloudMarksAndroidApplication> {
+@Component(
+    modules = [
+        AndroidSupportInjectionModule::class,
+        AndroidModule::class,
+        ApplicationModule::class
+    ]
+)
+interface ApplicationComponent : AndroidInjector<CloudMarksAndroidApplication> {
     @Component.Factory
-    interface Factory: AndroidInjector.Factory<CloudMarksAndroidApplication>
+    interface Factory : AndroidInjector.Factory<CloudMarksAndroidApplication>
 }

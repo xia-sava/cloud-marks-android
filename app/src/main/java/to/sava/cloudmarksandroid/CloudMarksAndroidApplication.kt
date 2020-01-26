@@ -1,42 +1,27 @@
 package to.sava.cloudmarksandroid
 
-import android.app.Activity
 import android.app.Application
-import android.app.Service
-import androidx.fragment.app.Fragment
+import androidx.room.Room
 import com.crashlytics.android.Crashlytics
+import com.crashlytics.android.core.CrashlyticsCore
 import dagger.android.DispatchingAndroidInjector
-import dagger.android.HasActivityInjector
-import dagger.android.HasServiceInjector
-import dagger.android.support.HasSupportFragmentInjector
+import dagger.android.HasAndroidInjector
 import io.fabric.sdk.android.Fabric
-import io.realm.Realm
-import io.realm.RealmConfiguration
+import to.sava.cloudmarksandroid.databases.CloudMarksAndroidDatabase
 import to.sava.cloudmarksandroid.libs.di.DaggerApplicationComponent
 import javax.inject.Inject
-import com.crashlytics.android.core.CrashlyticsCore
-
-
-
 
 class CloudMarksAndroidApplication : Application(),
-        HasActivityInjector, HasSupportFragmentInjector, HasServiceInjector {
+    HasAndroidInjector {
 
     @Inject
-    lateinit var dispatchingActivityInjector: DispatchingAndroidInjector<Activity>
+    lateinit var dispatchingAndroidInjector: DispatchingAndroidInjector<Any>
 
-    @Inject
-    lateinit var dispatchingFragmentInjector: DispatchingAndroidInjector<Fragment>
-
-    @Inject
-    lateinit var dispatchingServiceInjector: DispatchingAndroidInjector<Service>
-
-    override fun activityInjector() = dispatchingActivityInjector
-    override fun supportFragmentInjector() = dispatchingFragmentInjector
-    override fun serviceInjector() = dispatchingServiceInjector
+    override fun androidInjector() = dispatchingAndroidInjector
 
     companion object ApplicationInstance {
         lateinit var instance: CloudMarksAndroidApplication
+        lateinit var database: CloudMarksAndroidDatabase
     }
 
     var loading: Boolean = false
@@ -56,18 +41,23 @@ class CloudMarksAndroidApplication : Application(),
 
         instance = this
 
+        database = Room.databaseBuilder(
+            this,
+            CloudMarksAndroidDatabase::class.java,
+            "cma.db"
+        )
+            .allowMainThreadQueries()
+            .build()
+
         DaggerApplicationComponent.factory()
                 .create(this)
                 .inject(this)
 
-        Realm.init(this)
-        val config = RealmConfiguration.Builder()
-                .directory(this.cacheDir)
-                .deleteRealmIfMigrationNeeded()
-                .build()
-        Realm.setDefaultConfiguration(config)
-
-        Fabric.with(this, Crashlytics.Builder().core(
-                CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build()).build())
+        Fabric.with(
+            this,
+            Crashlytics.Builder().core(
+                CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build()
+            ).build()
+        )
     }
 }
