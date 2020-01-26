@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keepclassmembers class ** {
+    @org.greenrobot.eventbus.Subscribe public *;
+}
+-keepnames class to.sava.cloudmarksandroid.** {*;}
+-keep class com.google.api.** {*;}
