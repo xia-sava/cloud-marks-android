@@ -7,12 +7,11 @@
     <PreferenceScreen
         android:title="@string/pref_header_application"
         android:icon="@drawable/ic_cloud_circle_black_24dp"
-        android:fragment="to.sava.cloudmarksandroid.activities.SettingsActivity$ApplicationPreferenceFragment"
+        android:fragment="to.sava.cloudmarksandroid.ui.fragments.ApplicationPreferenceFragment"
         android:key="@string/pref_key_application">
 
         <EditTextPreference
             android:id="@+id/pref_app_folder_name"
-            android:capitalize="none"
             android:defaultValue="@string/pref_default_app_folder_name"
             android:inputType="text"
             android:key="@string/pref_key_app_folder_name"
@@ -36,7 +35,7 @@
     <PreferenceScreen
         android:title="@string/pref_header_google_drive"
         android:icon="@drawable/ic_google_drive"
-        android:fragment="to.sava.cloudmarksandroid.activities.SettingsActivity$GoogleDrivePreferenceFragment"
+        android:fragment="to.sava.cloudmarksandroid.ui.fragments.GoogleDrivePreferenceFragment"
         android:key="@string/pref_key_google_drive">
 
         <SwitchPreference

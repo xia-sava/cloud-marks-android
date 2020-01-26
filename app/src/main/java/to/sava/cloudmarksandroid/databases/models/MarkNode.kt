@@ -1,9 +1,8 @@
-package to.sava.cloudmarksandroid.models
+package to.sava.cloudmarksandroid.databases.models
 
 import android.net.Uri
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import java.util.*
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
 
 enum class MarkType(val rawValue: Int) {
@@ -16,29 +15,25 @@ enum class MarkType(val rawValue: Int) {
  * ツリー構造は親へのリンクだけ持つ．
  * Realm DBに保存される形式もこちら．
  */
-open class MarkNode (@PrimaryKey open var id: String = newKey(),
-                     open var typeValue: Int = MarkType.Bookmark.rawValue,
-                     open var title: String = "",
-                     open var url: String = "",
-                     open var order: Int = 0,
-                     open var parent: MarkNode? = null): RealmObject() {
+@Entity(tableName = "mark_node")
+class MarkNode(
+    var type: MarkType = MarkType.Bookmark,
+    var title: String = "",
+    var url: String = "",
+    var order: Int = 0,
+    var parent_id: Long? = null
+) {
+    @PrimaryKey(autoGenerate = true)
+    var id: Long = 0L
+
+    override fun toString() = "${type.name}/${parent_id}/${order}/${title}/<${url}>"
+
+    val domain: String get() = parseDomain(url)
 
     companion object {
-        const val ROOT_ID = "root________"
-
-        fun newKey() = UUID.randomUUID().toString()
-
+        const val ROOT_ID = -1L
         fun parseDomain(url: String): String = Uri.parse(url).host ?: ""
     }
-
-    val domain: String
-        get() = parseDomain(url)
-
-    open var type: MarkType
-        get() = MarkType.values().first { it.rawValue == typeValue }
-        set(value) {
-            typeValue = value.rawValue
-        }
 }
 
 /**
@@ -46,10 +41,13 @@ open class MarkNode (@PrimaryKey open var id: String = newKey(),
  * Androidではこちらが内部処理のメインのMarksツリー．
  * ツリー構造は再帰して持つ．
  */
-class MarkTreeNode(val type: MarkType,
-                   val title: String,
-                   val url: String,
-                   val children: List<MarkTreeNode>) {
+class MarkTreeNode(
+    val type: MarkType,
+    val title: String,
+    val url: String,
+    val children: List<MarkTreeNode>
+) {
+    override fun toString() = "${type.name}/${title}/<${url}>/${children.size}"
 
     /**
      * ツリー構造を辿ってアイテム数カウントする．
