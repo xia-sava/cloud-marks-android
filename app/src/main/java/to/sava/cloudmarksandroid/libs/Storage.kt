@@ -10,8 +10,8 @@ import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import com.google.common.io.ByteSource
 import com.google.gson.*
-import to.sava.cloudmarksandroid.models.MarkTreeNode
-import to.sava.cloudmarksandroid.models.MarkType
+import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
+import to.sava.cloudmarksandroid.databases.models.MarkType
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.util.*
@@ -116,7 +116,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
     }
 
     companion object {
-        val SCOPES: List<String> = Arrays.asList(DriveScopes.DRIVE)
+        val SCOPES: List<String> = listOf(DriveScopes.DRIVE)
     }
 
     override fun lsFile(filename: String, parent: FileInfo): FileInfo {

@@ -18,7 +18,7 @@ import org.jetbrains.anko.notificationManager
 import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
-import to.sava.cloudmarksandroid.activities.SettingsActivity
+import to.sava.cloudmarksandroid.ui.activities.SettingsActivity
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
 import javax.inject.Inject
@@ -79,7 +79,11 @@ class MarksService : JobIntentService() {
 
             if (rc) {
                 handler.post {
-                    toast("${getString(R.string.app_name)}: ${getString(R.string.marks_service_action_load_title)}${getString(R.string.marks_service_action_done)}")
+                    toast(
+                        "${getString(R.string.app_name)}: ${getString(R.string.marks_service_action_load_title)}${getString(
+                            R.string.marks_service_action_done
+                        )}"
+                    )
                 }
             }
         }
@@ -87,7 +91,11 @@ class MarksService : JobIntentService() {
 
     private fun handleAction(action: Action): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
+            )
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -98,27 +106,34 @@ class MarksService : JobIntentService() {
                 Action.LOAD -> {
                     CloudMarksAndroidApplication.instance.loading = true
 
-                    val progressNotificationBuilder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
-                        setOngoing(true)
-                        setSmallIcon(R.drawable.ic_cloud_download_black_24dp)
-                        setContentTitle(getString(R.string.marks_service_progress_notification_title, getString(R.string.marks_service_action_load_title)))
-                        setProgress(100, 0, true)
-                    }
+                    val progressNotificationBuilder =
+                        NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {
+                            setOngoing(true)
+                            setSmallIcon(R.drawable.ic_cloud_download_black_24dp)
+                            setContentTitle(
+                                getString(
+                                    R.string.marks_service_progress_notification_title,
+                                    getString(R.string.marks_service_action_load_title)
+                                )
+                            )
+                            setProgress(100, 0, true)
+                        }
                     startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
 
-                    marks.progressListener = {folder: String, percent: Int ->
+                    marks.progressListener = { folder: String, percent: Int ->
                         NotificationCompat.BigTextStyle(progressNotificationBuilder).bigText(
-                                getString(R.string.marks_service_progress_folder, folder))
+                            getString(R.string.marks_service_progress_folder, folder)
+                        )
                         progressNotificationBuilder.setProgress(100, percent, false)
                         startForeground(NOTIFICATION_ID, progressNotificationBuilder.build())
                     }
                     marks.load()
                 }
-                else -> {}
+                else -> {
+                }
             }
             rc = true
-        }
-        catch (ex: Exception) {
+        } catch (ex: Exception) {
             val contentTitle: String
             val contentText: String
             when (ex) {
@@ -139,10 +154,16 @@ class MarksService : JobIntentService() {
                 NotificationCompat.BigTextStyle(this).bigText(contentText)
                 val intentNext = Intent(this@MarksService, SettingsActivity::class.java)
                 intentNext.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                setContentIntent(PendingIntent.getActivity(this@MarksService, 1, intentNext, PendingIntent.FLAG_ONE_SHOT))
+                setContentIntent(
+                    PendingIntent.getActivity(
+                        this@MarksService,
+                        1,
+                        intentNext,
+                        PendingIntent.FLAG_ONE_SHOT
+                    )
+                )
             }.build()
-        }
-        finally {
+        } finally {
             CloudMarksAndroidApplication.instance.processing = false
         }
 

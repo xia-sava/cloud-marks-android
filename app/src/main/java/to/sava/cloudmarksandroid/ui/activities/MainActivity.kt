@@ -1,40 +1,42 @@
-package to.sava.cloudmarksandroid.activities
+package to.sava.cloudmarksandroid.ui.activities
 
 import android.content.ClipData
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import kotlinx.android.synthetic.main.activity_main.*
-import org.jetbrains.anko.*
-import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
-import to.sava.cloudmarksandroid.R
-import to.sava.cloudmarksandroid.fragments.MarksFragment
-import to.sava.cloudmarksandroid.libs.Marks
-import to.sava.cloudmarksandroid.models.MarkNode
-import to.sava.cloudmarksandroid.models.MarkType
-import to.sava.cloudmarksandroid.libs.Settings
-import to.sava.cloudmarksandroid.services.MarksService
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import dagger.android.AndroidInjection
+import kotlinx.android.synthetic.main.activity_main.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.jetbrains.anko.clipboardManager
+import org.jetbrains.anko.startActivity
+import org.jetbrains.anko.toast
+import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
+import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.databases.models.MarkNode
+import to.sava.cloudmarksandroid.databases.models.MarkType
+import to.sava.cloudmarksandroid.libs.Marks
+import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.services.FaviconService
+import to.sava.cloudmarksandroid.services.MarksService
+import to.sava.cloudmarksandroid.ui.adapters.MarksRecyclerViewAdapter
+import to.sava.cloudmarksandroid.ui.fragments.MarksFragment
 import javax.inject.Inject
 
-
-class MainActivity : AppCompatActivity(),
-        MarksFragment.OnListItemClickListener,
-        MarksFragment.OnListItemChangListener {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     internal lateinit var marks: Marks
+
+    @Inject
+    internal lateinit var settings: Settings
 
     // region Android Activity Lifecycle まわり
 
@@ -48,11 +50,8 @@ class MainActivity : AppCompatActivity(),
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        // Activity復元でなく完全な初回起動の時は，
-        // 前回開いていたフォルダまで移動してやる．
-        if (savedInstanceState == null) {
-            reTransitLastOpenedMarksFragment()
-        }
+        // 前回開いていたフォルダまで移動する
+        reTransitLastOpenedMarksFragment()
     }
 
     /**
@@ -90,20 +89,31 @@ class MainActivity : AppCompatActivity(),
      * 一覧のタイトルを表示フォルダ名に合わせたり，
      * バックボタンアイコンを表示したりする．
      */
-    override fun onListItemChange(mark: MarkNode?) {
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onListItemChange(event: MarksFragment.MarkListChangedEvent) {
+        val mark = event.mark
         val backCount = supportFragmentManager.backStackEntryCount
         toolbar.title =
-                if (backCount == 1) getString(R.string.app_name)
-                else mark?.title ?: "ブックマークが見つかりません"
+            if (backCount == 1) getString(R.string.app_name)
+            else mark?.title ?: "ブックマークが見つかりません"
         supportActionBar?.setDisplayHomeAsUpEnabled(backCount > 1)
-        Settings().lastOpenedMarkId = mark?.id ?: MarkNode.ROOT_ID
+        settings.lastOpenedMarkId = mark?.id ?: MarkNode.ROOT_ID
+    }
+
+    /**
+     * 一覧のアイテムがタップされた時にコールされる処理．
+     * 長押しメニューからの動作もあるので本処理は [listItemClicked] を参照．
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onListItemClicked(event: MarksRecyclerViewAdapter.MarkClickedEvent) {
+        return listItemClicked(event.mark, false)
     }
 
     /**
      * 一覧のフォルダやブックマークがタップされた時の処理．
      * フォルダ遷移するか，あるいはブックマークを開く．
      */
-    private fun onListItemClick(mark: MarkNode, choiceApp: Boolean) {
+    private fun listItemClicked(mark: MarkNode, choiceApp: Boolean) {
         when (mark.type) {
             MarkType.Folder -> {
                 transitionMarksFragment(mark.id)
@@ -112,15 +122,15 @@ class MainActivity : AppCompatActivity(),
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(mark.url))
                 if (choiceApp) {
                     // URLを選択するダイアログを出すのになんでこんな色々と……
-                    val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                        PackageManager.MATCH_ALL
-                    else
-                        PackageManager.MATCH_DEFAULT_ONLY
+                    val flag = PackageManager.MATCH_ALL
                     val intents =
-                            packageManager.queryIntentActivities(intent, flag).map {
-                                Intent(intent).setPackage(it.activityInfo.packageName)
-                            }.toMutableList()
-                    val chooser = Intent.createChooser(intents.removeAt(0), getString(R.string.mark_menu_share_to)) // *1
+                        packageManager.queryIntentActivities(intent, flag).map {
+                            Intent(intent).setPackage(it.activityInfo.packageName)
+                        }.toMutableList()
+                    val chooser = Intent.createChooser(
+                        intents.removeAt(0),
+                        getString(R.string.mark_menu_share_to)
+                    ) // *1
                     chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, intents.toTypedArray()) // *1
                     startActivity(chooser)
                 } else {
@@ -129,13 +139,6 @@ class MainActivity : AppCompatActivity(),
                 }
             }
         }
-    }
-
-    /**
-     * @see onListItemClick
-     */
-    override fun onListItemClick(mark: MarkNode) {
-        return onListItemClick(mark, false)
     }
 
     /**
@@ -148,20 +151,25 @@ class MainActivity : AppCompatActivity(),
                 fragment.adapter?.getItem(it)?.let { mark ->
                     when (item.itemId) {
                         R.id.mark_menu_open -> {
-                            onListItemClick(mark)
+                            listItemClicked(mark, false)
                             return true
                         }
                         R.id.mark_menu_share_to -> {
-                            onListItemClick(mark, true)
+                            listItemClicked(mark, true)
                             return true
                         }
                         R.id.mark_menu_copy_url -> {
-                            clipboardManager.primaryClip = ClipData.newRawUri("", Uri.parse(mark.url))
+                            clipboardManager.setPrimaryClip(
+                                ClipData.newRawUri(
+                                    "",
+                                    Uri.parse(mark.url)
+                                )
+                            )
                             toast(R.string.mark_toast_copy_url)
                             return true
                         }
                         R.id.mark_menu_copy_title -> {
-                            clipboardManager.primaryClip = ClipData.newPlainText("", mark.title)
+                            clipboardManager.setPrimaryClip(ClipData.newPlainText("", mark.title))
                             toast(R.string.mark_toast_copy_title)
                             return true
                         }
@@ -199,7 +207,7 @@ class MainActivity : AppCompatActivity(),
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         // 接続未設定およびロード中は Load メニューを disable
         val marksMenuEnabled = (
-                Settings().googleConnected &&
+                settings.googleConnected &&
                         !CloudMarksAndroidApplication.instance.loading
                 )
         menu?.findItem(R.id.main_menu_load)?.isEnabled = marksMenuEnabled
@@ -209,8 +217,8 @@ class MainActivity : AppCompatActivity(),
     /**
      * 右上メニューそれぞれの処理
      */
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when (item?.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
             // 右上といいつつ実は左上のバックボタンの処理もここなのだ
             android.R.id.home -> {
                 onBackPressed()
@@ -242,13 +250,13 @@ class MainActivity : AppCompatActivity(),
      * 最後に開いていたフォルダを開き直す
      */
     private fun reTransitLastOpenedMarksFragment() {
-        reTransitMarksFragmentTo(Settings().lastOpenedMarkId)
+        reTransitMarksFragmentTo(settings.lastOpenedMarkId)
     }
 
     /**
      * Marks一覧を最初から指定フォルダまで遷移しなおす．
      */
-    private fun reTransitMarksFragmentTo(markId: String) {
+    private fun reTransitMarksFragmentTo(markId: Long) {
         // 既にバックスタックがある場合は先頭まで戻してから遷移する
         supportFragmentManager.let {
             if (it.backStackEntryCount > 0) {
@@ -265,12 +273,12 @@ class MainActivity : AppCompatActivity(),
     /**
      * Marks一覧を指定フォルダへ遷移する．
      */
-    private fun transitionMarksFragment(markId: String) {
+    private fun transitionMarksFragment(markId: Long) {
         supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.main_view_wrapper, MarksFragment.newInstance(markId))
-                .addToBackStack(markId)
-                .commit()
+            .beginTransaction()
+            .replace(R.id.main_view_wrapper, MarksFragment.newInstance(markId))
+            .addToBackStack("$markId")
+            .commit()
     }
 
     // endregion
@@ -285,10 +293,6 @@ class MainActivity : AppCompatActivity(),
     fun onMarksServiceComplete(event: MarksService.MarksServiceCompleteEvent) {
         reTransitLastOpenedMarksFragment()
     }
-
-    // endregion
-
-    // region ブックマークアイコンまわり
 
     /**
      * FaviconServiceが取得処理を終えた後にEventBus経由で通知される処理．

@@ -1,24 +1,21 @@
 package to.sava.cloudmarksandroid.libs
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import to.sava.cloudmarksandroid.models.MarkNode
-import to.sava.cloudmarksandroid.models.MarkTreeNode
-import to.sava.cloudmarksandroid.models.MarkType
-import to.sava.cloudmarksandroid.repositories.MarkNodeRepository
-import javax.inject.Inject
+import to.sava.cloudmarksandroid.databases.models.MarkNode
+import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
+import to.sava.cloudmarksandroid.databases.models.MarkType
+import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
 
 
 /**
  * ブックマークを色々するまとめクラス．
  * cloud_marks形式JSONを保持するリモートストレージと，Marksツリーと，
- * Realm DBの仲介をする．
+ * Room DBの仲介をする．
  */
-class Marks @Inject constructor(
-        private val repos: MarkNodeRepository) {
-
-    private val settings: Settings by lazy {
-        Settings()
-    }
+class Marks(
+    private val settings: Settings,
+    private val repos: MarkNodeRepository
+) {
 
     /**
      * 設定画面で指定されたリモートストレージを保持する．
@@ -49,7 +46,7 @@ class Marks @Inject constructor(
     private var currentFolderNum = 0L
 
     /**
-     * リモートJSONからRealm DBを上書きで取り込む．
+     * リモートJSONからRoom DBを上書きで取り込む．
      */
     fun load() {
         // ストレージの最新ファイルを取得
@@ -60,12 +57,10 @@ class Marks @Inject constructor(
         val remote = storage.readMarksContents(remoteFile)
 
         // 差分を取って適用
-        repos.transactionScope {
-            try {
-                applyMarkTreeNodeToDB(remote, getMarkNodeRoot())
-            } catch (userAuthIoEx: UserRecoverableAuthIOException) {
-                throw ServiceAuthenticationException(userAuthIoEx.message ?: "DB反映で何かのエラーです")
-            }
+        try {
+            applyMarkTreeNodeToDB(remote, getRootMarkNode())
+        } catch (userAuthIoEx: UserRecoverableAuthIOException) {
+            throw ServiceAuthenticationException(userAuthIoEx.message ?: "DB反映で何かのエラーです")
         }
 
         // 最終ロード日時保存
@@ -96,26 +91,23 @@ class Marks @Inject constructor(
     }
 
     /**
-     * Realm DBからルートノードを取得する．
+     * Room DBからルートノードを取得する．
      * 取得できなかった場合（まだ一度も保存していないとか）は新規に作成．
      */
-    private fun getMarkNodeRoot(): MarkNode {
-        val root = getMark(MarkNode.ROOT_ID)
-        if (root != null) {
-            return root
-        }
-        return createBookmark(null, MarkType.Folder, markId = MarkNode.ROOT_ID)
+    private fun getRootMarkNode(): MarkNode {
+        return repos.getRootMarkNode()
+            ?: createBookmark(null, MarkType.Folder, "root")
     }
 
     /**
-     * Realm DBから指定名のノードを取得する．
+     * Room DBから指定名のノードを取得する．
      */
-    fun getMark(id: String): MarkNode? {
+    fun getMark(id: Long): MarkNode? {
         return repos.getMarkNode(id)
     }
 
     /**
-     * Realm DBから指定ノードの子ノードを取得する．
+     * Room DBから指定ノードの子ノードを取得する．
      */
     fun getMarkChildren(parent: MarkNode): List<MarkNode> {
         return repos.getMarkNodeChildren(parent)
@@ -126,15 +118,17 @@ class Marks @Inject constructor(
      * 要するに path みたいな．/root/fooFolder/barMark とかそういう．
      */
     fun getMarkPath(child: MarkNode): MutableList<MarkNode> {
-        return child.parent?.let { parent ->
-            val list = getMarkPath(parent)
-            list.add(child)
-            list
+        return child.parent_id?.let { parent_id ->
+            repos.getMarkNode(parent_id)?.let { parent ->
+                getMarkPath(parent).apply {
+                    add(child)
+                }
+            }
         } ?: mutableListOf(child)
     }
 
     /**
-     * MarkTreeNodeをRealm DBへ反映する．
+     * MarkTreeNodeをRoom DBへ反映する．
      */
     private fun applyMarkTreeNodeToDB(remote: MarkTreeNode, local: MarkNode): Boolean {
         if (remote.type == MarkType.Folder) {
@@ -149,6 +143,7 @@ class Marks @Inject constructor(
             // remote の url と title をブックマークに反映
             local.title = remote.title
             local.url = remote.url
+            repos.saveMarkNode(local)
             // フォルダの反映．いったん全消しして追加しなおす（乱暴）
             if (remote.type == MarkType.Folder) {
                 val children = repos.getMarkNodeChildren(local)
@@ -197,38 +192,28 @@ class Marks @Inject constructor(
     }
 
     /**
-     * Realm DBにノードを新規に作成する．
+     * Room DBにノードを新規に作成する．
      */
-    private fun createBookmark(parentMark: MarkNode?, mark: MarkTreeNode, markOrder: Int,
-                       markId: String = MarkNode.newKey()): MarkNode {
-
-        return createBookmark(parentMark, mark.type, mark.title, mark.url, markOrder,
-                markId, mark.children)
+    private fun createBookmark(parent: MarkNode?, mark: MarkTreeNode, order: Int): MarkNode {
+        return createBookmark(parent, mark.type, mark.title, mark.url, order, mark.children)
     }
 
     /**
-     * Realm DBにノードを新規に作成する．
+     * Room DBにノードを新規に作成する．
      */
-    private fun createBookmark(parentMark: MarkNode?, markType: MarkType, markTitle: String = "",
-                       markUrl: String = "", markOrder: Int = 0, markId: String = MarkNode.newKey(),
-                       markChildren: List<MarkTreeNode> = listOf()): MarkNode {
+    private fun createBookmark(parent: MarkNode?, type: MarkType, title: String = "",
+                               url: String = "", order: Int = 0,
+                               children: List<MarkTreeNode> = listOf()): MarkNode {
 
-        val added = repos.createMarkNode(markId).apply {
-            type = markType
-            title = markTitle
-            url = markUrl
-            order = markOrder
-            parent = parentMark
+        val mark = repos.createMarkNode(type, title, url, order, parent?.id)
+        for ((ord, child) in children.withIndex()) {
+            createBookmark(mark, child, ord)
         }
-        repos.saveMarkNode(added)
-        for ((order, child) in markChildren.withIndex()) {
-            createBookmark(added, child, order)
-        }
-        return added
+        return mark
     }
 
     /**
-     * Realm DBからノードを削除する．
+     * Room DBからノードを削除する．
      */
     private fun removeBookmark(target: MarkNode) {
         if (target.type == MarkType.Folder) {
