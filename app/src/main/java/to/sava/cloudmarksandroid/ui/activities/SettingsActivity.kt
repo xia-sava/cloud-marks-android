@@ -3,6 +3,7 @@ package to.sava.cloudmarksandroid.ui.activities
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.commit
 import androidx.preference.*
 import kotlinx.android.synthetic.main.activity_main.*
 import to.sava.cloudmarksandroid.R
@@ -24,13 +25,9 @@ class SettingsActivity : AppCompatActivity(),
         setContentView(R.layout.activity_settings)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportFragmentManager
-            .beginTransaction()
-            .replace(
-                R.id.settings_fragment,
-                SettingsFragment()
-            )
-            .commit()
+        supportFragmentManager.commit {
+            replace(R.id.settings_fragment, SettingsFragment())
+        }
     }
 
     /**
@@ -60,11 +57,10 @@ class SettingsActivity : AppCompatActivity(),
             GoogleDrivePreferenceFragment::class.java.name -> GoogleDrivePreferenceFragment()
             else -> throw InvalidParameterException("Invalid fragment: ${pref.fragment}")
         }
-        supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.settings_fragment, fragment)
-            .addToBackStack(null)
-            .commit()
+        supportFragmentManager.commit {
+            replace(R.id.settings_fragment, fragment)
+            addToBackStack(null)
+        }
         return true
     }
 }

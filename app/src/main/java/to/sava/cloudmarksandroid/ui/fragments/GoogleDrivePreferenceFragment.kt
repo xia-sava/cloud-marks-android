@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
 import androidx.core.content.ContextCompat
 import androidx.preference.Preference
 import androidx.preference.SwitchPreference
@@ -23,23 +24,35 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIO
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import dagger.android.support.AndroidSupportInjection
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.uiThread
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.GoogleDriveStorage
 import to.sava.cloudmarksandroid.libs.Settings
 import java.io.IOException
 import javax.inject.Inject
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Google Drive Settings フラグメント
  */
 class GoogleDrivePreferenceFragment : SettingsFragment(),
     Preference.OnPreferenceClickListener,
-    GoogleApiClient.OnConnectionFailedListener {
+    GoogleApiClient.OnConnectionFailedListener,
+        CoroutineScope
+{
 
     @Inject
     internal lateinit var settings: Settings
+
+    private val job = Job()
+
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + job
+
+    private val handler = Handler()
 
     private val storage: GoogleDriveStorage by lazy {
         GoogleDriveStorage(settings)
@@ -82,6 +95,11 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
         AndroidSupportInjection.inject(this)
 
         super.onAttach(context)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
     }
 
     /**
@@ -217,12 +235,12 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
      * Google Drive アクセスチェック．
      */
     private fun tryAuthenticate(name: String) {
-        doAsync {
+        launch {
             try {
                 Crashlytics.log("SettingsActivity.tryAuthenticate.checkAccessibility")
                 storage.credential.selectedAccountName = name
                 val accessOk = storage.checkAccessibility()
-                uiThread {
+                handler.post {
                     if (accessOk) {
                         storage.settings.googleAccount = storage.credential.selectedAccountName
                         connectionPref.isChecked = true
@@ -238,7 +256,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                         // Google Play サービス自体が使えない？
                         Crashlytics.logException(ex)
                         Crashlytics.log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
-                        uiThread {
+                        handler.post {
                             GoogleApiAvailability.getInstance()
                                 .getErrorDialog(
                                 activity, ex.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG
@@ -249,7 +267,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                         // ユーザの許可を得るためのダイアログを表示する
                         Crashlytics.logException(ex)
                         Crashlytics.log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
-                        uiThread {
+                        handler.post {
                             startActivityForResult(ex.intent, REQUEST_AUTHENTICATE)
                         }
                     }
@@ -265,13 +283,13 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                             val c = cause
                             // ひょっとしたら cause が UserRecoverable かもしれない
                             if (c is UserRecoverableAuthIOException) {
-                                uiThread {
+                                handler.post {
                                     startActivityForResult(c.intent, REQUEST_AUTHENTICATE)
                                 }
                                 handled = true
                                 break
                             } else if (c is UserRecoverableAuthException) {
-                                uiThread {
+                                handler.post {
                                     startActivityForResult(c.intent, REQUEST_AUTHENTICATE)
                                 }
                                 handled = true
@@ -281,7 +299,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                         }
                         if (!handled) {
                             Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
-                            uiThread {
+                            handler.post {
                                 toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}")
                             }
                         }
@@ -290,12 +308,16 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                         // ネットワークエラーとかか？
                         Crashlytics.logException(ex)
                         Crashlytics.log("SettingsActivity.tryAuthenticate.IOException")
-                        uiThread { toast("tryAuthenticate: IOException: " + ex.message) }
+                        handler.post {
+                            toast("tryAuthenticate: IOException: ${ex.message}")
+                        }
                     }
                     is RuntimeException -> {
                         // その他もう何だかわからないけどおかしい
                         Crashlytics.logException(ex)
-                        uiThread { toast("tryAuthenticate: RuntimeException: " + ex.message) }
+                        handler.post {
+                            toast("tryAuthenticate: RuntimeException: ${ex.message}")
+                        }
                     }
                     else -> {
                         Crashlytics.logException(ex)

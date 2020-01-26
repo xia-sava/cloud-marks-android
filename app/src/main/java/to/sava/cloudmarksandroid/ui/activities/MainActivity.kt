@@ -10,20 +10,17 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import androidx.fragment.app.commit
 import dagger.android.AndroidInjection
 import kotlinx.android.synthetic.main.activity_main.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import org.jetbrains.anko.clipboardManager
-import org.jetbrains.anko.startActivity
-import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
-import to.sava.cloudmarksandroid.libs.Marks
-import to.sava.cloudmarksandroid.libs.Settings
+import to.sava.cloudmarksandroid.libs.*
 import to.sava.cloudmarksandroid.services.FaviconService
 import to.sava.cloudmarksandroid.services.MarksService
 import to.sava.cloudmarksandroid.ui.adapters.MarksRecyclerViewAdapter
@@ -160,16 +157,15 @@ class MainActivity : AppCompatActivity() {
                         }
                         R.id.mark_menu_copy_url -> {
                             clipboardManager.setPrimaryClip(
-                                ClipData.newRawUri(
-                                    "",
-                                    Uri.parse(mark.url)
-                                )
+                                ClipData.newRawUri("", Uri.parse(mark.url))
                             )
                             toast(R.string.mark_toast_copy_url)
                             return true
                         }
                         R.id.mark_menu_copy_title -> {
-                            clipboardManager.setPrimaryClip(ClipData.newPlainText("", mark.title))
+                            clipboardManager.setPrimaryClip(
+                                ClipData.newPlainText("", mark.title)
+                            )
                             toast(R.string.mark_toast_copy_title)
                             return true
                         }
@@ -224,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                 onBackPressed()
             }
             R.id.main_menu_settings -> {
-                startActivity<SettingsActivity>()
+                startActivity(Intent(this, SettingsActivity::class.java))
             }
             R.id.main_menu_load -> {
                 MarksService.startActionLoad(this)
@@ -274,11 +270,10 @@ class MainActivity : AppCompatActivity() {
      * Marks一覧を指定フォルダへ遷移する．
      */
     private fun transitionMarksFragment(markId: Long) {
-        supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.main_view_wrapper, MarksFragment.newInstance(markId))
-            .addToBackStack("$markId")
-            .commit()
+        supportFragmentManager.commit {
+            replace(R.id.main_view_wrapper, MarksFragment.newInstance(markId))
+            addToBackStack("$markId")
+        }
     }
 
     // endregion

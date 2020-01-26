@@ -2,8 +2,8 @@ package to.sava.cloudmarksandroid.ui.fragments
 
 import android.os.Bundle
 import androidx.preference.PreferenceFragmentCompat
-import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.libs.toast
 
 /**
  * プリファレンスフラグメントの汎用のやつ

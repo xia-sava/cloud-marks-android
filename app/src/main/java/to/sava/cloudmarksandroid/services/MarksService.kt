@@ -14,13 +14,13 @@ import com.crashlytics.android.Crashlytics
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import dagger.android.AndroidInjection
 import org.greenrobot.eventbus.EventBus
-import org.jetbrains.anko.notificationManager
-import org.jetbrains.anko.toast
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.ui.activities.SettingsActivity
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
+import to.sava.cloudmarksandroid.libs.notificationManager
+import to.sava.cloudmarksandroid.libs.toast
 import javax.inject.Inject
 
 
