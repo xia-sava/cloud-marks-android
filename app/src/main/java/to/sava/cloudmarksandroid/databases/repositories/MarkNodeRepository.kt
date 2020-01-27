@@ -59,9 +59,10 @@ class MarkNodeRepository(
                 MarkType.Bookmark -> listOf(mark.domain)
                 MarkType.Folder -> {
                     getMarkNodeChildren(mark)
-                            .filter { it.type == MarkType.Bookmark }
-                            .map { it.domain }
-                            .distinct()
+                        .filter { it.type == MarkType.Bookmark }
+                        .map { it.domain }
+                        .filter { it.isNotEmpty() }
+                        .distinct()
                 }
             }
         } ?: listOf()
@@ -70,8 +71,10 @@ class MarkNodeRepository(
     /**
      * 新規 MarkNode を作成する．
      */
-    fun createMarkNode(type: MarkType, title: String, url: String,
-                       order: Int, parentId: Long?): MarkNode {
+    fun createMarkNode(
+        type: MarkType, title: String, url: String,
+        order: Int, parentId: Long?
+    ): MarkNode {
         val mark = MarkNode(type, title, url, order, parentId)
         mark.id = access.save(mark)
         return mark
