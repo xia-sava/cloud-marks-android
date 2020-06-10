@@ -4,8 +4,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Intent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import androidx.core.app.JobIntentService
@@ -16,11 +16,11 @@ import dagger.android.AndroidInjection
 import org.greenrobot.eventbus.EventBus
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
-import to.sava.cloudmarksandroid.ui.activities.SettingsActivity
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.libs.ServiceAuthenticationException
 import to.sava.cloudmarksandroid.libs.notificationManager
 import to.sava.cloudmarksandroid.libs.toast
+import to.sava.cloudmarksandroid.ui.activities.SettingsActivity
 import javax.inject.Inject
 
 
@@ -47,7 +47,7 @@ class MarksService : JobIntentService() {
 //            startAction(context, Action.MERGE)
 //        }
 
-        private fun startAction(context: Context, action: Action) {
+        private fun startAction(context: Context, @Suppress("SameParameterValue") action: Action) {
             val intent = Intent(context, MarksService::class.java).apply {
                 this.action = action.toString()
             }

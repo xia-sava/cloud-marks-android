@@ -4,7 +4,8 @@ import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
-import androidx.preference.*
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
 import kotlinx.android.synthetic.main.activity_main.*
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.libs.Settings

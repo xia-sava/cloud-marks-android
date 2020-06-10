@@ -9,7 +9,10 @@ import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import com.google.common.io.ByteSource
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonParseException
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import java.nio.charset.Charset
@@ -43,11 +46,11 @@ abstract class Storage(val settings: Settings) {
 
     open val gson: Gson by lazy {
         GsonBuilder()
-                .disableHtmlEscaping()
-                .registerTypeAdapter(MarkType::class.java, JsonDeserializer<MarkType> { json, _, _->
-                    MarkType.values().first { it.rawValue == json.asInt }
-                })
-                .create()
+            .disableHtmlEscaping()
+            .registerTypeAdapter(MarkType::class.java, JsonDeserializer { json, _, _ ->
+                MarkType.values().first { it.rawValue == json.asInt }
+            })
+            .create()
     }
 
     abstract fun checkAccessibility(): Boolean
@@ -70,8 +73,7 @@ abstract class Storage(val settings: Settings) {
         val container: MarksJsonContainer
         try {
             container = gson.fromJson(jsonStr, MarksJsonContainer::class.java)
-        }
-        catch (jsonEx: JsonParseException) {
+        } catch (jsonEx: JsonParseException) {
             throw InvalidJsonException("読込みデータの形式が不正です")
         }
         when (container.version) {
@@ -93,15 +95,14 @@ abstract class Storage(val settings: Settings) {
 }
 
 
-class GoogleDriveStorage(settings: Settings): Storage(settings) {
+class GoogleDriveStorage(settings: Settings) : Storage(settings) {
     val credential: GoogleAccountCredential by lazy {
         val cred = GoogleAccountCredential.usingOAuth2(settings.context, SCOPES)
         cred.backOff = ExponentialBackOff()
         if (settings.googleAccount != "") {
             try {
                 cred.selectedAccountName = settings.googleAccount
-            }
-            catch (ex: IllegalArgumentException) {
+            } catch (ex: IllegalArgumentException) {
                 // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
                 FirebaseCrashlytics.getInstance().recordException(ex)
                 throw ex
@@ -120,13 +121,15 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
 
     override fun lsFile(filename: String, parent: FileInfo): FileInfo {
         val response = api
-                .files().list()
-                .setQ(listOf(
-                        "name = '$filename'",
-                        "'${parent.fileObject["id"]}' in parents",
-                        "trashed = false"
-                ).joinToString(" and "))
-                .execute()
+            .files().list()
+            .setQ(
+                listOf(
+                    "name = '$filename'",
+                    "'${parent.fileObject["id"]}' in parents",
+                    "trashed = false"
+                ).joinToString(" and ")
+            )
+            .execute()
         if (response.files.size == 0) {
             return FileInfo("", mutableMapOf())
         }
@@ -147,13 +150,15 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
             return listOf()
         }
         val response = api
-                .files().list()
-                .setQ(listOf(
-                        "'${dirInfo.fileObject["id"]}' in parents",
-                        "trashed = false"
-                ).joinToString(" and "))
-                .execute()
-        return response.files.map {file -> mapFileInfo(file)}
+            .files().list()
+            .setQ(
+                listOf(
+                    "'${dirInfo.fileObject["id"]}' in parents",
+                    "trashed = false"
+                ).joinToString(" and ")
+            )
+            .execute()
+        return response.files.map { file -> mapFileInfo(file) }
     }
 
     override fun lsDir(dirName: String, parentName: String): List<FileInfo> {
@@ -167,13 +172,12 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
 
     override fun read(fileInfo: FileInfo): String {
         val response = api.files()
-                .get(fileInfo.fileObject["id"])
-                .executeMedia()
+            .get(fileInfo.fileObject["id"])
+            .executeMedia()
         return object : ByteSource() {
             override fun openStream() = response.content
         }.asCharSource(Charset.defaultCharset()).read()
     }
-
 
 
     private fun findDirectory(dirName: String): FileInfo {

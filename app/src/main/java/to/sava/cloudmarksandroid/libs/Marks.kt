@@ -40,6 +40,7 @@ class Marks(
      * 処理対象フォルダ数
      */
     private var folderCount = -1L
+
     /**
      * いま何個目のフォルダを処理しているか
      */
@@ -76,16 +77,16 @@ class Marks(
         // 複数回呼ばれると結果が変わらないのに時間がかかるのでプロパティにキャッシュ
         if (remoteFile == null || remoteFileCreated == null) {
             val remoteFiles = storage.lsDir(settings.folderName)
-                    .filter {
-                        f -> Regex("""^bookmarks\.\d+\.json$""").containsMatchIn(f.filename)
-                    }
-                    .sortedBy { it.filename }
+                .filter { f ->
+                    Regex("""^bookmarks\.\d+\.json$""").containsMatchIn(f.filename)
+                }
+                .sortedBy { it.filename }
             if (remoteFiles.isEmpty()) {
                 throw FileNotFoundException("ブックマークがまだ保存されていません")
             }
             remoteFile = remoteFiles.last()
             remoteFileCreated = Regex("""\d+""")
-                    .find(remoteFile!!.filename)?.groupValues?.get(0)?.toLong()
+                .find(remoteFile!!.filename)?.groupValues?.get(0)?.toLong()
         }
         return Pair(remoteFile, remoteFileCreated)
     }
@@ -201,9 +202,11 @@ class Marks(
     /**
      * Room DBにノードを新規に作成する．
      */
-    private fun createBookmark(parent: MarkNode?, type: MarkType, title: String = "",
-                               url: String = "", order: Int = 0,
-                               children: List<MarkTreeNode> = listOf()): MarkNode {
+    private fun createBookmark(
+        parent: MarkNode?, type: MarkType, title: String = "",
+        url: String = "", order: Int = 0,
+        children: List<MarkTreeNode> = listOf()
+    ): MarkNode {
 
         val mark = repos.createMarkNode(type, title, url, order, parent?.id)
         for ((ord, child) in children.withIndex()) {

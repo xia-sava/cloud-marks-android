@@ -31,7 +31,8 @@ class ApplicationPreferenceFragment : SettingsFragment(),
         setPreferencesFromResource(
             R.xml.settings, getString(
                 R.string.pref_key_application
-            ))
+            )
+        )
         setHasOptionsMenu(true)
 
         // onCreate時に初回のonPreferenceChange相当をコールしとく

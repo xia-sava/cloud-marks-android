@@ -74,6 +74,6 @@ class Settings @Inject constructor(var context: Context) {
             }
         }
 
-    var googleConnected: Boolean = false
+    val googleConnected: Boolean
         get() = googleAccount != ""
 }

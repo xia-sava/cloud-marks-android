@@ -47,7 +47,7 @@ class CloudMarksAndroidApplication : Application(),
             .build()
 
         DaggerApplicationComponent.factory()
-                .create(this)
-                .inject(this)
+            .create(this)
+            .inject(this)
     }
 }

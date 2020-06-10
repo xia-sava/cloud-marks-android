@@ -16,12 +16,12 @@ fun Context.toast(message: Int): Toast =
         show()
     }
 
-val Context.clipboardManager: ClipboardManager get() =
-    getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+val Context.clipboardManager: ClipboardManager
+    get() = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
-val Context.notificationManager: NotificationManager get() =
-    getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+val Context.notificationManager: NotificationManager
+    get() = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-val Context.windowManager: WindowManager get() =
-    getSystemService(Context.WINDOW_SERVICE) as WindowManager
+val Context.windowManager: WindowManager
+    get() = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 

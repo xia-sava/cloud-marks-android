@@ -4,11 +4,11 @@ import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.commit
 import dagger.android.AndroidInjection
@@ -20,7 +20,10 @@ import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
-import to.sava.cloudmarksandroid.libs.*
+import to.sava.cloudmarksandroid.libs.Marks
+import to.sava.cloudmarksandroid.libs.Settings
+import to.sava.cloudmarksandroid.libs.clipboardManager
+import to.sava.cloudmarksandroid.libs.toast
 import to.sava.cloudmarksandroid.services.FaviconService
 import to.sava.cloudmarksandroid.services.MarksService
 import to.sava.cloudmarksandroid.ui.adapters.MarksRecyclerViewAdapter

@@ -9,8 +9,8 @@ import to.sava.cloudmarksandroid.databases.CloudMarksAndroidDatabase
 import to.sava.cloudmarksandroid.databases.dao.FaviconDao
 import to.sava.cloudmarksandroid.databases.dao.MarkNodeDao
 import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
-import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
+import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.services.FaviconService
 import to.sava.cloudmarksandroid.services.MarksService

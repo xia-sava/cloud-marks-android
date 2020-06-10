@@ -12,7 +12,10 @@ import android.util.DisplayMetrics
 import androidx.core.app.JobIntentService
 import androidx.core.app.NotificationCompat
 import dagger.android.AndroidInjection
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.greenrobot.eventbus.EventBus
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.Favicon
@@ -59,7 +62,11 @@ class FaviconService : JobIntentService() {
 
     override fun onHandleWork(intent: Intent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
+            )
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -98,7 +105,11 @@ class FaviconService : JobIntentService() {
         // 終了通知
         EventBus.getDefault().postSticky(FaviconServiceCompleteEvent(domains))
         handler.post {
-            toast("${getString(R.string.app_name)}: ${getString(R.string.favicon_toast_fetch)}${getString(R.string.marks_service_action_done)}")
+            toast(
+                "${getString(R.string.app_name)}: ${getString(R.string.favicon_toast_fetch)}${getString(
+                    R.string.marks_service_action_done
+                )}"
+            )
         }
     }
 }

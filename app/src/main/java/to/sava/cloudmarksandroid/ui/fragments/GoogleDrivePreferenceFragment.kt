@@ -41,8 +41,7 @@ import kotlin.coroutines.CoroutineContext
 class GoogleDrivePreferenceFragment : SettingsFragment(),
     Preference.OnPreferenceClickListener,
     GoogleApiClient.OnConnectionFailedListener,
-        CoroutineScope
-{
+    CoroutineScope {
 
     @Inject
     internal lateinit var settings: Settings
@@ -59,9 +58,11 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
     }
 
     private val connectionPref: SwitchPreference by lazy {
-        findPreference<SwitchPreference>(getString(
-            R.string.pref_key_google_drive_connection
-        )) as SwitchPreference
+        findPreference<SwitchPreference>(
+            getString(
+                R.string.pref_key_google_drive_connection
+            )
+        ) as SwitchPreference
     }
 
     private val googleApiClient: GoogleApiClient by lazy {
@@ -109,7 +110,8 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
         setPreferencesFromResource(
             R.xml.settings, getString(
                 R.string.pref_key_google_drive
-            ))
+            )
+        )
         setHasOptionsMenu(true)
 
         connectionPref.onPreferenceClickListener = this
@@ -132,7 +134,8 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                         // 接続処理をする
                         if (checkPermission()) {
                             toast(R.string.connect_to_google_drive)
-                            FirebaseCrashlytics.getInstance().log("SettingsActivity.onPreferenceClick.startActivityForResult")
+                            FirebaseCrashlytics.getInstance()
+                                .log("SettingsActivity.onPreferenceClick.startActivityForResult")
                             googleApiClient.connect()
                             startActivityForResult(
                                 Auth.GoogleSignInApi.getSignInIntent(googleApiClient),
@@ -202,14 +205,16 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_PICK_ACCOUNT -> {
-                FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT")
+                FirebaseCrashlytics.getInstance()
+                    .log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT")
                 try {
                     val account =
                         GoogleSignIn.getSignedInAccountFromIntent(
                             data
                         )
                             .getResult(ApiException::class.java)
-                    FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '${account?.email!!}'")
+                    FirebaseCrashlytics.getInstance()
+                        .log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '${account?.email!!}'")
 
                     tryAuthenticate(account.email ?: "")
                 } catch (e: ApiException) {
@@ -217,7 +222,8 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                 }
             }
             REQUEST_AUTHENTICATE -> {
-                FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult.REQUEST_AUTHENTICATE")
+                FirebaseCrashlytics.getInstance()
+                    .log("SettingsActivity.onActivityResult.REQUEST_AUTHENTICATE")
                 if (resultCode == Activity.RESULT_OK) {
                     tryAuthenticate(storage.settings.googleAccount)
                 } else {
@@ -237,7 +243,8 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
     private fun tryAuthenticate(name: String) {
         launch {
             try {
-                FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.checkAccessibility")
+                FirebaseCrashlytics.getInstance()
+                    .log("SettingsActivity.tryAuthenticate.checkAccessibility")
                 storage.credential.selectedAccountName = name
                 val accessOk = storage.checkAccessibility()
                 handler.post {
@@ -255,25 +262,28 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                     is GooglePlayServicesAvailabilityIOException -> {
                         // Google Play サービス自体が使えない？
                         FirebaseCrashlytics.getInstance().recordException(ex)
-                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
+                        FirebaseCrashlytics.getInstance()
+                            .log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
                         handler.post {
                             GoogleApiAvailability.getInstance()
                                 .getErrorDialog(
-                                activity, ex.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG
-                            ).show()
+                                    activity, ex.connectionStatusCode, REQUEST_GMS_ERROR_DIALOG
+                                ).show()
                         }
                     }
                     is UserRecoverableAuthIOException -> {
                         // ユーザの許可を得るためのダイアログを表示する
                         FirebaseCrashlytics.getInstance().recordException(ex)
-                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
+                        FirebaseCrashlytics.getInstance()
+                            .log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
                         handler.post {
                             startActivityForResult(ex.intent, REQUEST_AUTHENTICATE)
                         }
                     }
                     is GoogleAuthIOException -> {
                         FirebaseCrashlytics.getInstance().recordException(ex)
-                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}'")
+                        FirebaseCrashlytics.getInstance()
+                            .log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}'")
                         // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
                         // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
                         // 次にこれ発生したら調べるけどホントこれ再現性ない
@@ -298,7 +308,8 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                             cause = cause.cause
                         }
                         if (!handled) {
-                            FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
+                            FirebaseCrashlytics.getInstance()
+                                .log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
                             handler.post {
                                 toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}")
                             }
@@ -307,7 +318,8 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                     is IOException -> {
                         // ネットワークエラーとかか？
                         FirebaseCrashlytics.getInstance().recordException(ex)
-                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.IOException")
+                        FirebaseCrashlytics.getInstance()
+                            .log("SettingsActivity.tryAuthenticate.IOException")
                         handler.post {
                             toast("tryAuthenticate: IOException: ${ex.message}")
                         }

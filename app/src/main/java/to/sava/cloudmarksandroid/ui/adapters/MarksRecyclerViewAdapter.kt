@@ -4,13 +4,13 @@ import android.graphics.drawable.Drawable
 import android.view.*
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import to.sava.cloudmarksandroid.R
 import kotlinx.android.synthetic.main.fragment_marks.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.EventBus
+import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 

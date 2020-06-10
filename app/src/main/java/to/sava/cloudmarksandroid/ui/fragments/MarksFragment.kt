@@ -1,20 +1,21 @@
 package to.sava.cloudmarksandroid.ui.fragments
 
 import android.content.Context
-
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.view.*
 import dagger.android.support.AndroidSupportInjection
 import org.greenrobot.eventbus.EventBus
-import to.sava.cloudmarksandroid.ui.adapters.MarksRecyclerViewAdapter
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
+import to.sava.cloudmarksandroid.ui.adapters.MarksRecyclerViewAdapter
 import javax.inject.Inject
 
 class MarksFragment : Fragment() {
