@@ -2,11 +2,8 @@ package to.sava.cloudmarksandroid
 
 import android.app.Application
 import androidx.room.Room
-import com.crashlytics.android.Crashlytics
-import com.crashlytics.android.core.CrashlyticsCore
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasAndroidInjector
-import io.fabric.sdk.android.Fabric
 import to.sava.cloudmarksandroid.databases.CloudMarksAndroidDatabase
 import to.sava.cloudmarksandroid.libs.di.DaggerApplicationComponent
 import javax.inject.Inject
@@ -52,12 +49,5 @@ class CloudMarksAndroidApplication : Application(),
         DaggerApplicationComponent.factory()
                 .create(this)
                 .inject(this)
-
-        Fabric.with(
-            this,
-            Crashlytics.Builder().core(
-                CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build()
-            ).build()
-        )
     }
 }

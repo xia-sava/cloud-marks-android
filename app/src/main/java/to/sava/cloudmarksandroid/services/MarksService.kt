@@ -10,8 +10,8 @@ import android.os.Build
 import android.os.Handler
 import androidx.core.app.JobIntentService
 import androidx.core.app.NotificationCompat
-import com.crashlytics.android.Crashlytics
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.android.AndroidInjection
 import org.greenrobot.eventbus.EventBus
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
@@ -144,7 +144,7 @@ class MarksService : JobIntentService() {
                 else -> {
                     contentTitle = getString(R.string.marks_service_error_title)
                     contentText = "${ex::class.java.name}\n${ex.message}"
-                    Crashlytics.logException(ex)
+                    FirebaseCrashlytics.getInstance().recordException(ex)
                 }
             }
             completeNotification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID).apply {

@@ -1,6 +1,5 @@
 package to.sava.cloudmarksandroid.libs
 
-import com.crashlytics.android.Crashlytics
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
@@ -9,12 +8,12 @@ import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import com.google.common.io.ByteSource
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.gson.*
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import java.nio.charset.Charset
 import java.security.MessageDigest
-import java.util.*
 
 
 enum class Services {
@@ -104,7 +103,7 @@ class GoogleDriveStorage(settings: Settings): Storage(settings) {
             }
             catch (ex: IllegalArgumentException) {
                 // settings で登録されてるアカウントがエラーとかまぁ普通は起きない
-                Crashlytics.logException(ex)
+                FirebaseCrashlytics.getInstance().recordException(ex)
                 throw ex
             }
         }

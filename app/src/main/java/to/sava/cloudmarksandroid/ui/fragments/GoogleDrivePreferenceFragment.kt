@@ -10,7 +10,6 @@ import android.os.Handler
 import androidx.core.content.ContextCompat
 import androidx.preference.Preference
 import androidx.preference.SwitchPreference
-import com.crashlytics.android.Crashlytics
 import com.google.android.gms.auth.UserRecoverableAuthException
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -23,6 +22,7 @@ import com.google.android.gms.common.api.Scope
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.android.support.AndroidSupportInjection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -132,7 +132,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                         // 接続処理をする
                         if (checkPermission()) {
                             toast(R.string.connect_to_google_drive)
-                            Crashlytics.log("SettingsActivity.onPreferenceClick.startActivityForResult")
+                            FirebaseCrashlytics.getInstance().log("SettingsActivity.onPreferenceClick.startActivityForResult")
                             googleApiClient.connect()
                             startActivityForResult(
                                 Auth.GoogleSignInApi.getSignInIntent(googleApiClient),
@@ -198,18 +198,18 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
      * Google アカウントピックダイアログからの戻り先．
      */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        Crashlytics.log("SettingsActivity.onActivityResult")
+        FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult")
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_PICK_ACCOUNT -> {
-                Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT")
+                FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT")
                 try {
                     val account =
                         GoogleSignIn.getSignedInAccountFromIntent(
                             data
                         )
                             .getResult(ApiException::class.java)
-                    Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '${account?.email!!}'")
+                    FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult.REQUEST_PICK_ACCOUNT / name: '${account?.email!!}'")
 
                     tryAuthenticate(account.email ?: "")
                 } catch (e: ApiException) {
@@ -217,7 +217,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                 }
             }
             REQUEST_AUTHENTICATE -> {
-                Crashlytics.log("SettingsActivity.onActivityResult.REQUEST_AUTHENTICATE")
+                FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult.REQUEST_AUTHENTICATE")
                 if (resultCode == Activity.RESULT_OK) {
                     tryAuthenticate(storage.settings.googleAccount)
                 } else {
@@ -225,7 +225,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                 }
             }
             else -> {
-                Crashlytics.log("SettingsActivity.onActivityResult.else")
+                FirebaseCrashlytics.getInstance().log("SettingsActivity.onActivityResult.else")
                 throw RuntimeException("requestCode: $requestCode resultCode: $resultCode")
             }
         }
@@ -237,7 +237,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
     private fun tryAuthenticate(name: String) {
         launch {
             try {
-                Crashlytics.log("SettingsActivity.tryAuthenticate.checkAccessibility")
+                FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.checkAccessibility")
                 storage.credential.selectedAccountName = name
                 val accessOk = storage.checkAccessibility()
                 handler.post {
@@ -254,8 +254,8 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                 when (ex) {
                     is GooglePlayServicesAvailabilityIOException -> {
                         // Google Play サービス自体が使えない？
-                        Crashlytics.logException(ex)
-                        Crashlytics.log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
+                        FirebaseCrashlytics.getInstance().recordException(ex)
+                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.GooglePlayServicesAvailabilityException")
                         handler.post {
                             GoogleApiAvailability.getInstance()
                                 .getErrorDialog(
@@ -265,15 +265,15 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                     }
                     is UserRecoverableAuthIOException -> {
                         // ユーザの許可を得るためのダイアログを表示する
-                        Crashlytics.logException(ex)
-                        Crashlytics.log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
+                        FirebaseCrashlytics.getInstance().recordException(ex)
+                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.UserRecoverableAuthException")
                         handler.post {
                             startActivityForResult(ex.intent, REQUEST_AUTHENTICATE)
                         }
                     }
                     is GoogleAuthIOException -> {
-                        Crashlytics.logException(ex)
-                        Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}'")
+                        FirebaseCrashlytics.getInstance().recordException(ex)
+                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}'")
                         // 本来は認証エラーだが，エラーなしでも Unknown でここに来る時がある
                         // どうも getCause を辿るとこの場で UserRecoverableAuthException に辿り着けることもあるらしい
                         // 次にこれ発生したら調べるけどホントこれ再現性ない
@@ -298,7 +298,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                             cause = cause.cause
                         }
                         if (!handled) {
-                            Crashlytics.log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
+                            FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.GoogleAuthIOException / message:'${ex.message}")
                             handler.post {
                                 toast("tryAuthenticate: GoogleAuthIOException: ${ex.message}")
                             }
@@ -306,21 +306,21 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                     }
                     is IOException -> {
                         // ネットワークエラーとかか？
-                        Crashlytics.logException(ex)
-                        Crashlytics.log("SettingsActivity.tryAuthenticate.IOException")
+                        FirebaseCrashlytics.getInstance().recordException(ex)
+                        FirebaseCrashlytics.getInstance().log("SettingsActivity.tryAuthenticate.IOException")
                         handler.post {
                             toast("tryAuthenticate: IOException: ${ex.message}")
                         }
                     }
                     is RuntimeException -> {
                         // その他もう何だかわからないけどおかしい
-                        Crashlytics.logException(ex)
+                        FirebaseCrashlytics.getInstance().recordException(ex)
                         handler.post {
                             toast("tryAuthenticate: RuntimeException: ${ex.message}")
                         }
                     }
                     else -> {
-                        Crashlytics.logException(ex)
+                        FirebaseCrashlytics.getInstance().recordException(ex)
                         throw ex
                     }
                 }
