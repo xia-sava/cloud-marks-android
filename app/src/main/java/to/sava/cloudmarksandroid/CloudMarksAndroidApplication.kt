@@ -43,7 +43,6 @@ class CloudMarksAndroidApplication : Application(),
             CloudMarksAndroidDatabase::class.java,
             "cma.db"
         )
-            .allowMainThreadQueries()
             .build()
 
         DaggerApplicationComponent.factory()
