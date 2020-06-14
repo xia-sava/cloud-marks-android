@@ -7,13 +7,13 @@ apply plugin: 'com.google.gms.google-services'
 apply from: 'releaseSigningConfigs.gradle', to: android
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     defaultConfig {
         applicationId "to.sava.cloudmarksandroid"
         minSdkVersion 25
-        targetSdkVersion 29
-        versionCode 406
-        versionName "0.4.06"
+        targetSdkVersion 30
+        versionCode 407
+        versionName "0.4.07"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary true
         multiDexEnabled true

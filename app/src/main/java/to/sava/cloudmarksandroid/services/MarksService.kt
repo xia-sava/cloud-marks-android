@@ -13,6 +13,10 @@ import androidx.core.app.NotificationCompat
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.android.AndroidInjection
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import org.greenrobot.eventbus.EventBus
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
@@ -22,7 +26,13 @@ import to.sava.cloudmarksandroid.libs.notificationManager
 import to.sava.cloudmarksandroid.libs.toast
 import to.sava.cloudmarksandroid.ui.activities.SettingsActivity
 import javax.inject.Inject
+import kotlin.coroutines.CoroutineContext
 
+
+private const val JOB_ID = 1001
+private const val NOTIFICATION_ID = 1001
+private const val NOTIFICATION_CHANNEL_ID = "CMA_PROGRESS"
+private const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
 
 enum class Action {
     LOAD,
@@ -30,55 +40,48 @@ enum class Action {
     MERGE,
 }
 
-class MarksService : JobIntentService() {
-    companion object {
-        @JvmStatic
-        fun startActionLoad(context: Context) {
-            startAction(context, Action.LOAD)
-        }
-
-//        @JvmStatic
-//        fun startActionSave(context: Context) {
-//            startAction(context, Action.SAVE)
-//        }
-
-//        @JvmStatic
-//        fun startActionMerge(context: Context) {
-//            startAction(context, Action.MERGE)
-//        }
-
-        private fun startAction(context: Context, @Suppress("SameParameterValue") action: Action) {
-            val intent = Intent(context, MarksService::class.java).apply {
-                this.action = action.toString()
-            }
-            enqueueWork(context, MarksService::class.java, JOB_ID, intent)
-        }
-
-        private const val JOB_ID = 1001
-        const val NOTIFICATION_ID = 1001
-        const val NOTIFICATION_CHANNEL_ID = "CMA_PROGRESS"
-        const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
+private fun startAction(context: Context, @Suppress("SameParameterValue") action: Action) {
+    val intent = Intent(context, MarksService::class.java).apply {
+        this.action = action.toString()
     }
+    JobIntentService.enqueueWork(context, MarksService::class.java, JOB_ID, intent)
+}
 
-    data class MarksServiceCompleteEvent(val action: Action)
+fun startMarksServiceLoad(context: Context) {
+    startAction(context, Action.LOAD)
+}
+
+//fun startMarksServiceSave(context: Context) {
+//    startAction(context, Action.SAVE)
+//}
+
+//fun startMarksServiceMerge(context: Context) {
+//    startAction(context, Action.MERGE)
+//}
+
+class MarksService : JobIntentService(), CoroutineScope {
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + job
 
     @Inject
     internal lateinit var marks: Marks
-
-    private val handler = Handler()
 
     override fun onCreate() {
         AndroidInjection.inject(this)
         super.onCreate()
     }
 
-    override fun onHandleWork(intent: Intent) {
-        intent.action?.let {
-            val action = Action.valueOf(it)
-            val rc = handleAction(action)
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
+    }
 
+    override fun onHandleWork(intent: Intent) = runBlocking {
+        intent.action?.let {
+            val rc = handleAction(Action.valueOf(it))
             if (rc) {
-                handler.post {
+                Handler(mainLooper).post {
                     toast(
                         "${getString(R.string.app_name)}: ${getString(R.string.marks_service_action_load_title)}${getString(
                             R.string.marks_service_action_done
@@ -87,9 +90,10 @@ class MarksService : JobIntentService() {
                 }
             }
         }
+        Unit
     }
 
-    private fun handleAction(action: Action): Boolean {
+    private suspend fun handleAction(action: Action): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
@@ -178,4 +182,6 @@ class MarksService : JobIntentService() {
 
         return rc
     }
+
+    data class MarksServiceCompleteEvent(val action: Action)
 }

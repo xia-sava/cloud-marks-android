@@ -49,7 +49,7 @@ class Marks(
     /**
      * リモートJSONからRoom DBを上書きで取り込む．
      */
-    fun load() {
+    suspend fun load() {
         // ストレージの最新ファイルを取得
         val (remoteFile, remoteFileCreated) = getLatestRemoteFile()
         if (remoteFile == null || remoteFileCreated == null) {
@@ -95,7 +95,7 @@ class Marks(
      * Room DBからルートノードを取得する．
      * 取得できなかった場合（まだ一度も保存していないとか）は新規に作成．
      */
-    private fun getRootMarkNode(): MarkNode {
+    private suspend fun getRootMarkNode(): MarkNode {
         return repos.getRootMarkNode()
             ?: createBookmark(null, MarkType.Folder, "root")
     }
@@ -103,14 +103,14 @@ class Marks(
     /**
      * Room DBから指定名のノードを取得する．
      */
-    fun getMark(id: Long): MarkNode? {
+    suspend fun getMark(id: Long): MarkNode? {
         return repos.getMarkNode(id)
     }
 
     /**
      * Room DBから指定ノードの子ノードを取得する．
      */
-    fun getMarkChildren(parent: MarkNode): List<MarkNode> {
+    suspend fun getMarkChildren(parent: MarkNode): List<MarkNode> {
         return repos.getMarkNodeChildren(parent)
     }
 
@@ -118,7 +118,7 @@ class Marks(
      * ルートから指定ノードへ辿り着くための名前のリストを取得する．
      * 要するに path みたいな．/root/fooFolder/barMark とかそういう．
      */
-    fun getMarkPath(child: MarkNode): MutableList<MarkNode> {
+    suspend fun getMarkPath(child: MarkNode): MutableList<MarkNode> {
         return child.parent_id?.let { parent_id ->
             repos.getMarkNode(parent_id)?.let { parent ->
                 getMarkPath(parent).apply {
@@ -131,7 +131,7 @@ class Marks(
     /**
      * MarkTreeNodeをRoom DBへ反映する．
      */
-    private fun applyMarkTreeNodeToDB(remote: MarkTreeNode, local: MarkNode): Boolean {
+    private suspend fun applyMarkTreeNodeToDB(remote: MarkTreeNode, local: MarkNode): Boolean {
         if (remote.type == MarkType.Folder) {
             if (folderCount == -1L) {
                 folderCount = remote.countChildren(MarkType.Folder)
@@ -175,7 +175,7 @@ class Marks(
      * MarkTreeとMarkNodeで差分があるかどうか判定する．
      * というほど賢くはない．名前かURLか，フォルダの場合は子ノードの数が違えば，差分ありと見なす．
      */
-    private fun diffMarks(remote: MarkTreeNode, bookmark: MarkNode): Boolean {
+    private suspend fun diffMarks(remote: MarkTreeNode, bookmark: MarkNode): Boolean {
         if (remote.title != bookmark.title) {
             return true
         }
@@ -195,14 +195,18 @@ class Marks(
     /**
      * Room DBにノードを新規に作成する．
      */
-    private fun createBookmark(parent: MarkNode?, mark: MarkTreeNode, order: Int): MarkNode {
+    private suspend fun createBookmark(
+        parent: MarkNode?,
+        mark: MarkTreeNode,
+        order: Int
+    ): MarkNode {
         return createBookmark(parent, mark.type, mark.title, mark.url, order, mark.children)
     }
 
     /**
      * Room DBにノードを新規に作成する．
      */
-    private fun createBookmark(
+    private suspend fun createBookmark(
         parent: MarkNode?, type: MarkType, title: String = "",
         url: String = "", order: Int = 0,
         children: List<MarkTreeNode> = listOf()
@@ -218,7 +222,7 @@ class Marks(
     /**
      * Room DBからノードを削除する．
      */
-    private fun removeBookmark(target: MarkNode) {
+    private suspend fun removeBookmark(target: MarkNode) {
         if (target.type == MarkType.Folder) {
             for (child in repos.getMarkNodeChildren(target)) {
                 removeBookmark(child)

@@ -9,6 +9,10 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.android.support.AndroidSupportInjection
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import org.greenrobot.eventbus.EventBus
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
@@ -17,8 +21,12 @@ import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
 import to.sava.cloudmarksandroid.ui.adapters.MarksRecyclerViewAdapter
 import javax.inject.Inject
+import kotlin.coroutines.CoroutineContext
 
-class MarksFragment : Fragment() {
+class MarksFragment : Fragment(), CoroutineScope {
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + job
 
     @Inject
     internal lateinit var markRepos: MarkNodeRepository
@@ -53,10 +61,10 @@ class MarksFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View? = runBlocking {
         val markId = arguments?.getLong(ARG_MARK_ID) ?: MarkNode.ROOT_ID
         val mark = markRepos.getMarkNode(markId)
-        this.mark = mark
+        this@MarksFragment.mark = mark
 
         val layout = when {
             mark == null ->
@@ -72,12 +80,12 @@ class MarksFragment : Fragment() {
             view.layoutManager = LinearLayoutManager(context)
             adapter = MarksRecyclerViewAdapter(
                 mark.id,
-                { markNode: MarkNode -> faviconRepos.findFaviconDrawable(markNode.domain) },
-                { id: Long -> markRepos.getMarkNodeChildren(id) }
+                { markNode: MarkNode -> runBlocking { faviconRepos.findFaviconDrawable(markNode.domain) } },
+                { id: Long -> runBlocking { markRepos.getMarkNodeChildren(id) } }
             )
             view.adapter = adapter
         }
-        return view
+        return@runBlocking view
     }
 
     override fun onResume() {

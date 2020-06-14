@@ -13,15 +13,15 @@ class FaviconRepository(
     private val access: FaviconDao
 ) {
 
-    private fun findFavicon(domain: String): Favicon? {
+    private suspend fun findFavicon(domain: String): Favicon? {
         return access.findFavicon(domain)
     }
 
-    fun saveFavicons(favicons: List<Favicon>): List<Long> {
+    suspend fun saveFavicons(favicons: List<Favicon>): List<Long> {
         return access.save(favicons)
     }
 
-    fun findFaviconDrawable(domain: String): Drawable? {
+    suspend fun findFaviconDrawable(domain: String): Drawable? {
         return findFavicon(domain)?.let { favicon ->
             val bitmap = Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888)
             bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))

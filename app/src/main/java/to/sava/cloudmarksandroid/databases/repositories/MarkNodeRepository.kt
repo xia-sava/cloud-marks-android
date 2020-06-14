@@ -11,14 +11,14 @@ class MarkNodeRepository(
     /**
      * root MarkNode を取得する．
      */
-    fun getRootMarkNode(): MarkNode? {
+    suspend fun getRootMarkNode(): MarkNode? {
         return access.getRootMarkNode()
     }
 
     /**
      * 指定 ID の MarkNode を取得する．
      */
-    fun getMarkNode(id: Long): MarkNode? {
+    suspend fun getMarkNode(id: Long): MarkNode? {
         return if (id == MarkNode.ROOT_ID) {
             access.getRootMarkNode()
         } else {
@@ -29,22 +29,22 @@ class MarkNodeRepository(
     /**
      * 指定 ID の直接の children を取得する．
      */
-    fun getMarkNodeChildren(parent_id: Long): List<MarkNode> {
+    suspend fun getMarkNodeChildren(parent_id: Long): List<MarkNode> {
         return access.getMarkNodeChildren(parent_id)
     }
 
-    fun getMarkNodeChildren(parent: MarkNode): List<MarkNode> {
+    suspend fun getMarkNodeChildren(parent: MarkNode): List<MarkNode> {
         return getMarkNodeChildren(parent.id)
     }
 
     /**
      * 指定 ID の直接の children の数を取得する．
      */
-    fun getMarkNodeChildrenCount(parent_id: Long): Long {
+    private suspend fun getMarkNodeChildrenCount(parent_id: Long): Long {
         return access.getMarkNodeChildrenCount(parent_id)
     }
 
-    fun getMarkNodeChildrenCount(parent: MarkNode): Long {
+    suspend fun getMarkNodeChildrenCount(parent: MarkNode): Long {
         return getMarkNodeChildrenCount(parent.id)
     }
 
@@ -52,7 +52,7 @@ class MarkNodeRepository(
      * 指定idのMarkNodeのドメイン名ユニークリストを取得する．
      * MarkNodeがFolderだった場合はその配下のBookmark全てのリストを作る．
      */
-    fun getUniqueListOfFaviconDomains(id: Long): List<String> {
+    suspend fun getUniqueListOfFaviconDomains(id: Long): List<String> {
         val target = getMarkNode(id)
         return target?.let { mark ->
             when (mark.type) {
@@ -71,7 +71,7 @@ class MarkNodeRepository(
     /**
      * 新規 MarkNode を作成する．
      */
-    fun createMarkNode(
+    suspend fun createMarkNode(
         type: MarkType, title: String, url: String,
         order: Int, parentId: Long?
     ): MarkNode {
@@ -80,9 +80,9 @@ class MarkNodeRepository(
         return mark
     }
 
-    fun saveMarkNode(entity: MarkNode) = access.save(entity)
-    fun saveMarkNodes(entities: List<MarkNode>) = access.save(entities)
+    suspend fun saveMarkNode(entity: MarkNode) = access.save(entity)
+    suspend fun saveMarkNodes(entities: List<MarkNode>) = access.save(entities)
 
-    fun deleteMarkNode(entity: MarkNode) = access.delete(entity)
-    fun deleteMarkNodes(entities: List<MarkNode>) = access.delete(entities)
+    suspend fun deleteMarkNode(entity: MarkNode) = access.delete(entity)
+    suspend fun deleteMarkNodes(entities: List<MarkNode>) = access.delete(entities)
 }

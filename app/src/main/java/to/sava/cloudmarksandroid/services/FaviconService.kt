@@ -7,15 +7,10 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
-import android.os.Handler
-import android.util.DisplayMetrics
 import androidx.core.app.JobIntentService
 import androidx.core.app.NotificationCompat
 import dagger.android.AndroidInjection
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.*
 import org.greenrobot.eventbus.EventBus
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.Favicon
@@ -24,28 +19,27 @@ import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
 import to.sava.cloudmarksandroid.libs.notificationManager
 import to.sava.cloudmarksandroid.libs.toast
-import to.sava.cloudmarksandroid.libs.windowManager
 import java.net.URL
 import java.nio.ByteBuffer
 import javax.inject.Inject
+import kotlin.coroutines.CoroutineContext
 
-class FaviconService : JobIntentService() {
-    companion object {
-        @JvmStatic
-        fun startAction(context: Context, markId: Long) {
-            val intent = Intent(context, FaviconService::class.java).apply {
-                this.putExtra("id", markId)
-            }
-            enqueueWork(context, FaviconService::class.java, JOB_ID, intent)
-        }
+private const val JOB_ID = 2001
+private const val NOTIFICATION_ID = 2001
+private const val NOTIFICATION_CHANNEL_ID = "CMA_PROGRESS"
+private const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
 
-        private const val JOB_ID = 2001
-        const val NOTIFICATION_ID = 2001
-        const val NOTIFICATION_CHANNEL_ID = "CMA_PROGRESS"
-        const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
+fun startFaviconService(context: Context, markId: Long) {
+    val intent = Intent(context, FaviconService::class.java).apply {
+        this.putExtra("id", markId)
     }
+    JobIntentService.enqueueWork(context, FaviconService::class.java, JOB_ID, intent)
+}
 
-    data class FaviconServiceCompleteEvent(val urls: List<String>)
+class FaviconService : JobIntentService(), CoroutineScope {
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + job
 
     @Inject
     internal lateinit var faviconRepos: FaviconRepository
@@ -53,11 +47,14 @@ class FaviconService : JobIntentService() {
     @Inject
     internal lateinit var marksRepos: MarkNodeRepository
 
-    private val handler = Handler()
-
     override fun onCreate() {
-        AndroidInjection.inject(this)
         super.onCreate()
+        AndroidInjection.inject(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
     }
 
     override fun onHandleWork(intent: Intent) {
@@ -77,39 +74,39 @@ class FaviconService : JobIntentService() {
         }
         startForeground(NOTIFICATION_ID, notificationBuilder.build())
 
-        val markId = intent.getLongExtra("id", MarkNode.ROOT_ID)
-        val domains = marksRepos.getUniqueListOfFaviconDomains(markId)
+        runBlocking {
+            val markId = intent.getLongExtra("id", MarkNode.ROOT_ID)
+            val domains = marksRepos.getUniqueListOfFaviconDomains(markId)
 
-        val favicons = runBlocking {
-            val deferredFavicons = domains.map { domain ->
+            val favicons = domains.map { domain ->
                 async {
                     withTimeoutOrNull(5000) {
                         val faviconUrl = "https://www.google.com/s2/favicons?domain=$domain"
-                        val bitmap = BitmapFactory.decodeStream(URL(faviconUrl).openStream())
-                        val metrics = DisplayMetrics().apply {
-                            windowManager.defaultDisplay.getMetrics(this)
+                        val bitmap = withContext(Dispatchers.IO) {
+                            BitmapFactory.decodeStream(URL(faviconUrl).openStream())
                         }
-                        val size = (24 * metrics.density).toInt()
+                        val size = (24 * resources.displayMetrics.density).toInt()
                         val scaled = Bitmap.createScaledBitmap(bitmap, size, size, false)
                         val bytes = ByteBuffer.allocate(scaled.byteCount)
                         scaled.copyPixelsToBuffer(bytes)
                         Favicon(domain, bytes.array(), size)
                     }
                 }
+            }.awaitAll().filterNotNull()
+
+            faviconRepos.saveFavicons(favicons)
+
+            // 終了通知
+            EventBus.getDefault().postSticky(FaviconServiceCompleteEvent(domains))
+            withContext(Dispatchers.Main) {
+                toast(
+                    "${getString(R.string.app_name)}: ${getString(R.string.favicon_toast_fetch)}${getString(
+                        R.string.marks_service_action_done
+                    )}"
+                )
             }
-            awaitAll(*(deferredFavicons.toTypedArray())).filterNotNull()
-        }
-
-        faviconRepos.saveFavicons(favicons)
-
-        // 終了通知
-        EventBus.getDefault().postSticky(FaviconServiceCompleteEvent(domains))
-        handler.post {
-            toast(
-                "${getString(R.string.app_name)}: ${getString(R.string.favicon_toast_fetch)}${getString(
-                    R.string.marks_service_action_done
-                )}"
-            )
         }
     }
+
+    data class FaviconServiceCompleteEvent(val urls: List<String>)
 }

@@ -13,6 +13,10 @@ import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.commit
 import dagger.android.AndroidInjection
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -26,11 +30,17 @@ import to.sava.cloudmarksandroid.libs.clipboardManager
 import to.sava.cloudmarksandroid.libs.toast
 import to.sava.cloudmarksandroid.services.FaviconService
 import to.sava.cloudmarksandroid.services.MarksService
+import to.sava.cloudmarksandroid.services.startFaviconService
+import to.sava.cloudmarksandroid.services.startMarksServiceLoad
 import to.sava.cloudmarksandroid.ui.adapters.MarksRecyclerViewAdapter
 import to.sava.cloudmarksandroid.ui.fragments.MarksFragment
 import javax.inject.Inject
+import kotlin.coroutines.CoroutineContext
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CoroutineScope {
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + job
 
     @Inject
     internal lateinit var marks: Marks
@@ -68,6 +78,14 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         EventBus.getDefault().unregister(this)
+    }
+
+    /**
+     * アプリ終了時の処理．
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
     }
 
     /**
@@ -144,10 +162,10 @@ class MainActivity : AppCompatActivity() {
     /**
      * 一覧のアイテム長押しメニューの処理．
      */
-    override fun onContextItemSelected(item: MenuItem?): Boolean {
+    override fun onContextItemSelected(item: MenuItem): Boolean {
         val fragment = supportFragmentManager.fragments.last()
         if (fragment is MarksFragment) {
-            item?.groupId?.let {
+            item.groupId.let {
                 fragment.adapter?.getItem(it)?.let { mark ->
                     when (item.itemId) {
                         R.id.mark_menu_open -> {
@@ -173,11 +191,11 @@ class MainActivity : AppCompatActivity() {
                             return true
                         }
                         R.id.mark_menu_fetch_favicon -> {
-                            FaviconService.startAction(this, mark.id)
+                            startFaviconService(this, mark.id)
                             return true
                         }
                         R.id.mark_menu_fetch_favicon_in_this_folder -> {
-                            FaviconService.startAction(this, mark.id)
+                            startFaviconService(this, mark.id)
                             return true
                         }
                         else -> Unit
@@ -226,7 +244,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, SettingsActivity::class.java))
             }
             R.id.main_menu_load -> {
-                MarksService.startActionLoad(this)
+                startMarksServiceLoad(this)
             }
             R.id.main_menu_about -> {
                 val version = packageManager.getPackageInfo(packageName, 0).versionName
@@ -262,11 +280,13 @@ class MainActivity : AppCompatActivity() {
                 it.popBackStack(it.getBackStackEntryAt(0).id, POP_BACK_STACK_INCLUSIVE)
             }
         }
-        marks.getMark(markId)?.let { lastMark ->
-            for (mark in marks.getMarkPath(lastMark)) {
-                transitionMarksFragment(mark.id)
-            }
-        } ?: transitionMarksFragment(MarkNode.ROOT_ID)
+        launch {
+            marks.getMark(markId)?.let { lastMark ->
+                for (mark in marks.getMarkPath(lastMark)) {
+                    transitionMarksFragment(mark.id)
+                }
+            } ?: transitionMarksFragment(MarkNode.ROOT_ID)
+        }
     }
 
     /**
