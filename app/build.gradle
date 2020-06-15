@@ -12,8 +12,8 @@ android {
         applicationId "to.sava.cloudmarksandroid"
         minSdkVersion 25
         targetSdkVersion 30
-        versionCode 407
-        versionName "0.4.07"
+        versionCode 409
+        versionName "0.4.09"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary true
         multiDexEnabled true
