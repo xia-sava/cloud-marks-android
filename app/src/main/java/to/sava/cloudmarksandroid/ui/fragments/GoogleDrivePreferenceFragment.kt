@@ -61,7 +61,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
             )
         ) as SwitchPreference
     }
-    
+
     private val fc = FirebaseCrashlytics.getInstance()
 
     companion object {
@@ -176,7 +176,7 @@ class GoogleDrivePreferenceFragment : SettingsFragment(),
                         if (granted != PackageManager.PERMISSION_GRANTED) {
                             toast(R.string.require_get_account_permission)
                         } else {
-                            toast(R.string.granted_get_account_permission)
+                            signInGoogle()
                         }
                     }
                 }
