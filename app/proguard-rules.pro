@@ -20,8 +20,29 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keepclassmembers class ** {
-    @org.greenrobot.eventbus.Subscribe public *;
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+-keepattributes *Annotation*
+
+# アプリ
+-keep public class to.sava.cloudmarksandroid.** {*;}
+-keep public class com.google.api.** {*;}
+
+
+# EventBus
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @org.greenrobot.eventbus.Subscribe <methods>;
 }
--keepnames class to.sava.cloudmarksandroid.** {*;}
--keep class com.google.api.** {*;}
+-keep enum org.greenrobot.eventbus.ThreadMode { *; }
+
+# And if you use AsyncExecutor:
+-keepclassmembers class * extends org.greenrobot.eventbus.util.ThrowableFailureEvent {
+    <init>(java.lang.Throwable);
+}
+
+
+# Google APIs
+-keep class * extends com.google.api.client.json.GenericJson { *; }
+-keep class com.google.api.services.drive.** { *; }
+-keepclassmembers class * { @com.google.api.client.util.Key <fields>; }
