@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.fragment.app.commit
 import dagger.android.AndroidInjection
-import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +23,7 @@ import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
+import to.sava.cloudmarksandroid.databinding.ActivityMainBinding
 import to.sava.cloudmarksandroid.libs.Marks
 import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.libs.clipboardManager
@@ -48,6 +48,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     @Inject
     internal lateinit var settings: Settings
 
+    private lateinit var binding: ActivityMainBinding
+
     // region Android Activity Lifecycle まわり
 
     /**
@@ -57,8 +59,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         AndroidInjection.inject(this)
 
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        setSupportActionBar(toolbar)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
 
         // 前回開いていたフォルダまで移動する
         reTransitLastOpenedMarksFragment()
@@ -111,7 +114,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     fun onListItemChange(event: MarksFragment.MarkListChangedEvent) {
         val mark = event.mark
         val backCount = supportFragmentManager.backStackEntryCount
-        toolbar.title =
+        binding.toolbar.title =
             if (backCount == 1) getString(R.string.app_name)
             else mark?.title ?: "ブックマークが見つかりません"
         supportActionBar?.setDisplayHomeAsUpEnabled(backCount > 1)

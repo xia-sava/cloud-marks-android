@@ -4,7 +4,6 @@ import android.graphics.drawable.Drawable
 import android.view.*
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.android.synthetic.main.fragment_marks.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,6 +12,7 @@ import org.greenrobot.eventbus.EventBus
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
+import to.sava.cloudmarksandroid.databinding.FragmentMarksBinding
 
 class MarksRecyclerViewAdapter(
     private val markId: Long,
@@ -37,7 +37,8 @@ class MarksRecyclerViewAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MarksViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.fragment_marks, parent, false)
-        return MarksViewHolder(view)
+        val binding = FragmentMarksBinding.inflate(LayoutInflater.from(view.context))
+        return MarksViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: MarksViewHolder, position: Int) {
@@ -86,14 +87,16 @@ class MarksRecyclerViewAdapter(
         return markNodes.size
     }
 
-    inner class MarksViewHolder(view: View) : RecyclerView.ViewHolder(view),
+    inner class MarksViewHolder(binding: FragmentMarksBinding) : RecyclerView.ViewHolder(binding.root),
         View.OnCreateContextMenuListener {
-        val marksView: View = view.marks
-        val contentView: TextView = view.content
+        val marksView: View
+        val contentView: TextView
         lateinit var data: MarkNode
 
         init {
-            view.setOnCreateContextMenuListener(this)
+            binding.root.setOnCreateContextMenuListener(this)
+            marksView = binding.marks
+            contentView = binding.content
         }
 
         override fun onCreateContextMenu(
@@ -105,31 +108,31 @@ class MarksRecyclerViewAdapter(
                 when (data.type) {
                     MarkType.Bookmark -> {
                         add(
-                            adapterPosition,
+                            bindingAdapterPosition,
                             R.id.mark_menu_open,
                             Menu.NONE,
                             R.string.mark_menu_open
                         )
                         add(
-                            adapterPosition,
+                            bindingAdapterPosition,
                             R.id.mark_menu_share_to,
                             Menu.NONE,
                             R.string.mark_menu_share_to
                         )
                         add(
-                            adapterPosition,
+                            bindingAdapterPosition,
                             R.id.mark_menu_copy_url,
                             Menu.NONE,
                             R.string.mark_menu_copy_url
                         )
                         add(
-                            adapterPosition,
+                            bindingAdapterPosition,
                             R.id.mark_menu_copy_title,
                             Menu.NONE,
                             R.string.mark_menu_copy_title
                         )
                         add(
-                            adapterPosition,
+                            bindingAdapterPosition,
                             R.id.mark_menu_fetch_favicon,
                             Menu.NONE,
                             R.string.mark_menu_fetch_favicon
@@ -137,13 +140,13 @@ class MarksRecyclerViewAdapter(
                     }
                     MarkType.Folder -> {
                         add(
-                            adapterPosition,
+                            bindingAdapterPosition,
                             R.id.mark_menu_copy_title,
                             Menu.NONE,
                             R.string.mark_menu_copy_title
                         )
                         add(
-                            adapterPosition,
+                            bindingAdapterPosition,
                             R.id.mark_menu_fetch_favicon_in_this_folder,
                             Menu.NONE,
                             R.string.mark_menu_fetch_favicon_in_this_folder

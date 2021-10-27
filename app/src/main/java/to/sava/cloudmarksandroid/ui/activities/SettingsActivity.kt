@@ -6,8 +6,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import kotlinx.android.synthetic.main.activity_main.*
 import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.databinding.ActivitySettingsBinding
 import to.sava.cloudmarksandroid.libs.Settings
 import to.sava.cloudmarksandroid.ui.fragments.ApplicationPreferenceFragment
 import to.sava.cloudmarksandroid.ui.fragments.GoogleDrivePreferenceFragment
@@ -21,10 +21,13 @@ class SettingsActivity : AppCompatActivity(),
     @Inject
     lateinit var settings: Settings
 
+    private lateinit var binding: ActivitySettingsBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_settings)
-        setSupportActionBar(toolbar)
+        binding = ActivitySettingsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportFragmentManager.commit {
             replace(R.id.settings_fragment, SettingsFragment())
