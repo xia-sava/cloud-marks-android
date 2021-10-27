@@ -11,7 +11,7 @@ import to.sava.cloudmarksandroid.databases.models.Favicon
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 
-@Database(entities = [MarkNode::class, Favicon::class], version = 1)
+@Database(entities = [MarkNode::class, Favicon::class], version = 1, exportSchema = false)
 @TypeConverters(MarkTypeConverter::class, ByteArrayConverter::class)
 abstract class CloudMarksAndroidDatabase : RoomDatabase() {
 
