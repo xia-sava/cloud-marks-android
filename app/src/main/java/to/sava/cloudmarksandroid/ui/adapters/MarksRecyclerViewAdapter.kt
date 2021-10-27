@@ -29,7 +29,9 @@ class MarksRecyclerViewAdapter(
         CoroutineScope(Dispatchers.IO).launch {
             markNodes = getMarkChildren(markId)
             withContext(Dispatchers.Main) {
-                notifyDataSetChanged()
+                repeat(markNodes.size) {
+                    notifyItemChanged(it)
+                }
             }
         }
     }
@@ -87,7 +89,8 @@ class MarksRecyclerViewAdapter(
         return markNodes.size
     }
 
-    inner class MarksViewHolder(binding: FragmentMarksBinding) : RecyclerView.ViewHolder(binding.root),
+    inner class MarksViewHolder(binding: FragmentMarksBinding) :
+        RecyclerView.ViewHolder(binding.root),
         View.OnCreateContextMenuListener {
         val marksView: View
         val contentView: TextView
