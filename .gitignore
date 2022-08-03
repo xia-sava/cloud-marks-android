@@ -137,9 +137,8 @@ fabric.properties
 
 
 # Google service JSON
-app/google-services.json
+google-services.json
 
 # Keystore files
 *.jks
-
-/app/releaseSigningConfigs.gradle
+releaseSigningConfigs.properties
