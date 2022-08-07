@@ -3,9 +3,8 @@ package to.sava.cloudmarksandroid
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import to.sava.cloudmarksandroid.ui.GoogleDriveCheckIn
 import to.sava.cloudmarksandroid.ui.MainPage
 import to.sava.cloudmarksandroid.ui.theme.CloudMarksAndroidTheme
 
@@ -14,8 +13,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CloudMarksAndroidTheme {
-//                MainPage()
-                GoogleDriveCheckIn()
+                MainPage()
             }
         }
     }

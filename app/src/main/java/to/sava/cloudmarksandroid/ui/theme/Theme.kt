@@ -17,6 +17,7 @@ private val DarkColorPalette = darkColors(
 private val LightColorPalette = lightColors(
     primary = XiaGreen,
     onPrimary = Color.Black,
+
 )
 
 @Composable

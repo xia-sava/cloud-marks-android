@@ -137,7 +137,7 @@ fabric.properties
 
 
 # Google service JSON
-google-services.json
+app/google-services.json
 
 # Keystore files
 *.jks

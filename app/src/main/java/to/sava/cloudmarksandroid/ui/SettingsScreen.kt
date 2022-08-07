@@ -10,13 +10,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import to.sava.cloudmarksandroid.ui.preferences.EditTextPreference
 import to.sava.cloudmarksandroid.ui.preferences.PreferenceGroup
-import to.sava.cloudmarksandroid.ui.preferences.SwitchPreference
 
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 const val FOLDER_NAME = "folder_name"
-const val GOOGLE_DRIVE_CONNECTION = "google_drive_connection"
+const val GOOGLE_DRIVE_ACCOUNT = "google_drive_account"
 
 
 @Composable
@@ -35,13 +34,10 @@ fun Settings(
             )
         }
         PreferenceGroup(name = "Google Drive Settings") {
-            SwitchPreference(
-                keyString = GOOGLE_DRIVE_CONNECTION,
+            GoogleDrivePreference(
+                keyString = GOOGLE_DRIVE_ACCOUNT,
                 label = "Google Drive Connection",
-                defaultValue = false,
-                onChangeCancellable = { value, cancel ->
-
-                },
+                defaultValue = "",
             )
         }
     }
