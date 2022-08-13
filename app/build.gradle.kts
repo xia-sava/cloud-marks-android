@@ -5,6 +5,7 @@ import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 val composeVersion: String by project
 val kotlinVersion: String by project
 val roomVersion: String by project
+val hiltVersion: String by project
 
 
 val releaseSigningConfigsProperties = Properties().also {
@@ -13,13 +14,13 @@ val releaseSigningConfigsProperties = Properties().also {
 fun Properties.str(key: String): String = this[key] as String
 
 
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.kapt")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
-    id("com.google.devtools.ksp")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -84,6 +85,7 @@ android {
     packagingOptions {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/gradle/incremental.annotation.processors"
         }
     }
 }
@@ -99,11 +101,16 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
     implementation("androidx.activity:activity-compose:1.5.1")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
     implementation("androidx.room:room-runtime:$roomVersion")
     annotationProcessor("androidx.room:room-compiler:$roomVersion")
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.7.10-1.0.6")
-    ksp("androidx.room:room-compiler:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
+
+    implementation("com.google.dagger:hilt-compiler:$hiltVersion")
+    implementation("com.google.dagger:hilt-android:$hiltVersion")
+    kapt("com.google.dagger:hilt-compiler:$hiltVersion")
+    kapt("com.google.dagger:hilt-android-compiler:$hiltVersion")
 
     implementation("com.google.accompanist:accompanist-permissions:0.23.1")
     implementation("com.google.android.gms:play-services-auth:20.2.0")
