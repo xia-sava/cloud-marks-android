@@ -1,8 +1,9 @@
 
 buildscript {
     extra.apply {
-        set("kotlinVersion", "1.6.10")
-        set("composeVersion", "1.1.1")
+        set("kotlinVersion", "1.7.0")
+        set("composeVersion", "1.2.0")
+        set("roomVersion", "2.4.3")
     }
     dependencies {
         classpath("com.google.gms:google-services:4.3.13")
@@ -15,6 +16,7 @@ plugins {
     id("com.android.application") version "7.2.2" apply false
     id("com.android.library") version "7.2.2" apply false
     id("org.jetbrains.kotlin.android") version "1.6.10" apply false
+    id("com.google.devtools.ksp") version "1.7.0-1.0.6" apply false
 }
 
 tasks.register<Delete>("clean").configure {
