@@ -24,7 +24,9 @@ fun MainPage(modifier: Modifier = Modifier) {
         topBar = {
             CloudMarksTopAppBar(
                 showBackButton = navBackStack?.destination?.route != "marks",
+                disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
+                disableLoadMenu = false,
                 onClickLoad = { /* Load() */ },
                 onClickBack = { navController.popBackStack() },
             )
@@ -46,7 +48,9 @@ fun MainPage(modifier: Modifier = Modifier) {
 @Composable
 private fun CloudMarksTopAppBar(
     showBackButton: Boolean = false,
+    disableSettingsMenu: Boolean = false,
     onClickSettings: () -> Unit = {},
+    disableLoadMenu: Boolean = false,
     onClickLoad: () -> Unit = {},
     onClickBack: () -> Unit = {},
 ) {
@@ -76,16 +80,22 @@ private fun CloudMarksTopAppBar(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false }
             ) {
-                DropdownMenuItem(onClick = {
-                    showMenu = false
-                    onClickSettings()
-                }) {
+                DropdownMenuItem(
+                    onClick = {
+                        showMenu = false
+                        onClickSettings()
+                    },
+                    enabled = !disableSettingsMenu,
+                ) {
                     Text("Settings")
                 }
-                DropdownMenuItem(onClick = {
-                    showMenu = false
-                    onClickLoad()
-                }) {
+                DropdownMenuItem(
+                    onClick = {
+                        showMenu = false
+                        onClickLoad()
+                    },
+                    enabled = !disableLoadMenu,
+                ) {
                     Text("Load")
                 }
             }
