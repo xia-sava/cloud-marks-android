@@ -9,22 +9,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.launch
-import to.sava.cloudmarksandroid.ui.dataStore
+import to.sava.cloudmarksandroid.dataStore
 
 
 @Composable
 fun EditTextPreference(
-    keyString: String,
+    key: Preferences.Key<String>,
     label: String,
     defaultValue: String,
     modifier: Modifier = Modifier,
     onChange: (value: String) -> Unit = {},
     onChangeCancellable: (value: String, cancel: () -> Unit) -> Unit = {_, _ -> },
 ) {
-    val key = stringPreferencesKey(keyString)
     val dataStore = LocalContext.current.dataStore
     val prefs by remember { dataStore.data }.collectAsState(initial = null)
     var value by remember { mutableStateOf(defaultValue) }

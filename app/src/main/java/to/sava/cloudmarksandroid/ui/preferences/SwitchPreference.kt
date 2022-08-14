@@ -9,22 +9,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.launch
-import to.sava.cloudmarksandroid.ui.dataStore
+import to.sava.cloudmarksandroid.dataStore
 
 
 @Composable
 fun SwitchPreference(
-    keyString: String,
+    key: Preferences.Key<Boolean>,
     label: String,
     defaultValue: Boolean,
     modifier: Modifier = Modifier,
     onChange: (value: Boolean) -> Unit = {},
     onChangeCancellable: (value: Boolean, cancel: () -> Unit) -> Unit = { _, _ -> },
 ) {
-    val key = stringPreferencesKey(keyString)
     val dataStore = LocalContext.current.dataStore
     val prefs by remember { dataStore.data }.collectAsState(initial = null)
     var value by remember { mutableStateOf(defaultValue) }
@@ -32,7 +31,7 @@ fun SwitchPreference(
 
     LaunchedEffect(prefs) {
         prefs?.get(key)?.also {
-            value = it.toBooleanStrictOrNull() ?: false
+            value = it
         }
     }
 
@@ -60,7 +59,7 @@ fun SwitchPreference(
                         value = it
                         scope.launch {
                             dataStore.edit { settings ->
-                                settings[key] = value.toString()
+                                settings[key] = value
                             }
                         }
                     }

@@ -19,8 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -32,6 +32,7 @@ import com.google.android.gms.tasks.Task
 import com.google.api.services.drive.DriveScopes
 import kotlinx.coroutines.launch
 import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.dataStore
 
 private enum class LoadingStatus {
     NORMAL, ERROR, LOADING
@@ -40,13 +41,12 @@ private enum class LoadingStatus {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun GoogleDrivePreference(
-    keyString: String,
+    key: Preferences.Key<String>,
     label: String,
     defaultValue: String,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val key = stringPreferencesKey(keyString)
     val context = LocalContext.current
     val dataStore = context.dataStore
 
