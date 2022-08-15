@@ -39,7 +39,7 @@ class Marks(
     /**
      * 作業状況を外部へ伝えるためのリスナー
      */
-    var progressListener: ((folder: String, percent: Int) -> Unit)? = null
+    var progressListener: (suspend (folder: String, percent: Int) -> Unit)? = null
 
     /**
      * 処理対象フォルダ数

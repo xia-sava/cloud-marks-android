@@ -6,13 +6,13 @@ import android.content.Context
 import android.view.WindowManager
 import android.widget.Toast
 
-fun Context.toast(message: CharSequence): Toast =
-    Toast.makeText(this, message, Toast.LENGTH_SHORT).apply {
+fun Context.toast(message: CharSequence, length: Int = Toast.LENGTH_SHORT): Toast =
+    Toast.makeText(this, message, length).apply {
         show()
     }
 
-fun Context.toast(message: Int): Toast =
-    Toast.makeText(this, message, Toast.LENGTH_SHORT).apply {
+fun Context.toast(message: Int, length: Int = Toast.LENGTH_SHORT): Toast =
+    Toast.makeText(this, message, length).apply {
         show()
     }
 

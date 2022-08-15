@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,6 +19,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.databases.models.MarkNode
+import to.sava.cloudmarksandroid.modules.MarkWorker
+import to.sava.cloudmarksandroid.modules.enqueueMarkLoader
 import to.sava.cloudmarksandroid.ui.theme.CloudMarksAndroidTheme
 
 @AndroidEntryPoint
@@ -37,14 +42,26 @@ fun MainPage(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val scaffoldState = rememberScaffoldState()
     val navBackStack by navController.currentBackStackEntryAsState()
+    var runMarksLoader by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
+
+    if (runMarksLoader) {
+        LaunchedEffect(MarkNode.ROOT_ID) {
+            enqueueMarkLoader(MarkWorker.Action.LOAD, context, lifecycleOwner) {
+                runMarksLoader = false
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             CloudMarksTopAppBar(
                 showBackButton = navBackStack?.destination?.route != "marks",
                 disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
-                disableLoadMenu = false,
-                onClickLoad = { /* Load() */ },
+                disableLoadMenu = runMarksLoader,
+                onClickLoad = { runMarksLoader = true },
                 onClickBack = { navController.popBackStack() },
             )
         },
@@ -119,4 +136,3 @@ private fun CloudMarksTopAppBar(
         }
     )
 }
-
