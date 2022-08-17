@@ -117,17 +117,7 @@ class MarkWorker @AssistedInject constructor(
                 )
             )
         }
-//        marks.load()
-        repeat(10) {
-            delay(1000)
-            setForeground(
-                createNotification(
-                    "ブックマークをロードしています",
-                    "フォルダ $it を処理しています……",
-                    it * 10,
-                )
-            )
-        }
+        marks.load()
     }
 
     private fun createNotification(
