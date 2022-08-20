@@ -1,5 +1,6 @@
 package to.sava.cloudmarksandroid.databases.repositories
 
+import kotlinx.coroutines.flow.Flow
 import to.sava.cloudmarksandroid.databases.dao.MarkNodeDao
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
@@ -23,6 +24,17 @@ class MarkNodeRepository(
             access.getRootMarkNode()
         } else {
             access.getMarkNode(id)
+        }
+    }
+
+    /**
+     * 指定 ID の MarkNode Flow を取得する．
+     */
+    fun getMarkNodeFlow(id: Long): Flow<MarkNode> {
+        return if (id == MarkNode.ROOT_ID) {
+            access.getRootMarkNodeFlow()
+        } else {
+            access.getMarkNodeFlow(id)
         }
     }
 

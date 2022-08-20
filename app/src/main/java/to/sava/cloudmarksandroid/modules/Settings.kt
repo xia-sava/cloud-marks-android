@@ -33,34 +33,68 @@ class Settings(
                 }
             }
 
-    private suspend fun getString(key: Preferences.Key<String>, default: String = ""): String {
+    private fun getString(key: Preferences.Key<String>, default: String = ""): Flow<String> {
+        return prefs.map { it[key] ?: default }
+    }
+
+    private fun getInt(key: Preferences.Key<Int>, default: Int = 0): Flow<Int> {
+        return prefs.map { it[key] ?: default }
+    }
+
+    private fun getLong(key: Preferences.Key<Long>, default: Long = 0L): Flow<Long> {
+        return prefs.map { it[key] ?: default }
+    }
+
+    private fun getFloat(key: Preferences.Key<Float>, default: Float = 0f): Flow<Float> {
+        return prefs.map { it[key] ?: default }
+    }
+
+    private fun getDouble(key: Preferences.Key<Double>, default: Double = 0.0): Flow<Double> {
+        return prefs.map { it[key] ?: default }
+    }
+
+    private fun getBoolean(
+        key: Preferences.Key<Boolean>,
+        default: Boolean = false
+    ): Flow<Boolean> {
+        return prefs.map { it[key] ?: default }
+    }
+
+    private suspend fun getSet(
+        key: Preferences.Key<Set<String>>,
+        default: Set<String> = setOf()
+    ): Flow<Set<String>> {
+        return prefs.map { it[key] ?: default }
+    }
+
+    private suspend fun getStringValue(key: Preferences.Key<String>, default: String = ""): String {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getInt(key: Preferences.Key<Int>, default: Int = 0): Int {
+    private suspend fun getIntValue(key: Preferences.Key<Int>, default: Int = 0): Int {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getLong(key: Preferences.Key<Long>, default: Long = 0L): Long {
+    private suspend fun getLongValue(key: Preferences.Key<Long>, default: Long = 0L): Long {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getFloat(key: Preferences.Key<Float>, default: Float = 0f): Float {
+    private suspend fun getFloatValue(key: Preferences.Key<Float>, default: Float = 0f): Float {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getDouble(key: Preferences.Key<Double>, default: Double = 0.0): Double {
+    private suspend fun getDoubleValue(key: Preferences.Key<Double>, default: Double = 0.0): Double {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getBoolean(
+    private suspend fun getBooleanValue(
         key: Preferences.Key<Boolean>,
         default: Boolean = false
     ): Boolean {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getSet(
+    private suspend fun getSetValue(
         key: Preferences.Key<Set<String>>,
         default: Set<String> = setOf()
     ): Set<String> {
@@ -73,26 +107,38 @@ class Settings(
         }
     }
 
-    suspend fun getFolderName() =
+    fun getFolderName() =
         getString(PreferenceKeys.FOLDER_NAME, "cloud_marks")
+
+    suspend fun getFolderNameValue() =
+        getStringValue(PreferenceKeys.FOLDER_NAME, "cloud_marks")
 
     suspend fun setFolderName(value: String) =
         setValue(PreferenceKeys.FOLDER_NAME, value)
 
-    suspend fun getLastSynced() =
+    fun getLastSynced() =
         getLong(PreferenceKeys.LAST_SYNCED)
+
+    suspend fun getLastSyncedValue() =
+        getLongValue(PreferenceKeys.LAST_SYNCED)
 
     suspend fun setLastSynced(value: Long) =
         setValue(PreferenceKeys.LAST_SYNCED, value)
 
-    suspend fun getLastBookmarkModified() =
+    fun getLastBookmarkModified() =
         getLong(PreferenceKeys.LAST_BOOKMARK_MODIFIED)
+
+    suspend fun getLastBookmarkModifiedValue() =
+        getLongValue(PreferenceKeys.LAST_BOOKMARK_MODIFIED)
 
     suspend fun setLastBookmarkModified(value: Long) =
         setValue(PreferenceKeys.LAST_BOOKMARK_MODIFIED, value)
 
-    suspend fun getLastOpenedMarkId() =
+    fun getLastOpenedMarkId() =
         getLong(PreferenceKeys.LAST_OPENED_MARK_ID, MarkNode.ROOT_ID)
+
+    suspend fun getLastOpenedMarkIdValue() =
+        getLongValue(PreferenceKeys.LAST_OPENED_MARK_ID, MarkNode.ROOT_ID)
 
     suspend fun setLastOpenedMarkId(value: Long) =
         setValue(PreferenceKeys.LAST_OPENED_MARK_ID, value)
@@ -102,7 +148,7 @@ class Settings(
     suspend fun getCurrentService() = Services.Gdrive
 
     suspend fun getGoogleAccount() =
-        getString(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
+        getStringValue(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
 
     suspend fun setGoogleAccount(value: String) =
         setValue(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, value)

@@ -8,15 +8,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import to.sava.cloudmarksandroid.databases.models.MarkNode
+import to.sava.cloudmarksandroid.modules.Marks
+import javax.inject.Inject
 
 @Composable
-fun MarksScreen() {
+fun MarksScreen(viewModel: MarksScreenViewModel, initialMarkId: Long) {
     val cols = 1
+    val currentMarkId by remember { mutableStateOf(initialMarkId) }
+    val markNode = viewModel.markNode.collectAsState(initial = Unit)
+
     Column(
         modifier = Modifier
     ) {
@@ -89,5 +99,18 @@ private fun MarksItem(name: String, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .height(1.dp)
         )
+    }
+}
+
+
+@HiltViewModel
+class MarksScreenViewModel @Inject constructor(
+    private val marks: Marks
+) : ViewModel() {
+    private var _markNode: Flow<MarkNode> = flowOf()
+    val markNode get() = _markNode
+
+    fun getMarks(markId: Long) {
+        _markNode = marks.getMarkFlow(markId)
     }
 }

@@ -1,5 +1,6 @@
 package to.sava.cloudmarksandroid.modules
 
+import kotlinx.coroutines.flow.Flow
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
@@ -81,7 +82,7 @@ class Marks(
         // ストレージのファイル一覧を取得して最新ファイルを取得
         // 複数回呼ばれると結果が変わらないのに時間がかかるのでプロパティにキャッシュ
         if (remoteFile == null || remoteFileCreated == null) {
-            val remoteFiles = storage().lsDir(settings.getFolderName())
+            val remoteFiles = storage().lsDir(settings.getFolderNameValue())
                 .filter { f ->
                     Regex("""^bookmarks\.\d+\.json$""").containsMatchIn(f.filename)
                 }
@@ -110,6 +111,13 @@ class Marks(
      */
     suspend fun getMark(id: Long): MarkNode? {
         return repos.getMarkNode(id)
+    }
+
+    /**
+     * Room DBから指定名のノードを取得する．
+     */
+    fun getMarkFlow(id: Long): Flow<MarkNode> {
+        return repos.getMarkNodeFlow(id)
     }
 
     /**
