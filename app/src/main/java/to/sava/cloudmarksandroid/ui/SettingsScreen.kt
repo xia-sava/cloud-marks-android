@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import to.sava.cloudmarksandroid.modules.PreferenceKeys
 import to.sava.cloudmarksandroid.ui.preferences.EditTextPreference
 import to.sava.cloudmarksandroid.ui.preferences.PreferenceGroup
+import to.sava.cloudmarksandroid.ui.preferences.SliderPreference
 
 
 @Composable
@@ -22,6 +23,13 @@ fun Settings(
                 key = PreferenceKeys.FOLDER_NAME,
                 label = "Folder name on storage service",
                 defaultValue = "cloud_marks-",
+            )
+            SliderPreference(
+                key = PreferenceKeys.FOLDER_COLUMNS,
+                label = "Folder Columns",
+                minValue = 1,
+                maxValue = 5,
+                defaultValue = 1,
             )
         }
         PreferenceGroup(name = "Google Drive Settings") {

@@ -13,13 +13,14 @@ import java.io.IOException
 
 object PreferenceKeys {
     val FOLDER_NAME = stringPreferencesKey("folder_name")
+    val FOLDER_COLUMNS = intPreferencesKey("folder_columns")
     val LAST_SYNCED = longPreferencesKey("last_synced")
     val LAST_BOOKMARK_MODIFIED = longPreferencesKey("last_bookmark_modified")
     val LAST_OPENED_MARK_ID = longPreferencesKey("last_opened_mark_id")
     val GOOGLE_DRIVE_ACCOUNT = stringPreferencesKey("google_drive_account")
 }
 
-class Settings(
+abstract class BaseSettings(
     val context: Context,
     private val dataStore: DataStore<Preferences>
 ) {
@@ -33,79 +34,85 @@ class Settings(
                 }
             }
 
-    private fun getString(key: Preferences.Key<String>, default: String = ""): Flow<String> {
+    protected fun getString(key: Preferences.Key<String>, default: String = ""): Flow<String> {
         return prefs.map { it[key] ?: default }
     }
 
-    private fun getInt(key: Preferences.Key<Int>, default: Int = 0): Flow<Int> {
+    protected fun getInt(key: Preferences.Key<Int>, default: Int = 0): Flow<Int> {
         return prefs.map { it[key] ?: default }
     }
 
-    private fun getLong(key: Preferences.Key<Long>, default: Long = 0L): Flow<Long> {
+    protected fun getLong(key: Preferences.Key<Long>, default: Long = 0L): Flow<Long> {
         return prefs.map { it[key] ?: default }
     }
 
-    private fun getFloat(key: Preferences.Key<Float>, default: Float = 0f): Flow<Float> {
+    protected fun getFloat(key: Preferences.Key<Float>, default: Float = 0f): Flow<Float> {
         return prefs.map { it[key] ?: default }
     }
 
-    private fun getDouble(key: Preferences.Key<Double>, default: Double = 0.0): Flow<Double> {
+    protected fun getDouble(key: Preferences.Key<Double>, default: Double = 0.0): Flow<Double> {
         return prefs.map { it[key] ?: default }
     }
 
-    private fun getBoolean(
+    protected fun getBoolean(
         key: Preferences.Key<Boolean>,
         default: Boolean = false
     ): Flow<Boolean> {
         return prefs.map { it[key] ?: default }
     }
 
-    private suspend fun getSet(
+    protected suspend fun getSet(
         key: Preferences.Key<Set<String>>,
         default: Set<String> = setOf()
     ): Flow<Set<String>> {
         return prefs.map { it[key] ?: default }
     }
 
-    private suspend fun getStringValue(key: Preferences.Key<String>, default: String = ""): String {
+    protected suspend fun getStringValue(key: Preferences.Key<String>, default: String = ""): String {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getIntValue(key: Preferences.Key<Int>, default: Int = 0): Int {
+    protected suspend fun getIntValue(key: Preferences.Key<Int>, default: Int = 0): Int {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getLongValue(key: Preferences.Key<Long>, default: Long = 0L): Long {
+    protected suspend fun getLongValue(key: Preferences.Key<Long>, default: Long = 0L): Long {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getFloatValue(key: Preferences.Key<Float>, default: Float = 0f): Float {
+    protected suspend fun getFloatValue(key: Preferences.Key<Float>, default: Float = 0f): Float {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getDoubleValue(key: Preferences.Key<Double>, default: Double = 0.0): Double {
+    protected suspend fun getDoubleValue(key: Preferences.Key<Double>, default: Double = 0.0): Double {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getBooleanValue(
+    protected suspend fun getBooleanValue(
         key: Preferences.Key<Boolean>,
         default: Boolean = false
     ): Boolean {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun getSetValue(
+    protected suspend fun getSetValue(
         key: Preferences.Key<Set<String>>,
         default: Set<String> = setOf()
     ): Set<String> {
         return prefs.map { it[key] ?: default }.first()
     }
 
-    private suspend fun <T> setValue(key: Preferences.Key<T>, value: T) {
+    protected suspend fun <T> setValue(key: Preferences.Key<T>, value: T) {
         dataStore.edit {
             it[key] = value
         }
     }
+}
+
+class Settings(
+    context: Context,
+    dataStore: DataStore<Preferences>
+) : BaseSettings(context, dataStore) {
 
     fun getFolderName() =
         getString(PreferenceKeys.FOLDER_NAME, "cloud_marks")
@@ -143,6 +150,14 @@ class Settings(
     suspend fun setLastOpenedMarkId(value: Long) =
         setValue(PreferenceKeys.LAST_OPENED_MARK_ID, value)
 
+    fun getFolderColumns() =
+        getInt(PreferenceKeys.FOLDER_COLUMNS, 1)
+
+    suspend fun getFolderColumnsValue() =
+        getIntValue(PreferenceKeys.FOLDER_COLUMNS, 1)
+
+    suspend fun setFolderColumns(value: Int) =
+        setValue(PreferenceKeys.FOLDER_COLUMNS, value)
 
     // サービス設定
     suspend fun getCurrentService() = Services.Gdrive
