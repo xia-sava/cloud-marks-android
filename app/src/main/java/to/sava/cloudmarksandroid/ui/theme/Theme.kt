@@ -7,17 +7,24 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+val XiaGreen = Color(0xFF80FFC0)
+val XiaDarkGreen = Color(0xFF408060)
+val XiaDeepGreen = Color(0xFF204030)
+
 private val DarkColorPalette = darkColors(
-    primary = XiaGreen,
-    onPrimary = Color.Black,
-    surface = XiaGreen,
-    onSurface = Color.Black,
+    primary = XiaDarkGreen,
+    onPrimary = Color.White,
+    surface = XiaDarkGreen,
+    onSurface = Color.White,
+    secondary = XiaDeepGreen,
+    onSecondary = Color.White,
 )
 
 private val LightColorPalette = lightColors(
     primary = XiaGreen,
     onPrimary = Color.Black,
-
+    secondary = XiaDarkGreen,
+    onSecondary = Color.White,
 )
 
 @Composable

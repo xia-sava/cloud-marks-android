@@ -1,14 +1,11 @@
 package to.sava.cloudmarksandroid.ui
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +61,9 @@ fun MarksScreen(
                         .padding(end = 4.dp),
                     onMarkClick = { mark ->
                         when (mark.type) {
-                            MarkType.Folder -> { onSelectFolder(mark.id) }
+                            MarkType.Folder -> {
+                                onSelectFolder(mark.id)
+                            }
                             MarkType.Bookmark -> {}
                         }
                     }
@@ -85,7 +85,7 @@ private fun MarksBreadcrumbs(
     }
 
     Surface(
-        color = Color.LightGray,
+        color = MaterialTheme.colors.secondary,
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(scrollState)
@@ -93,24 +93,35 @@ private fun MarksBreadcrumbs(
         Row(
             modifier = Modifier
         ) {
-            markPath.firstOrNull()?.let { mark ->
-                Button(
-                    onClick = { onMarkClick(mark) }
-                ) {
-                    Text("/")
+            for ((i, mark) in markPath.withIndex()) {
+                val text = if (i == 0) "/" else mark.title
+                @Composable
+                fun TextElement(label: String) {
+                    Text(
+                        text = label,
+                        fontSize = 10.sp,
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .padding(horizontal = 4.dp)
+                    )
                 }
-                Text("/")
-            }
-            for (mark in markPath.drop(1).dropLast(1)) {
-                Button(
-                    onClick = { onMarkClick(mark) }
-                ) {
-                    Text(mark.title)
+
+                if (i != markPath.size - 1) {
+                    OutlinedButton(
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            backgroundColor = MaterialTheme.colors.secondary,
+                            contentColor = MaterialTheme.colors.onSecondary,
+                        ),
+                        contentPadding = PaddingValues(all = 0.dp),
+                        onClick = { onMarkClick(mark) },
+                        modifier = Modifier
+                    ) {
+                        TextElement(text)
+                    }
+                    TextElement("/")
+                } else {
+                    TextElement(text)
                 }
-                Text("/")
-            }
-            markPath.lastOrNull()?.let { mark ->
-                Text(mark.title)
             }
         }
     }
