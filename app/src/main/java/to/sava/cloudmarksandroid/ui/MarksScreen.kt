@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
@@ -35,39 +37,63 @@ fun MarksScreen(
     markId: Long,
     onSelectFolder: (markId: Long) -> Unit = {}
 ) {
+    val scope = rememberCoroutineScope()
     val markPath by viewModel.markPath.collectAsState(initial = listOf())
     val markColumns by viewModel.markColumns.collectAsState(initial = mapOf())
+    var openDrawer by remember { mutableStateOf(false) }
+    var selectedMark by remember { mutableStateOf<MarkNode?>(null) }
 
     LaunchedEffect(markId) {
         viewModel.getMarks(markId)
     }
 
-    Column(
-        modifier = Modifier
-    ) {
-        MarksBreadcrumbs(
-            markPath,
-            onMarkClick = { onSelectFolder(it.id) }
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth()
+    Box() {
+        Column(
+            modifier = Modifier
         ) {
-            for ((current, children) in markColumns) {
-                MarksColumn(
-                    current,
-                    children,
-                    modifier = Modifier
-                        .weight(1f / markColumns.size)
-                        .padding(end = 4.dp),
-                    onMarkClick = { mark ->
-                        when (mark.type) {
-                            MarkType.Folder -> {
-                                onSelectFolder(mark.id)
-                            }
-                            MarkType.Bookmark -> {}
-                        }
-                    }
+            MarksBreadcrumbs(
+                markPath,
+                onMarkClick = { onSelectFolder(it.id) }
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Divider(
+                    Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
                 )
+                for ((current, children) in markColumns) {
+                    MarksColumn(
+                        current,
+                        children,
+                        modifier = Modifier
+                            .weight(1f / markColumns.size)
+                            .padding(horizontal = 1.dp),
+                        onMarkClick = { mark ->
+                            when (mark.type) {
+                                MarkType.Folder -> onSelectFolder(mark.id)
+                                MarkType.Bookmark -> {}
+                            }
+                        },
+                        onMarkLongClick = { mark ->
+                            selectedMark = mark
+                            openDrawer = true
+                        }
+                    )
+                    Divider(
+                        Modifier
+                            .fillMaxHeight()
+                            .width(1.dp)
+                    )
+                }
+            }
+            DropdownMenu(
+                expanded = openDrawer,
+                onDismissRequest = { openDrawer = false },
+                offset = DpOffset(16.dp, 32.dp),
+            ) {
+                MarksMenu(mark = selectedMark)
             }
         }
     }
@@ -95,6 +121,7 @@ private fun MarksBreadcrumbs(
         ) {
             for ((i, mark) in markPath.withIndex()) {
                 val text = if (i == 0) "/" else mark.title
+
                 @Composable
                 fun TextElement(label: String) {
                     Text(
@@ -128,28 +155,75 @@ private fun MarksBreadcrumbs(
 }
 
 @Composable
-private fun MarksColumn(
-    current: MarkNode,
-    children: List<MarkNode>,
+private fun MarksMenu(
+    mark: MarkNode?,
     modifier: Modifier = Modifier,
-    onMarkClick: (mark: MarkNode) -> Unit = {},
 ) {
-    val listState = rememberLazyListState()
-    LazyColumn(state = listState, modifier = modifier) {
-        items(children) { mark ->
-            MarksItem(
-                mark,
-                onMarkClicked = { onMarkClick(it) }
+    Surface(
+        color = MaterialTheme.colors.background,
+        modifier = modifier
+            .fillMaxWidth(),
+    ) {
+        Column {
+            Text(
+                text = mark?.title ?: "",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                    .align(Alignment.CenterHorizontally)
             )
+            Text(
+                text = mark?.url ?: "",
+                fontSize = 10.sp,
+                modifier = Modifier
+                    .padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+            Divider()
+            DropdownMenuItem(onClick = { /*TODO*/ }) {
+                Text("めにゅー1")
+            }
+            DropdownMenuItem(onClick = { /*TODO*/ }) {
+                Text("めにゅー2")
+            }
+            DropdownMenuItem(onClick = { /*TODO*/ }) {
+                Text("めにゅー3")
+            }
         }
     }
 }
 
 @Composable
+private fun MarksColumn(
+    current: MarkNode,
+    children: List<MarkNode>,
+    modifier: Modifier = Modifier,
+    onMarkClick: (mark: MarkNode) -> Unit = {},
+    onMarkLongClick: (mark: MarkNode) -> Unit = {},
+) {
+    val listState = rememberLazyListState()
+    LazyColumn(
+        state = listState,
+        modifier = modifier,
+    ) {
+        items(children) { mark ->
+            MarksItem(
+                mark,
+                onMarkClick = { onMarkClick(it) },
+                onMarkLongClick = { onMarkLongClick(it) },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 private fun MarksItem(
     mark: MarkNode,
     modifier: Modifier = Modifier,
-    onMarkClicked: (mark: MarkNode) -> Unit = {},
+    onMarkClick: (mark: MarkNode) -> Unit = {},
+    onMarkLongClick: (mark: MarkNode) -> Unit = {},
 ) {
     val favicon: Bitmap? = remember {
         mark.favicon?.let { favicon ->
@@ -163,7 +237,10 @@ private fun MarksItem(
         modifier = modifier
             .fillMaxWidth()
             .height(32.dp)
-            .clickable { onMarkClicked(mark) }
+            .combinedClickable(
+                onClick = { onMarkClick(mark) },
+                onLongClick = { onMarkLongClick(mark) }
+            )
     ) {
         Row(
             modifier = Modifier
@@ -192,8 +269,10 @@ private fun MarksItem(
             }
             Text(
                 text = mark.title,
+                softWrap = false,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
+                    .horizontalScroll(rememberScrollState())
             )
         }
         Divider(
@@ -227,7 +306,7 @@ class MarksScreenViewModel @Inject constructor(
             markPath
                 .takeLast(settings.getFolderColumnsValue())
                 .associateWith {
-                    marks.getMarkChildren(mark)
+                    marks.getMarkChildren(it)
                 }
                 .let {
                     _markColumns.value = it
