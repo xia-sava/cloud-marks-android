@@ -1,11 +1,5 @@
 
 buildscript {
-    extra.apply {
-        set("kotlinVersion", "1.7.0")
-        set("composeVersion", "1.2.0")
-        set("roomVersion", "2.4.3")
-        set("hiltVersion", "2.43.2")
-    }
     dependencies {
         classpath("com.google.gms:google-services:4.3.13")
         classpath("com.google.firebase:firebase-crashlytics-gradle:2.9.1")

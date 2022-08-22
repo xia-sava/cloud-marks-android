@@ -2,6 +2,7 @@ package to.sava.cloudmarksandroid.databases.models
 
 import android.net.Uri
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 
@@ -30,8 +31,11 @@ class MarkNode(
 
     val domain: String get() = parseDomain(url)
 
+    @Ignore
+    var favicon: Favicon? = null
+
     companion object {
-        const val ROOT_ID = -1L
+        const val ROOT_ID = 1L
         fun parseDomain(url: String): String = Uri.parse(url).host ?: ""
     }
 }

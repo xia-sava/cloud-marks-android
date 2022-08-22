@@ -13,7 +13,7 @@ class FaviconRepository(
     private val access: FaviconDao
 ) {
 
-    private suspend fun findFavicon(domain: String): Favicon? {
+    suspend fun findFavicon(domain: String): Favicon? {
         return access.findFavicon(domain)
     }
 

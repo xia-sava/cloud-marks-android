@@ -58,6 +58,10 @@ object DiModuleProvider {
         FaviconRepository(context, faviconDao)
 
     @Provides
-    fun provideMarks(settings: Settings, markNodeRepository: MarkNodeRepository) =
-        Marks(settings, markNodeRepository)
+    fun provideMarks(
+        settings: Settings,
+        markNodeRepository: MarkNodeRepository,
+        faviconRepository: FaviconRepository
+    ) =
+        Marks(settings, markNodeRepository, faviconRepository)
 }

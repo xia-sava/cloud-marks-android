@@ -2,12 +2,6 @@ import java.io.FileInputStream
 import java.util.Properties
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 
-val composeVersion: String by project
-val kotlinVersion: String by project
-val roomVersion: String by project
-val hiltVersion: String by project
-
-
 val releaseSigningConfigsProperties = Properties().also {
     it.load(FileInputStream(file("releaseSigningConfigs.properties")))
 }
@@ -80,7 +74,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = composeVersion
+        kotlinCompilerExtensionVersion = "1.2.0"
     }
     packagingOptions {
         resources {
@@ -93,26 +87,26 @@ android {
 dependencies {
 
     implementation("androidx.core:core-ktx:1.8.0")
-    implementation("androidx.compose.ui:ui:$composeVersion")
+    implementation("androidx.compose.ui:ui:1.2.1")
     implementation("androidx.navigation:navigation-compose:2.5.1")
-    implementation("androidx.compose.material:material:$composeVersion")
-    implementation("androidx.compose.material:material-icons-core:$composeVersion")
-    implementation("androidx.compose.material:material-icons-extended:$composeVersion")
-    implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
-    implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
+    implementation("androidx.compose.material:material:1.2.1")
+    implementation("androidx.compose.material:material-icons-core:1.2.1")
+    implementation("androidx.compose.material:material-icons-extended:1.2.1")
+    implementation("androidx.compose.runtime:runtime-livedata:1.2.1")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.2.1")
     implementation("androidx.activity:activity-compose:1.5.1")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("androidx.work:work-runtime-ktx:2.7.1")
 
-    implementation("androidx.room:room-runtime:$roomVersion")
-    annotationProcessor("androidx.room:room-compiler:$roomVersion")
-    kapt("androidx.room:room-compiler:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
+    implementation("androidx.room:room-runtime:2.4.3")
+    annotationProcessor("androidx.room:room-compiler:2.4.3")
+    kapt("androidx.room:room-compiler:2.4.3")
+    implementation("androidx.room:room-ktx:2.4.3")
 
-    implementation("com.google.dagger:hilt-compiler:$hiltVersion")
-    implementation("com.google.dagger:hilt-android:$hiltVersion")
-    kapt("com.google.dagger:hilt-compiler:$hiltVersion")
-    kapt("com.google.dagger:hilt-android-compiler:$hiltVersion")
+    implementation("com.google.dagger:hilt-compiler:2.43.2")
+    implementation("com.google.dagger:hilt-android:2.43.2")
+    kapt("com.google.dagger:hilt-compiler:2.43.2")
+    kapt("com.google.dagger:hilt-android-compiler:2.43.2")
     implementation("androidx.hilt:hilt-work:1.0.0")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
     annotationProcessor("androidx.hilt:hilt-compiler:1.0.0")
@@ -128,10 +122,12 @@ dependencies {
         exclude("org.apache.httpcomponents")
     }
     implementation("io.coil-kt:coil-compose:2.1.0")
+
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.2.1")
+
+    debugImplementation("androidx.compose.ui:ui-tooling:1.2.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.2.1")
 }

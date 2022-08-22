@@ -1,5 +1,7 @@
 package to.sava.cloudmarksandroid.ui
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,38 +9,61 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Divider
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
+import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
+import to.sava.cloudmarksandroid.databases.models.MarkType
 import to.sava.cloudmarksandroid.modules.Marks
+import to.sava.cloudmarksandroid.modules.Settings
+import java.nio.ByteBuffer
 import javax.inject.Inject
 
 @Composable
 fun MarksScreen(viewModel: MarksScreenViewModel, initialMarkId: Long) {
-    val cols = 1
-    val currentMarkId by remember { mutableStateOf(initialMarkId) }
-    val markNode = viewModel.markNode.collectAsState(initial = Unit)
+    var currentMarkId by remember { mutableStateOf(initialMarkId) }
+    val markPath by viewModel.markPath.collectAsState(initial = listOf())
+    val markColumns by viewModel.markColumns.collectAsState(initial = mapOf())
+
+    LaunchedEffect(currentMarkId) {
+        viewModel.getMarks(currentMarkId)
+    }
 
     Column(
         modifier = Modifier
     ) {
-        MarksBreadcrumbs()
+        MarksBreadcrumbs(markPath)
         Row(
             modifier = Modifier.fillMaxWidth()
         ) {
-            for (i in 1..cols) {
+            for ((current, children) in markColumns) {
                 MarksColumn(
+                    current,
+                    children,
                     modifier = Modifier
-                        .weight(1f / cols)
-                        .padding(end = 4.dp)
+                        .weight(1f / markColumns.size)
+                        .padding(end = 4.dp),
+                    onMarkClicked = { mark ->
+                        when (mark.type) {
+                            MarkType.Folder -> {
+                                currentMarkId = mark.id
+                            }
+                            MarkType.Bookmark -> {}
+                        }
+                    }
                 )
             }
         }
@@ -46,7 +71,10 @@ fun MarksScreen(viewModel: MarksScreenViewModel, initialMarkId: Long) {
 }
 
 @Composable
-private fun MarksBreadcrumbs(modifier: Modifier = Modifier) {
+private fun MarksBreadcrumbs(
+    markPath: List<MarkNode>,
+    modifier: Modifier = Modifier,
+) {
     Text(
         text = "/ hoge / fuga",
         modifier = modifier
@@ -57,38 +85,70 @@ private fun MarksBreadcrumbs(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun MarksColumn(modifier: Modifier = Modifier) {
-    MarksList(
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun MarksList(modifier: Modifier = Modifier) {
+private fun MarksColumn(
+    current: MarkNode,
+    children: List<MarkNode>,
+    modifier: Modifier = Modifier,
+    onMarkClicked: (mark: MarkNode) -> Unit = {},
+) {
     val listState = rememberLazyListState()
-    val items = (0..100).toList()
     LazyColumn(state = listState, modifier = modifier) {
-        items(items) {
-            MarksItem("Item $it")
+        items(children) { mark ->
+            MarksItem(
+                mark,
+                onMarkClicked = { onMarkClicked(it) }
+            )
         }
     }
 }
 
 @Composable
-private fun MarksItem(name: String, modifier: Modifier = Modifier) {
+private fun MarksItem(
+    mark: MarkNode,
+    modifier: Modifier = Modifier,
+    onMarkClicked: (mark: MarkNode) -> Unit = {},
+) {
+    val favicon: Bitmap? = remember {
+        mark.favicon?.let { favicon ->
+            Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888).also {
+                it.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))
+            }
+        }
+    }
+
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(32.dp)
-            .clickable { }
+            .clickable { onMarkClicked(mark) }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(31.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(start = 4.dp, end = 4.dp)
+            ) {
+                if (favicon != null) {
+                    Image(bitmap = favicon.asImageBitmap(), mark.domain)
+                } else {
+                    when (mark.type) {
+                        MarkType.Folder -> Icon(
+                            painterResource(R.drawable.ic_folder_open_black_24dp),
+                            "Folder"
+                        )
+                        MarkType.Bookmark -> Icon(
+                            painterResource(R.drawable.ic_bookmark_border_black_24dp),
+                            "Bookmark"
+                        )
+                    }
+                }
+            }
             Text(
-                text = name,
+                text = mark.title,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
             )
@@ -105,12 +165,30 @@ private fun MarksItem(name: String, modifier: Modifier = Modifier) {
 
 @HiltViewModel
 class MarksScreenViewModel @Inject constructor(
-    private val marks: Marks
+    private val marks: Marks,
+    private val settings: Settings,
 ) : ViewModel() {
-    private var _markNode: Flow<MarkNode> = flowOf()
-    val markNode get() = _markNode
 
-    fun getMarks(markId: Long) {
-        _markNode = marks.getMarkFlow(markId)
+    private var _markPath = MutableStateFlow(listOf<MarkNode>())
+    val markPath: StateFlow<List<MarkNode>> get() = _markPath
+
+    private var _markColumns = MutableStateFlow(mapOf<MarkNode, List<MarkNode>>())
+    val markColumns: StateFlow<Map<MarkNode, List<MarkNode>>> get() = _markColumns
+
+    suspend fun getMarks(markId: Long) {
+        withContext(Dispatchers.IO) {
+            val mark = marks.getMark(markId) ?: return@withContext
+            val markPath = marks.getMarkPath(mark)
+            _markPath.value = markPath
+
+            markPath
+                .takeLast(settings.getFolderColumnsValue())
+                .associateWith {
+                    marks.getMarkChildren(mark)
+                }
+                .let {
+                    _markColumns.value = it
+                }
+        }
     }
 }

@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
+import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
 import java.io.IOException
 
@@ -15,7 +16,8 @@ import java.io.IOException
  */
 class Marks(
     private val settings: Settings,
-    private val repos: MarkNodeRepository
+    private val repos: MarkNodeRepository,
+    private val faviconRepos: FaviconRepository,
 ) {
 
     /**
@@ -124,21 +126,31 @@ class Marks(
      * Room DBから指定ノードの子ノードを取得する．
      */
     suspend fun getMarkChildren(parent: MarkNode): List<MarkNode> {
-        return repos.getMarkNodeChildren(parent)
+        val children = repos.getMarkNodeChildren(parent)
+        val faviconMap = children
+            .map { it.domain }
+            .distinct()
+            .associateWith {
+                faviconRepos.findFavicon(it)
+            }
+        children.forEach {
+            it.favicon = faviconMap[it.domain]
+        }
+        return children
     }
 
     /**
      * ルートから指定ノードへ辿り着くための名前のリストを取得する．
      * 要するに path みたいな．/root/fooFolder/barMark とかそういう．
      */
-    suspend fun getMarkPath(child: MarkNode): MutableList<MarkNode> {
+    suspend fun getMarkPath(child: MarkNode): List<MarkNode> {
         return child.parent_id?.let { parent_id ->
             repos.getMarkNode(parent_id)?.let { parent ->
-                getMarkPath(parent).apply {
+                getMarkPath(parent).toMutableList().apply {
                     add(child)
                 }
             }
-        } ?: mutableListOf(child)
+        } ?: listOf(child)
     }
 
     /**
