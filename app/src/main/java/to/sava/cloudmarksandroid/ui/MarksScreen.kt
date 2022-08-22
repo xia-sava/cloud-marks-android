@@ -2,15 +2,14 @@ package to.sava.cloudmarksandroid.ui
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Divider
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,19 +32,25 @@ import java.nio.ByteBuffer
 import javax.inject.Inject
 
 @Composable
-fun MarksScreen(viewModel: MarksScreenViewModel, initialMarkId: Long) {
-    var currentMarkId by remember { mutableStateOf(initialMarkId) }
+fun MarksScreen(
+    viewModel: MarksScreenViewModel,
+    markId: Long,
+    onSelectFolder: (markId: Long) -> Unit = {}
+) {
     val markPath by viewModel.markPath.collectAsState(initial = listOf())
     val markColumns by viewModel.markColumns.collectAsState(initial = mapOf())
 
-    LaunchedEffect(currentMarkId) {
-        viewModel.getMarks(currentMarkId)
+    LaunchedEffect(markId) {
+        viewModel.getMarks(markId)
     }
 
     Column(
         modifier = Modifier
     ) {
-        MarksBreadcrumbs(markPath)
+        MarksBreadcrumbs(
+            markPath,
+            onMarkClick = { onSelectFolder(it.id) }
+        )
         Row(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -56,11 +61,9 @@ fun MarksScreen(viewModel: MarksScreenViewModel, initialMarkId: Long) {
                     modifier = Modifier
                         .weight(1f / markColumns.size)
                         .padding(end = 4.dp),
-                    onMarkClicked = { mark ->
+                    onMarkClick = { mark ->
                         when (mark.type) {
-                            MarkType.Folder -> {
-                                currentMarkId = mark.id
-                            }
+                            MarkType.Folder -> { onSelectFolder(mark.id) }
                             MarkType.Bookmark -> {}
                         }
                     }
@@ -74,14 +77,43 @@ fun MarksScreen(viewModel: MarksScreenViewModel, initialMarkId: Long) {
 private fun MarksBreadcrumbs(
     markPath: List<MarkNode>,
     modifier: Modifier = Modifier,
+    onMarkClick: (mark: MarkNode) -> Unit = {}
 ) {
-    Text(
-        text = "/ hoge / fuga",
+    val scrollState = rememberScrollState()
+    LaunchedEffect(markPath) {
+        scrollState.scrollTo(scrollState.maxValue)
+    }
+
+    Surface(
+        color = Color.LightGray,
         modifier = modifier
             .fillMaxWidth()
-            .height(32.dp)
-            .background(Color.LightGray)
-    )
+            .horizontalScroll(scrollState)
+    ) {
+        Row(
+            modifier = Modifier
+        ) {
+            markPath.firstOrNull()?.let { mark ->
+                Button(
+                    onClick = { onMarkClick(mark) }
+                ) {
+                    Text("/")
+                }
+                Text("/")
+            }
+            for (mark in markPath.drop(1).dropLast(1)) {
+                Button(
+                    onClick = { onMarkClick(mark) }
+                ) {
+                    Text(mark.title)
+                }
+                Text("/")
+            }
+            markPath.lastOrNull()?.let { mark ->
+                Text(mark.title)
+            }
+        }
+    }
 }
 
 @Composable
@@ -89,14 +121,14 @@ private fun MarksColumn(
     current: MarkNode,
     children: List<MarkNode>,
     modifier: Modifier = Modifier,
-    onMarkClicked: (mark: MarkNode) -> Unit = {},
+    onMarkClick: (mark: MarkNode) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     LazyColumn(state = listState, modifier = modifier) {
         items(children) { mark ->
             MarksItem(
                 mark,
-                onMarkClicked = { onMarkClicked(it) }
+                onMarkClicked = { onMarkClick(it) }
             )
         }
     }

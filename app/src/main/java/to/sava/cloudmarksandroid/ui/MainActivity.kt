@@ -16,12 +16,16 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.modules.MarkWorker
@@ -53,7 +57,7 @@ fun MainPage(modifier: Modifier = Modifier) {
     var runMarksLoader by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
-    val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(initial = MarkNode.ROOT_ID)
+    val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(initial = null)
 
     if (runMarksLoader) {
         LaunchedEffect(MarkNode.ROOT_ID) {
@@ -63,10 +67,15 @@ fun MainPage(modifier: Modifier = Modifier) {
         }
     }
 
+    val markId = lastOpenedMarkId ?: return
+
     Scaffold(
         topBar = {
             CloudMarksTopAppBar(
-                showBackButton = navBackStack?.destination?.route != "marks",
+                showBackButton = (
+                        navBackStack?.destination?.route != "marks/{markId}"
+                                || markId != MarkNode.ROOT_ID
+                        ),
                 disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
                 disableLoadMenu = runMarksLoader,
@@ -77,9 +86,24 @@ fun MainPage(modifier: Modifier = Modifier) {
         modifier = modifier,
         scaffoldState = scaffoldState,
     ) {
-        NavHost(navController, startDestination = "marks") {
-            composable("marks") {
-                MarksScreen(hiltViewModel(), lastOpenedMarkId)
+        NavHost(navController, startDestination = "marks/{markId}") {
+            composable(
+                "marks/{markId}",
+                arguments = listOf(
+                    navArgument("markId") {
+                        type = NavType.LongType
+                        defaultValue = markId
+                    },
+                )
+            ) { backStackEntry ->
+                MarksScreen(
+                    hiltViewModel(),
+                    backStackEntry.arguments?.getLong("markId") ?: markId,
+                    onSelectFolder = { selectedId ->
+                        viewModel.setLastOpenedId(selectedId)
+                        navController.navigate("marks/$selectedId")
+                    }
+                )
             }
             composable("settings") {
                 Settings()
@@ -149,7 +173,13 @@ private fun CloudMarksTopAppBar(
 
 @HiltViewModel
 private class MainPageViewModel @Inject constructor(
-    settings: Settings
+    private val settings: Settings
 ) : ViewModel() {
     val lastOpenedId = settings.getLastOpenedMarkId()
+
+    fun setLastOpenedId(markId: Long) {
+        viewModelScope.launch {
+            settings.setLastOpenedMarkId(markId)
+        }
+    }
 }
