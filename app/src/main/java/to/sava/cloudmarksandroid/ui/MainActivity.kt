@@ -97,12 +97,13 @@ fun MainPage(modifier: Modifier = Modifier) {
                 )
             ) { backStackEntry ->
                 MarksScreen(
-                    hiltViewModel(),
+                    hiltViewModel<MarksScreenViewModel>().apply {
+                        onSelectFolder = { selectedId ->
+                            viewModel.setLastOpenedId(selectedId)
+                            navController.navigate("marks/$selectedId")
+                        }
+                    },
                     backStackEntry.arguments?.getLong("markId") ?: markId,
-                    onSelectFolder = { selectedId ->
-                        viewModel.setLastOpenedId(selectedId)
-                        navController.navigate("marks/$selectedId")
-                    }
                 )
             }
             composable("settings") {

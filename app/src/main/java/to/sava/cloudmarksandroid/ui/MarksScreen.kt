@@ -35,66 +35,58 @@ import javax.inject.Inject
 fun MarksScreen(
     viewModel: MarksScreenViewModel,
     markId: Long,
-    onSelectFolder: (markId: Long) -> Unit = {}
 ) {
-    val scope = rememberCoroutineScope()
-    val markPath by viewModel.markPath.collectAsState(initial = listOf())
-    val markColumns by viewModel.markColumns.collectAsState(initial = mapOf())
-    var openDrawer by remember { mutableStateOf(false) }
-    var selectedMark by remember { mutableStateOf<MarkNode?>(null) }
+    val markPath by viewModel.markPath.collectAsState(listOf())
+    val markColumns by viewModel.markColumns.collectAsState(mapOf())
+    val openMenu by viewModel.openMenu.collectAsState(false)
+    val selectedMark by viewModel.selectedMark.collectAsState(null)
+    val marksMenuItems by viewModel.marksMenuItems.collectAsState(listOf())
 
     LaunchedEffect(markId) {
         viewModel.getMarks(markId)
     }
 
-    Box() {
-        Column(
-            modifier = Modifier
+    Column(
+        modifier = Modifier
+    ) {
+        MarksBreadcrumbs(
+            markPath,
+            onMarkClick = { viewModel.clickMark(it) }
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            MarksBreadcrumbs(
-                markPath,
-                onMarkClick = { onSelectFolder(it.id) }
+            Divider(
+                Modifier
+                    .fillMaxHeight()
+                    .width(1.dp)
             )
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            for ((_, children) in markColumns) {
+                MarksColumn(
+                    children,
+                    modifier = Modifier
+                        .weight(1f / markColumns.size)
+                        .padding(horizontal = 1.dp),
+                    onMarkClick = { viewModel.clickMark(it) },
+                    onMarkLongClick = { viewModel.selectMark(it) }
+                )
                 Divider(
                     Modifier
                         .fillMaxHeight()
                         .width(1.dp)
                 )
-                for ((current, children) in markColumns) {
-                    MarksColumn(
-                        current,
-                        children,
-                        modifier = Modifier
-                            .weight(1f / markColumns.size)
-                            .padding(horizontal = 1.dp),
-                        onMarkClick = { mark ->
-                            when (mark.type) {
-                                MarkType.Folder -> onSelectFolder(mark.id)
-                                MarkType.Bookmark -> {}
-                            }
-                        },
-                        onMarkLongClick = { mark ->
-                            selectedMark = mark
-                            openDrawer = true
-                        }
-                    )
-                    Divider(
-                        Modifier
-                            .fillMaxHeight()
-                            .width(1.dp)
-                    )
-                }
             }
-            DropdownMenu(
-                expanded = openDrawer,
-                onDismissRequest = { openDrawer = false },
-                offset = DpOffset(16.dp, 32.dp),
-            ) {
-                MarksMenu(mark = selectedMark)
-            }
+        }
+        DropdownMenu(
+            expanded = openMenu,
+            onDismissRequest = { viewModel.dismissMenu() },
+            offset = DpOffset(16.dp, 32.dp),
+        ) {
+            MarksMenu(
+                selectedMark,
+                marksMenuItems,
+                { mark, menuItem -> viewModel.clickMenu(menuItem, mark)}
+            )
         }
     }
 }
@@ -154,11 +146,23 @@ private fun MarksBreadcrumbs(
     }
 }
 
+enum class MarksMenuItem(val label: String) {
+    OPEN("Open"),
+    SHARE("Share to ..."),
+    COPY_URL("Copy URL"),
+    COPY_TITLE("Copy title"),
+    FETCH_FAVICON("Fetch favicon"),
+    FETCH_FAVICON_IN_FOLDER("Fetch favicon in this folder"),
+}
+
 @Composable
 private fun MarksMenu(
     mark: MarkNode?,
+    menuItems: List<MarksMenuItem> = listOf(),
+    onClick: (mark: MarkNode, menuItem: MarksMenuItem) -> Unit = {_, _ ->},
     modifier: Modifier = Modifier,
 ) {
+    mark ?: return
     Surface(
         color = MaterialTheme.colors.background,
         modifier = modifier
@@ -166,7 +170,7 @@ private fun MarksMenu(
     ) {
         Column {
             Text(
-                text = mark?.title ?: "",
+                text = mark.title,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
@@ -174,21 +178,17 @@ private fun MarksMenu(
                     .align(Alignment.CenterHorizontally)
             )
             Text(
-                text = mark?.url ?: "",
+                text = mark.url,
                 fontSize = 10.sp,
                 modifier = Modifier
                     .padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
                     .align(Alignment.CenterHorizontally)
             )
             Divider()
-            DropdownMenuItem(onClick = { /*TODO*/ }) {
-                Text("めにゅー1")
-            }
-            DropdownMenuItem(onClick = { /*TODO*/ }) {
-                Text("めにゅー2")
-            }
-            DropdownMenuItem(onClick = { /*TODO*/ }) {
-                Text("めにゅー3")
+            for (menuItem in menuItems) {
+                DropdownMenuItem({ onClick(mark, menuItem) }) {
+                    Text(menuItem.label)
+                }
             }
         }
     }
@@ -196,7 +196,6 @@ private fun MarksMenu(
 
 @Composable
 private fun MarksColumn(
-    current: MarkNode,
     children: List<MarkNode>,
     modifier: Modifier = Modifier,
     onMarkClick: (mark: MarkNode) -> Unit = {},
@@ -291,11 +290,22 @@ class MarksScreenViewModel @Inject constructor(
     private val settings: Settings,
 ) : ViewModel() {
 
+    var onSelectFolder: (markId: Long) -> Unit = {}
+
     private var _markPath = MutableStateFlow(listOf<MarkNode>())
     val markPath: StateFlow<List<MarkNode>> get() = _markPath
 
     private var _markColumns = MutableStateFlow(mapOf<MarkNode, List<MarkNode>>())
     val markColumns: StateFlow<Map<MarkNode, List<MarkNode>>> get() = _markColumns
+
+    private var _selectedMark = MutableStateFlow<MarkNode?>(null)
+    val selectedMark: StateFlow<MarkNode?> get() = _selectedMark
+
+    private var _openMenu = MutableStateFlow(false)
+    val openMenu: StateFlow<Boolean> get() = _openMenu
+
+    private var _marksMenuItems = MutableStateFlow(listOf<MarksMenuItem>())
+    val marksMenuItems: StateFlow<List<MarksMenuItem>> get() = _marksMenuItems
 
     suspend fun getMarks(markId: Long) {
         withContext(Dispatchers.IO) {
@@ -311,6 +321,44 @@ class MarksScreenViewModel @Inject constructor(
                 .let {
                     _markColumns.value = it
                 }
+        }
+    }
+
+    fun clickMark(mark: MarkNode) {
+        when (mark.type) {
+            MarkType.Folder -> onSelectFolder(mark.id)
+            MarkType.Bookmark -> {}
+        }
+    }
+
+    fun selectMark(mark: MarkNode) {
+        _selectedMark.value = mark
+        _openMenu.value = true
+        _marksMenuItems.value = when (mark.type) {
+            MarkType.Bookmark -> listOf(
+                MarksMenuItem.OPEN,
+                MarksMenuItem.SHARE,
+                MarksMenuItem.COPY_URL,
+                MarksMenuItem.COPY_TITLE,
+                MarksMenuItem.FETCH_FAVICON,
+            )
+            MarkType.Folder -> listOf(
+                MarksMenuItem.OPEN,
+                MarksMenuItem.COPY_TITLE,
+                MarksMenuItem.FETCH_FAVICON_IN_FOLDER,
+            )
+        }
+    }
+
+    fun dismissMenu() {
+        _openMenu.value = false
+    }
+
+    fun clickMenu(menuItem: MarksMenuItem, mark: MarkNode) {
+        dismissMenu()
+        when (menuItem) {
+            MarksMenuItem.OPEN -> clickMark(mark)
+            else -> {}
         }
     }
 }

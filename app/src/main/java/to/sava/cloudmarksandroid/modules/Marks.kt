@@ -128,10 +128,13 @@ class Marks(
     suspend fun getMarkChildren(parent: MarkNode): List<MarkNode> {
         val children = repos.getMarkNodeChildren(parent)
         val faviconMap = children
+            .filter { it.type == MarkType.Bookmark }
             .map { it.domain }
             .distinct()
-            .associateWith {
-                faviconRepos.findFavicon(it)
+            .let {
+                faviconRepos.findFavicons(it)
+            }.associateBy {
+                it.domain
             }
         children.forEach {
             it.favicon = faviconMap[it.domain]

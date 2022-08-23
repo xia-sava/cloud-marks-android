@@ -17,6 +17,10 @@ class FaviconRepository(
         return access.findFavicon(domain)
     }
 
+    suspend fun findFavicons(domains: List<String>): List<Favicon> {
+        return access.findFavicons(domains)
+    }
+
     suspend fun saveFavicons(favicons: List<Favicon>): List<Long> {
         return access.save(favicons)
     }
