@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
@@ -21,13 +22,15 @@ import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import to.sava.cloudmarksandroid.modules.Marks
 import to.sava.cloudmarksandroid.modules.Settings
+import to.sava.cloudmarksandroid.modules.toast
 import java.nio.ByteBuffer
 import javax.inject.Inject
 
@@ -41,9 +44,15 @@ fun MarksScreen(
     val openMenu by viewModel.openMenu.collectAsState(false)
     val selectedMark by viewModel.selectedMark.collectAsState(null)
     val marksMenuItems by viewModel.marksMenuItems.collectAsState(listOf())
+    val message by viewModel.message.collectAsState("")
 
     LaunchedEffect(markId) {
         viewModel.getMarks(markId)
+    }
+
+    message.takeIf { it.isNotEmpty() }?.let {
+        LocalContext.current.toast(it).show()
+        viewModel.markMessageShown(it)
     }
 
     Column(
@@ -85,7 +94,7 @@ fun MarksScreen(
             MarksMenu(
                 selectedMark,
                 marksMenuItems,
-                { mark, menuItem -> viewModel.clickMenu(menuItem, mark)}
+                { mark, menuItem -> viewModel.clickMenu(menuItem, mark) }
             )
         }
     }
@@ -159,7 +168,7 @@ enum class MarksMenuItem(val label: String) {
 private fun MarksMenu(
     mark: MarkNode?,
     menuItems: List<MarksMenuItem> = listOf(),
-    onClick: (mark: MarkNode, menuItem: MarksMenuItem) -> Unit = {_, _ ->},
+    onClick: (mark: MarkNode, menuItem: MarksMenuItem) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     mark ?: return
@@ -291,21 +300,27 @@ class MarksScreenViewModel @Inject constructor(
 ) : ViewModel() {
 
     var onSelectFolder: (markId: Long) -> Unit = {}
+    var onCopyToClipboard: (text: String) -> Unit = {}
+    var openMark: (url: String) -> Unit = {}
+    var shareMark: (url: String) -> Unit = {}
 
-    private var _markPath = MutableStateFlow(listOf<MarkNode>())
-    val markPath: StateFlow<List<MarkNode>> get() = _markPath
+    private val _markPath = MutableStateFlow(listOf<MarkNode>())
+    val markPath get() = _markPath.asStateFlow()
 
-    private var _markColumns = MutableStateFlow(mapOf<MarkNode, List<MarkNode>>())
-    val markColumns: StateFlow<Map<MarkNode, List<MarkNode>>> get() = _markColumns
+    private val _markColumns = MutableStateFlow(mapOf<MarkNode, List<MarkNode>>())
+    val markColumns get() = _markColumns.asStateFlow()
 
-    private var _selectedMark = MutableStateFlow<MarkNode?>(null)
-    val selectedMark: StateFlow<MarkNode?> get() = _selectedMark
+    private val _selectedMark = MutableStateFlow<MarkNode?>(null)
+    val selectedMark get() = _selectedMark.asStateFlow()
 
-    private var _openMenu = MutableStateFlow(false)
-    val openMenu: StateFlow<Boolean> get() = _openMenu
+    private val _openMenu = MutableStateFlow(false)
+    val openMenu get() = _openMenu.asStateFlow()
 
-    private var _marksMenuItems = MutableStateFlow(listOf<MarksMenuItem>())
-    val marksMenuItems: StateFlow<List<MarksMenuItem>> get() = _marksMenuItems
+    private val _marksMenuItems = MutableStateFlow(listOf<MarksMenuItem>())
+    val marksMenuItems get() = _marksMenuItems.asStateFlow()
+
+    private val _message = MutableStateFlow("")
+    val message get() = _message.asSharedFlow()
 
     suspend fun getMarks(markId: Long) {
         withContext(Dispatchers.IO) {
@@ -327,7 +342,7 @@ class MarksScreenViewModel @Inject constructor(
     fun clickMark(mark: MarkNode) {
         when (mark.type) {
             MarkType.Folder -> onSelectFolder(mark.id)
-            MarkType.Bookmark -> {}
+            MarkType.Bookmark -> openMark(mark.url)
         }
     }
 
@@ -358,7 +373,27 @@ class MarksScreenViewModel @Inject constructor(
         dismissMenu()
         when (menuItem) {
             MarksMenuItem.OPEN -> clickMark(mark)
-            else -> {}
+            MarksMenuItem.SHARE -> shareMark(mark.url)
+            MarksMenuItem.COPY_URL -> {
+                onCopyToClipboard(mark.url)
+                showMessage("URLをクリップボードにコピーしました。")
+            }
+            MarksMenuItem.COPY_TITLE -> {
+                onCopyToClipboard(mark.title)
+                showMessage("タイトルをクリップボードにコピーしました。")
+            }
+            MarksMenuItem.FETCH_FAVICON -> {}
+            MarksMenuItem.FETCH_FAVICON_IN_FOLDER -> {}
+        }
+    }
+
+    fun showMessage(message: String) {
+        _message.value = message
+    }
+
+    fun markMessageShown(message: String) {
+        if (_message.value == message) {
+            _message.value = ""
         }
     }
 }

@@ -1,5 +1,8 @@
 package to.sava.cloudmarksandroid.ui
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,9 +14,12 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -57,6 +63,8 @@ fun MainPage(modifier: Modifier = Modifier) {
     var runMarksLoader by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val uriHandler = LocalUriHandler.current
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(initial = null)
 
     if (runMarksLoader) {
@@ -101,6 +109,29 @@ fun MainPage(modifier: Modifier = Modifier) {
                         onSelectFolder = { selectedId ->
                             viewModel.setLastOpenedId(selectedId)
                             navController.navigate("marks/$selectedId")
+                        }
+                        onCopyToClipboard = { text ->
+                            clipboardManager.setText(AnnotatedString(text))
+                        }
+                        openMark = { url ->
+                            uriHandler.openUri(url)
+                        }
+                        shareMark = { url ->
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            context.packageManager.queryIntentActivities(
+                                intent,
+                                PackageManager.MATCH_ALL,
+                            ).map {
+                                Intent(intent).apply {
+                                    setPackage(it.activityInfo.packageName)
+                                }
+                            }.let {
+                                Intent.createChooser(Intent(), "Share to ...").apply {
+                                    putExtra(Intent.EXTRA_INITIAL_INTENTS, it.toTypedArray())
+                                }.let {
+                                    context.startActivity(it)
+                                }
+                            }
                         }
                     },
                     backStackEntry.arguments?.getLong("markId") ?: markId,
