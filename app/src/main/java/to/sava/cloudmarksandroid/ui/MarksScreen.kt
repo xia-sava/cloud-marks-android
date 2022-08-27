@@ -1,6 +1,7 @@
 package to.sava.cloudmarksandroid.ui
 
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -51,6 +52,11 @@ fun MarksScreen(
 
     LaunchedEffect(lastOpenedTime) {
         viewModel.getMarks(markId)
+    }
+    if (markPath.size > 1) {
+        BackHandler {
+            viewModel.backButton()
+        }
     }
 
     Column(
@@ -307,6 +313,7 @@ class MarksScreenViewModel @Inject constructor(
     var openMark: (url: String) -> Unit = {}
     var shareMark: (url: String) -> Unit = {}
     var fetchFavicon: (domains: List<String>) -> Unit = {}
+    var backButton: () -> Unit = {}
 
     private val _markPath = MutableStateFlow(listOf<MarkNode>())
     val markPath get() = _markPath.asStateFlow()

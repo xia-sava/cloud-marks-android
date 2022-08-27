@@ -85,7 +85,7 @@ fun MainPage(modifier: Modifier = Modifier) {
                 onClickSettings = { navController.navigate("settings") },
                 disableLoadMenu = marksWorkerRunning,
                 onClickLoad = { viewModel.loadMarks(lifecycleOwner) },
-                onClickBack = { navController.popBackStack() },
+                onClickBack = { viewModel.back() },
             )
         },
         modifier = modifier,
@@ -136,6 +136,9 @@ fun MainPage(modifier: Modifier = Modifier) {
                         }
                         fetchFavicon = { domains ->
                             viewModel.fetchFavicon(domains)
+                        }
+                        backButton = {
+                            viewModel.back()
                         }
                     },
                     backStackEntry.arguments?.getLong("markId") ?: markId,
@@ -223,6 +226,20 @@ private class MainPageViewModel @Inject constructor(
 
     fun showMessage(message: String) {
         CloudMarksAndroidApplication.instance.toast(message)
+    }
+
+    fun back() {
+        viewModelScope.launch {
+            settings.getLastOpenedMarkIdValue()
+                .let { marks.getMark(it) }
+                ?.let { marks.getMarkPath(it) }
+                ?.takeIf { it.size > 1 }
+                ?.takeLast(2)
+                ?.first()
+                ?.let {
+                    setLastOpenedId(it.id)
+                }
+        }
     }
 
     fun loadMarks(lifecycleOwner: LifecycleOwner) {
