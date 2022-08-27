@@ -7,7 +7,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import to.sava.cloudmarksandroid.R
+import to.sava.cloudmarksandroid.databases.models.Favicon
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import to.sava.cloudmarksandroid.modules.Marks
@@ -37,14 +41,15 @@ import javax.inject.Inject
 fun MarksScreen(
     viewModel: MarksScreenViewModel,
     markId: Long,
+    lastOpenedTime: String,
 ) {
     val markPath by viewModel.markPath.collectAsState(listOf())
-    val markColumns by viewModel.markColumns.collectAsState(mapOf())
+    val markColumns by viewModel.markColumns.collectAsState(listOf())
     val openMenu by viewModel.openMenu.collectAsState(false)
     val selectedMark by viewModel.selectedMark.collectAsState(null)
     val marksMenuItems by viewModel.marksMenuItems.collectAsState(listOf())
 
-    LaunchedEffect(markId) {
+    LaunchedEffect(lastOpenedTime) {
         viewModel.getMarks(markId)
     }
 
@@ -63,7 +68,7 @@ fun MarksScreen(
                     .fillMaxHeight()
                     .width(1.dp)
             )
-            for ((_, children) in markColumns) {
+            for (children in markColumns) {
                 MarksColumn(
                     children,
                     modifier = Modifier
@@ -198,19 +203,19 @@ private fun MarksMenu(
 
 @Composable
 private fun MarksColumn(
-    children: List<MarkNode>,
+    children: List<Pair<MarkNode, Favicon?>>,
     modifier: Modifier = Modifier,
     onMarkClick: (mark: MarkNode) -> Unit = {},
     onMarkLongClick: (mark: MarkNode) -> Unit = {},
 ) {
-    val listState = rememberLazyListState()
     LazyColumn(
-        state = listState,
+        state = rememberLazyListState(),
         modifier = modifier,
     ) {
-        items(children) { mark ->
+        items(children) { (mark, favicon) ->
             MarksItem(
                 mark,
+                favicon,
                 onMarkClick = { onMarkClick(it) },
                 onMarkLongClick = { onMarkLongClick(it) },
             )
@@ -222,15 +227,14 @@ private fun MarksColumn(
 @Composable
 private fun MarksItem(
     mark: MarkNode,
+    favicon: Favicon?,
     modifier: Modifier = Modifier,
     onMarkClick: (mark: MarkNode) -> Unit = {},
     onMarkLongClick: (mark: MarkNode) -> Unit = {},
 ) {
-    val favicon: Bitmap? = remember {
-        mark.favicon?.let { favicon ->
-            Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888).also {
-                it.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))
-            }
+    val faviconBitmap: Bitmap? = favicon?.let {
+        Bitmap.createBitmap(it.size, it.size, Bitmap.Config.ARGB_8888).apply {
+            copyPixelsFromBuffer(ByteBuffer.wrap(it.favicon))
         }
     }
 
@@ -253,9 +257,9 @@ private fun MarksItem(
                     .align(Alignment.CenterVertically)
                     .padding(start = 4.dp, end = 4.dp)
             ) {
-                if (favicon != null) {
+                if (faviconBitmap != null) {
                     Image(
-                        bitmap = favicon.asImageBitmap(),
+                        bitmap = faviconBitmap.asImageBitmap(),
                         mark.domain,
                         modifier = Modifier.size(24.dp),
                     )
@@ -295,6 +299,7 @@ class MarksScreenViewModel @Inject constructor(
     private val marks: Marks,
     private val settings: Settings,
 ) : ViewModel() {
+    private var currentMarkId: Long = 0
 
     var showMessage: (message: String) -> Unit = {}
     var onSelectFolder: (markId: Long) -> Unit = {}
@@ -306,7 +311,7 @@ class MarksScreenViewModel @Inject constructor(
     private val _markPath = MutableStateFlow(listOf<MarkNode>())
     val markPath get() = _markPath.asStateFlow()
 
-    private val _markColumns = MutableStateFlow(mapOf<MarkNode, List<MarkNode>>())
+    private val _markColumns = MutableStateFlow(listOf<List<Pair<MarkNode, Favicon?>>>())
     val markColumns get() = _markColumns.asStateFlow()
 
     private val _selectedMark = MutableStateFlow<MarkNode?>(null)
@@ -319,18 +324,20 @@ class MarksScreenViewModel @Inject constructor(
     val marksMenuItems get() = _marksMenuItems.asStateFlow()
 
     suspend fun getMarks(markId: Long) {
+        currentMarkId = markId
         withContext(Dispatchers.IO) {
             val mark = marks.getMark(markId) ?: return@withContext
             val markPath = marks.getMarkPath(mark)
             _markPath.value = markPath
 
-            markPath
+            _markColumns.value = markPath
                 .takeLast(settings.getFolderColumnsValue())
-                .associateWith {
-                    marks.getMarkChildren(it)
-                }
-                .let {
-                    _markColumns.value = it
+                .map { parent ->
+                    val children = marks.getMarkChildren(parent)
+                    val favicons = marks.findFavicons(children.map { it.domain })
+                    children.map { mark ->
+                        Pair(mark, favicons.firstOrNull { it.domain == mark.domain })
+                    }
                 }
         }
     }
@@ -378,13 +385,16 @@ class MarksScreenViewModel @Inject constructor(
             }
             MarksMenuItem.FETCH_FAVICON -> {
                 fetchFavicon(listOf(mark.domain))
+                showMessage("Favicon を取得しました")
             }
             MarksMenuItem.FETCH_FAVICON_IN_FOLDER -> {
                 viewModelScope.launch {
                     marks.getMarkChildren(mark)
+                        .filter { it.isBookmark }
                         .map { it.domain }
                         .let {
                             fetchFavicon(it)
+                            showMessage("Favicon を取得しました")
                         }
                 }
             }

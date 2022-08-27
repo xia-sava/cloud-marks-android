@@ -1,6 +1,5 @@
 package to.sava.cloudmarksandroid.databases.repositories
 
-import kotlinx.coroutines.flow.Flow
 import to.sava.cloudmarksandroid.databases.dao.MarkNodeDao
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
@@ -28,17 +27,6 @@ class MarkNodeRepository(
     }
 
     /**
-     * 指定 ID の MarkNode Flow を取得する．
-     */
-    fun getMarkNodeFlow(id: Long): Flow<MarkNode> {
-        return if (id == MarkNode.ROOT_ID) {
-            access.getRootMarkNodeFlow()
-        } else {
-            access.getMarkNodeFlow(id)
-        }
-    }
-
-    /**
      * 指定 ID の直接の children を取得する．
      */
     suspend fun getMarkNodeChildren(parent_id: Long): List<MarkNode> {
@@ -61,23 +49,10 @@ class MarkNodeRepository(
     }
 
     /**
-     * 指定idのMarkNodeのドメイン名ユニークリストを取得する．
-     * MarkNodeがFolderだった場合はその配下のBookmark全てのリストを作る．
+     * 全 MarkNode を取得する．
      */
-    suspend fun getUniqueListOfFaviconDomains(id: Long): List<String> {
-        val target = getMarkNode(id)
-        return target?.let { mark ->
-            when (mark.type) {
-                MarkType.Bookmark -> listOf(mark.domain)
-                MarkType.Folder -> {
-                    getMarkNodeChildren(mark)
-                        .filter { it.type == MarkType.Bookmark }
-                        .map { it.domain }
-                        .filter { it.isNotEmpty() }
-                        .distinct()
-                }
-            }
-        } ?: listOf()
+    suspend fun getAllMarkNode(): List<MarkNode> {
+        return access.getAllMarkNode()
     }
 
     /**

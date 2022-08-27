@@ -2,7 +2,6 @@ package to.sava.cloudmarksandroid.databases.models
 
 import android.net.Uri
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 
@@ -31,8 +30,8 @@ class MarkNode(
 
     val domain: String get() = parseDomain(url)
 
-    @Ignore
-    var favicon: Favicon? = null
+    val isBookmark get() = this.type == MarkType.Bookmark
+    val isFolder get() = this.type == MarkType.Folder
 
     companion object {
         const val ROOT_ID = 1L
@@ -51,6 +50,9 @@ class MarkTreeNode(
     val url: String,
     val children: List<MarkTreeNode>
 ) {
+    val isBookmark get() = this.type == MarkType.Bookmark
+    val isFolder get() = this.type == MarkType.Folder
+
     override fun toString() = "${type.name}/${title}/<${url}>/${children.size}"
 
     /**
@@ -61,8 +63,8 @@ class MarkTreeNode(
             filter == null -> 1
             type == filter -> 1
             else -> 0
-        } + if (type == MarkType.Folder)
-            children.map { it.countChildren(type) }.sum()
+        } + if (isFolder)
+            children.sumOf { it.countChildren(type) }
         else
             0
     }

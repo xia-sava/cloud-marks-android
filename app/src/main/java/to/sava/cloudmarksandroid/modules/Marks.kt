@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import to.sava.cloudmarksandroid.databases.models.Favicon
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
@@ -122,20 +123,7 @@ class Marks(
      * Room DBから指定ノードの子ノードを取得する．
      */
     suspend fun getMarkChildren(parent: MarkNode): List<MarkNode> {
-        val children = repos.getMarkNodeChildren(parent)
-        val faviconMap = children
-            .filter { it.type == MarkType.Bookmark }
-            .map { it.domain }
-            .distinct()
-            .let {
-                faviconRepos.findFavicons(it)
-            }.associateBy {
-                it.domain
-            }
-        children.forEach {
-            it.favicon = faviconMap[it.domain]
-        }
-        return children
+        return repos.getMarkNodeChildren(parent)
     }
 
     /**
@@ -156,7 +144,7 @@ class Marks(
      * MarkTreeNodeをRoom DBへ反映する．
      */
     private suspend fun applyMarkTreeNodeToDB(remote: MarkTreeNode, local: MarkNode): Boolean {
-        if (remote.type == MarkType.Folder) {
+        if (remote.isFolder) {
             if (folderCount == -1L) {
                 folderCount = remote.countChildren(MarkType.Folder)
             }
@@ -170,7 +158,7 @@ class Marks(
             local.url = remote.url
             repos.saveMarkNode(local)
             // フォルダの反映．いったん全消しして追加しなおす（乱暴）
-            if (remote.type == MarkType.Folder) {
+            if (remote.isFolder) {
                 val children = repos.getMarkNodeChildren(local)
                 for (child in children) {
                     removeBookmark(child)
@@ -182,7 +170,7 @@ class Marks(
             return true
         }
         // ターゲットに差分がなさそうでも子階層は違うかもしれないので再帰チェックする
-        if (remote.type == MarkType.Folder) {
+        if (remote.isFolder) {
             val children = repos.getMarkNodeChildren(local)
             if (children.isNotEmpty()) {
                 var rc = false
@@ -207,7 +195,7 @@ class Marks(
             return true
         }
         // children の比較は個数まで，中身の比較は他ループに任せる
-        if (remote.type == MarkType.Folder) {
+        if (remote.isFolder) {
             val childrenCount = repos.getMarkNodeChildren(bookmark).count()
             if (remote.children.size != childrenCount) {
                 return true
@@ -247,7 +235,7 @@ class Marks(
      * Room DBからノードを削除する．
      */
     private suspend fun removeBookmark(target: MarkNode) {
-        if (target.type == MarkType.Folder) {
+        if (target.isFolder) {
             for (child in repos.getMarkNodeChildren(target)) {
                 removeBookmark(child)
             }
@@ -258,7 +246,10 @@ class Marks(
     /**
      * favicon を Google から HTTP で取得する
      */
-    suspend fun fetchFavicons(domains: List<String>) = coroutineScope {
+    suspend fun fetchFavicons(
+        domains: List<String>,
+        onFetched: (favicons: List<Favicon>) -> Unit = {},
+    ) = coroutineScope {
         domains
             .map { domain ->
                 async(Dispatchers.Default) {
@@ -269,13 +260,22 @@ class Marks(
             .filterNotNull()
             .let {
                 faviconRepos.saveFavicons(it)
+                onFetched(it)
             }
     }
 
-    suspend fun fetchFavicon(domain: String) {
-        faviconRepos.fetchFavicon(domain)
-            ?.let {
-                faviconRepos.saveFavicon(it)
+    suspend fun fetchAllFavicons() {
+        repos.getAllMarkNode()
+            .filter { it.isBookmark }
+            .map { it.domain }
+            .distinct()
+            .minus(faviconRepos.findAllFavicons().map { it.domain }.toSet())
+            .let {
+                fetchFavicons(it)
             }
+    }
+
+    suspend fun findFavicons(domains: List<String>): List<Favicon> {
+        return faviconRepos.findFavicons(domains)
     }
 }

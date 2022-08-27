@@ -39,6 +39,7 @@ import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.modules.*
 import to.sava.cloudmarksandroid.ui.theme.CloudMarksAndroidTheme
+import java.time.LocalTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -69,6 +70,7 @@ fun MainPage(modifier: Modifier = Modifier) {
 
     val marksWorkerRunning by viewModel.marksWorkerRunning.collectAsState(false)
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
+    val lastOpenedTime by viewModel.lastOpenedTime.collectAsState("")
 
     val markId = lastOpenedMarkId ?: return
 
@@ -137,6 +139,7 @@ fun MainPage(modifier: Modifier = Modifier) {
                         }
                     },
                     backStackEntry.arguments?.getLong("markId") ?: markId,
+                    lastOpenedTime,
                 )
             }
             composable("settings") {
@@ -215,6 +218,9 @@ private class MainPageViewModel @Inject constructor(
     private var _marksWorkerRunning = MutableStateFlow(false)
     val marksWorkerRunning get() = _marksWorkerRunning.asStateFlow()
 
+    private var _lastOpenedTime = MutableStateFlow(LocalTime.now().toString())
+    val lastOpenedTime get() = _lastOpenedTime.asStateFlow()
+
     fun showMessage(message: String) {
         CloudMarksAndroidApplication.instance.toast(message)
     }
@@ -223,12 +229,13 @@ private class MainPageViewModel @Inject constructor(
         _marksWorkerRunning.value = true
         enqueueMarkLoader(MarkWorker.Action.LOAD, lifecycleOwner) {
             _marksWorkerRunning.value = false
+            refresh()
         }
     }
 
     fun fetchFavicon(domains: List<String>) {
         viewModelScope.launch {
-            marks.fetchFavicons(domains)
+            marks.fetchFavicons(domains, onFetched = { refresh() })
         }
     }
 
@@ -236,5 +243,9 @@ private class MainPageViewModel @Inject constructor(
         viewModelScope.launch {
             settings.setLastOpenedMarkId(markId)
         }
+    }
+
+    private fun refresh() {
+        _lastOpenedTime.value = LocalTime.now().toString()
     }
 }

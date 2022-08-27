@@ -6,6 +6,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import to.sava.cloudmarksandroid.databases.dao.FaviconDao
 import to.sava.cloudmarksandroid.databases.models.Favicon
+import java.io.FileNotFoundException
 import java.net.URL
 import java.nio.ByteBuffer
 
@@ -21,6 +22,10 @@ class FaviconRepository(
         return access.findFavicons(domains)
     }
 
+    suspend fun findAllFavicons(): List<Favicon> {
+        return access.findAllFavicons()
+    }
+
     suspend fun saveFavicon(favicon: Favicon): Long {
         return access.save(favicon)
     }
@@ -31,11 +36,25 @@ class FaviconRepository(
 
     suspend fun fetchFavicon(domain: String): Favicon? {
         return withTimeoutOrNull(5000) {
-            val faviconUrl = "https://cdn-ak.favicon.st-hatena.com/?url=https://$domain"
-//            val faviconUrl = "https://www.google.com/s2/favicons?domain=$domain"
+            val faviconUrls = listOf(
+                "https://cdn-ak.favicon.st-hatena.com/?url=https://$domain",
+                "https://cdn-ak.favicon.st-hatena.com/?url=http://$domain",
+                "https://www.google.com/s2/favicons?domain=$domain",
+            )
             withContext(Dispatchers.IO) {
-                BitmapFactory.decodeStream(URL(faviconUrl).openStream())
-            }.let { bitmap ->
+                faviconUrls.firstNotNullOfOrNull { url ->
+                    runCatching {
+                        URL(url).openStream()
+                    }.getOrElse {
+                        when (it) {
+                            is FileNotFoundException -> null
+                            else -> throw it
+                        }
+                    }
+                }
+            }?.let {
+                BitmapFactory.decodeStream(it)
+            }?.let { bitmap ->
                 ByteBuffer.allocate(bitmap.byteCount).also {
                     bitmap.copyPixelsToBuffer(it)
                 }.let { bytes ->

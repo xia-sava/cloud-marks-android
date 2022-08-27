@@ -119,6 +119,7 @@ class MarkWorker @AssistedInject constructor(
             )
         }
         marks.load()
+        marks.fetchAllFavicons()
     }
 
     private fun createNotification(

@@ -14,6 +14,9 @@ interface FaviconDao {
     @Query("SELECT * FROM favicon WHERE domain IN (:domains)")
     suspend fun findFavicons(domains: List<String>): List<Favicon>
 
+    @Query("SELECT * FROM favicon")
+    suspend fun findAllFavicons(): List<Favicon>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun save(favicon: Favicon): Long
 

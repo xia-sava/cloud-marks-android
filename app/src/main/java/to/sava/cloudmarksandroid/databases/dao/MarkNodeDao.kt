@@ -1,7 +1,6 @@
 package to.sava.cloudmarksandroid.databases.dao
 
 import androidx.room.*
-import kotlinx.coroutines.flow.Flow
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 
 @Dao
@@ -13,22 +12,10 @@ interface MarkNodeDao {
     suspend fun getRootMarkNode(): MarkNode?
 
     /**
-     * root MarkNode Flow を取得する．
-     */
-    @Query("SELECT * FROM mark_node WHERE parent_id is NULL")
-    fun getRootMarkNodeFlow(): Flow<MarkNode>
-
-    /**
      * 指定 ID の MarkNode を取得する．
      */
     @Query("SELECT * FROM mark_node WHERE id = :id")
     suspend fun getMarkNode(id: Long): MarkNode?
-
-    /**
-     * 指定 ID の MarkNode Flow を取得する．
-     */
-    @Query("SELECT * FROM mark_node WHERE id = :id")
-    fun getMarkNodeFlow(id: Long): Flow<MarkNode>
 
     /**
      * 指定 ID の直接の children を取得する．
@@ -41,6 +28,12 @@ interface MarkNodeDao {
      */
     @Query("SELECT COUNT(*) FROM mark_node WHERE parent_id = :parentId")
     suspend fun getMarkNodeChildrenCount(parentId: Long): Long
+
+    /**
+     * 全 MarkNode を取得する．
+     */
+    @Query("SELECT * FROM mark_node")
+    suspend fun getAllMarkNode(): List<MarkNode>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun save(entity: MarkNode): Long
