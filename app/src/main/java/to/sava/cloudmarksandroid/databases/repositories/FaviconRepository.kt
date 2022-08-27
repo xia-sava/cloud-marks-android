@@ -1,15 +1,15 @@
 package to.sava.cloudmarksandroid.databases.repositories
 
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
+import android.graphics.BitmapFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import to.sava.cloudmarksandroid.databases.dao.FaviconDao
 import to.sava.cloudmarksandroid.databases.models.Favicon
+import java.net.URL
 import java.nio.ByteBuffer
 
 class FaviconRepository(
-    private val context: Context,
     private val access: FaviconDao
 ) {
 
@@ -21,15 +21,27 @@ class FaviconRepository(
         return access.findFavicons(domains)
     }
 
+    suspend fun saveFavicon(favicon: Favicon): Long {
+        return access.save(favicon)
+    }
+
     suspend fun saveFavicons(favicons: List<Favicon>): List<Long> {
         return access.save(favicons)
     }
 
-    suspend fun findFaviconDrawable(domain: String): Drawable? {
-        return findFavicon(domain)?.let { favicon ->
-            val bitmap = Bitmap.createBitmap(favicon.size, favicon.size, Bitmap.Config.ARGB_8888)
-            bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(favicon.favicon))
-            BitmapDrawable(context.resources, bitmap)
+    suspend fun fetchFavicon(domain: String): Favicon? {
+        return withTimeoutOrNull(5000) {
+            val faviconUrl = "https://cdn-ak.favicon.st-hatena.com/?url=https://$domain"
+//            val faviconUrl = "https://www.google.com/s2/favicons?domain=$domain"
+            withContext(Dispatchers.IO) {
+                BitmapFactory.decodeStream(URL(faviconUrl).openStream())
+            }.let { bitmap ->
+                ByteBuffer.allocate(bitmap.byteCount).also {
+                    bitmap.copyPixelsToBuffer(it)
+                }.let { bytes ->
+                    Favicon(domain, bytes.array(), Integer.max(bitmap.height, bitmap.width))
+                }
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.work.WorkManager
 
 fun Context.toast(message: CharSequence, length: Int = Toast.LENGTH_SHORT): Toast =
     Toast.makeText(this, message, length).apply {
@@ -25,3 +26,5 @@ val Context.notificationManager: NotificationManager
 val Context.windowManager: WindowManager
     get() = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
+val Context.workerManager: WorkManager
+    get() = WorkManager.getInstance(this)

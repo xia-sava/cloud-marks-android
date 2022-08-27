@@ -16,8 +16,8 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIO
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.ui.MainActivity
 
@@ -29,21 +29,22 @@ private const val NOTIFICATION_CHANNEL_NAME = "Cloud Marks Android 処理状況"
 
 fun enqueueMarkLoader(
     action: MarkWorker.Action,
-    context: Context,
     lifecycleOwner: LifecycleOwner,
     onWorkerEnds: (workInfo: WorkInfo) -> Unit = {},
 ) {
     val request = OneTimeWorkRequestBuilder<MarkWorker>()
         .setInputData(workDataOf("action" to action.name))
         .build()
-    val wm = WorkManager.getInstance(context)
-    wm.getWorkInfoByIdLiveData(request.id)
-        .observe(lifecycleOwner) { workInfo ->
-            if (workInfo.state.isFinished) {
-                onWorkerEnds(workInfo)
-            }
+    CloudMarksAndroidApplication.instance.workerManager
+        .apply {
+            getWorkInfoByIdLiveData(request.id)
+                .observe(lifecycleOwner) { workInfo ->
+                    if (workInfo.state.isFinished) {
+                        onWorkerEnds(workInfo)
+                    }
+                }
         }
-    wm.enqueue(request)
+        .enqueue(request)
 }
 
 @HiltWorker

@@ -12,25 +12,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import to.sava.cloudmarksandroid.modules.Marks
 import to.sava.cloudmarksandroid.modules.Settings
-import to.sava.cloudmarksandroid.modules.toast
 import java.nio.ByteBuffer
 import javax.inject.Inject
 
@@ -44,15 +43,9 @@ fun MarksScreen(
     val openMenu by viewModel.openMenu.collectAsState(false)
     val selectedMark by viewModel.selectedMark.collectAsState(null)
     val marksMenuItems by viewModel.marksMenuItems.collectAsState(listOf())
-    val message by viewModel.message.collectAsState("")
 
     LaunchedEffect(markId) {
         viewModel.getMarks(markId)
-    }
-
-    message.takeIf { it.isNotEmpty() }?.let {
-        LocalContext.current.toast(it).show()
-        viewModel.markMessageShown(it)
     }
 
     Column(
@@ -261,7 +254,11 @@ private fun MarksItem(
                     .padding(start = 4.dp, end = 4.dp)
             ) {
                 if (favicon != null) {
-                    Image(bitmap = favicon.asImageBitmap(), mark.domain)
+                    Image(
+                        bitmap = favicon.asImageBitmap(),
+                        mark.domain,
+                        modifier = Modifier.size(24.dp),
+                    )
                 } else {
                     when (mark.type) {
                         MarkType.Folder -> Icon(
@@ -299,10 +296,12 @@ class MarksScreenViewModel @Inject constructor(
     private val settings: Settings,
 ) : ViewModel() {
 
+    var showMessage: (message: String) -> Unit = {}
     var onSelectFolder: (markId: Long) -> Unit = {}
-    var onCopyToClipboard: (text: String) -> Unit = {}
+    var onCopyToClipboard: (copyText: String, typeText: String) -> Unit = { _, _ -> }
     var openMark: (url: String) -> Unit = {}
     var shareMark: (url: String) -> Unit = {}
+    var fetchFavicon: (domains: List<String>) -> Unit = {}
 
     private val _markPath = MutableStateFlow(listOf<MarkNode>())
     val markPath get() = _markPath.asStateFlow()
@@ -318,9 +317,6 @@ class MarksScreenViewModel @Inject constructor(
 
     private val _marksMenuItems = MutableStateFlow(listOf<MarksMenuItem>())
     val marksMenuItems get() = _marksMenuItems.asStateFlow()
-
-    private val _message = MutableStateFlow("")
-    val message get() = _message.asSharedFlow()
 
     suspend fun getMarks(markId: Long) {
         withContext(Dispatchers.IO) {
@@ -375,25 +371,23 @@ class MarksScreenViewModel @Inject constructor(
             MarksMenuItem.OPEN -> clickMark(mark)
             MarksMenuItem.SHARE -> shareMark(mark.url)
             MarksMenuItem.COPY_URL -> {
-                onCopyToClipboard(mark.url)
-                showMessage("URLをクリップボードにコピーしました。")
+                onCopyToClipboard(mark.url, "URL")
             }
             MarksMenuItem.COPY_TITLE -> {
-                onCopyToClipboard(mark.title)
-                showMessage("タイトルをクリップボードにコピーしました。")
+                onCopyToClipboard(mark.title, "タイトル")
             }
-            MarksMenuItem.FETCH_FAVICON -> {}
-            MarksMenuItem.FETCH_FAVICON_IN_FOLDER -> {}
-        }
-    }
-
-    fun showMessage(message: String) {
-        _message.value = message
-    }
-
-    fun markMessageShown(message: String) {
-        if (_message.value == message) {
-            _message.value = ""
+            MarksMenuItem.FETCH_FAVICON -> {
+                fetchFavicon(listOf(mark.domain))
+            }
+            MarksMenuItem.FETCH_FAVICON_IN_FOLDER -> {
+                viewModelScope.launch {
+                    marks.getMarkChildren(mark)
+                        .map { it.domain }
+                        .let {
+                            fetchFavicon(it)
+                        }
+                }
+            }
         }
     }
 }

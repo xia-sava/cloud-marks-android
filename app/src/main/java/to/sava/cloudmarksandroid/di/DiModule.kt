@@ -54,8 +54,8 @@ object DiModuleProvider {
         MarkNodeRepository(markNodeDao)
 
     @Provides
-    fun provideFaviconRepository(context: Context, faviconDao: FaviconDao) =
-        FaviconRepository(context, faviconDao)
+    fun provideFaviconRepository(faviconDao: FaviconDao) =
+        FaviconRepository(faviconDao)
 
     @Provides
     fun provideMarks(

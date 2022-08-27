@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +20,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavType
@@ -31,12 +31,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
-import to.sava.cloudmarksandroid.modules.MarkWorker
-import to.sava.cloudmarksandroid.modules.Settings
-import to.sava.cloudmarksandroid.modules.enqueueMarkLoader
+import to.sava.cloudmarksandroid.modules.*
 import to.sava.cloudmarksandroid.ui.theme.CloudMarksAndroidTheme
 import javax.inject.Inject
 
@@ -57,23 +58,17 @@ class MainActivity : ComponentActivity() {
 fun MainPage(modifier: Modifier = Modifier) {
     val viewModel: MainPageViewModel = hiltViewModel()
 
-    val navController = rememberNavController()
-    val scaffoldState = rememberScaffoldState()
-    val navBackStack by navController.currentBackStackEntryAsState()
-    var runMarksLoader by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val uriHandler = LocalUriHandler.current
-    val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(initial = null)
 
-    if (runMarksLoader) {
-        LaunchedEffect(MarkNode.ROOT_ID) {
-            enqueueMarkLoader(MarkWorker.Action.LOAD, context, lifecycleOwner) {
-                runMarksLoader = false
-            }
-        }
-    }
+    val navController = rememberNavController()
+    val scaffoldState = rememberScaffoldState()
+    val navBackStack by navController.currentBackStackEntryAsState()
+
+    val marksWorkerRunning by viewModel.marksWorkerRunning.collectAsState(false)
+    val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
 
     val markId = lastOpenedMarkId ?: return
 
@@ -86,8 +81,8 @@ fun MainPage(modifier: Modifier = Modifier) {
                         ),
                 disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
-                disableLoadMenu = runMarksLoader,
-                onClickLoad = { runMarksLoader = true },
+                disableLoadMenu = marksWorkerRunning,
+                onClickLoad = { viewModel.loadMarks(lifecycleOwner) },
                 onClickBack = { navController.popBackStack() },
             )
         },
@@ -106,12 +101,16 @@ fun MainPage(modifier: Modifier = Modifier) {
             ) { backStackEntry ->
                 MarksScreen(
                     hiltViewModel<MarksScreenViewModel>().apply {
+                        showMessage = { message ->
+                            viewModel.showMessage(message)
+                        }
                         onSelectFolder = { selectedId ->
                             viewModel.setLastOpenedId(selectedId)
                             navController.navigate("marks/$selectedId")
                         }
-                        onCopyToClipboard = { text ->
-                            clipboardManager.setText(AnnotatedString(text))
+                        onCopyToClipboard = { copyText, typeText ->
+                            clipboardManager.setText(AnnotatedString(copyText))
+                            showMessage("${typeText}をクリップボードにコピーしました。")
                         }
                         openMark = { url ->
                             uriHandler.openUri(url)
@@ -132,6 +131,9 @@ fun MainPage(modifier: Modifier = Modifier) {
                                     context.startActivity(it)
                                 }
                             }
+                        }
+                        fetchFavicon = { domains ->
+                            viewModel.fetchFavicon(domains)
                         }
                     },
                     backStackEntry.arguments?.getLong("markId") ?: markId,
@@ -205,9 +207,30 @@ private fun CloudMarksTopAppBar(
 
 @HiltViewModel
 private class MainPageViewModel @Inject constructor(
-    private val settings: Settings
+    private val settings: Settings,
+    private val marks: Marks,
 ) : ViewModel() {
     val lastOpenedId = settings.getLastOpenedMarkId()
+
+    private var _marksWorkerRunning = MutableStateFlow(false)
+    val marksWorkerRunning get() = _marksWorkerRunning.asStateFlow()
+
+    fun showMessage(message: String) {
+        CloudMarksAndroidApplication.instance.toast(message)
+    }
+
+    fun loadMarks(lifecycleOwner: LifecycleOwner) {
+        _marksWorkerRunning.value = true
+        enqueueMarkLoader(MarkWorker.Action.LOAD, lifecycleOwner) {
+            _marksWorkerRunning.value = false
+        }
+    }
+
+    fun fetchFavicon(domains: List<String>) {
+        viewModelScope.launch {
+            marks.fetchFavicons(domains)
+        }
+    }
 
     fun setLastOpenedId(markId: Long) {
         viewModelScope.launch {

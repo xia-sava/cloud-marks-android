@@ -1,6 +1,9 @@
 package to.sava.cloudmarksandroid.modules
 
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
@@ -113,13 +116,6 @@ class Marks(
      */
     suspend fun getMark(id: Long): MarkNode? {
         return repos.getMarkNode(id)
-    }
-
-    /**
-     * Room DBから指定名のノードを取得する．
-     */
-    fun getMarkFlow(id: Long): Flow<MarkNode> {
-        return repos.getMarkNodeFlow(id)
     }
 
     /**
@@ -257,5 +253,29 @@ class Marks(
             }
         }
         repos.deleteMarkNode(target)
+    }
+
+    /**
+     * favicon を Google から HTTP で取得する
+     */
+    suspend fun fetchFavicons(domains: List<String>) = coroutineScope {
+        domains
+            .map { domain ->
+                async(Dispatchers.Default) {
+                    faviconRepos.fetchFavicon(domain)
+                }
+            }
+            .awaitAll()
+            .filterNotNull()
+            .let {
+                faviconRepos.saveFavicons(it)
+            }
+    }
+
+    suspend fun fetchFavicon(domain: String) {
+        faviconRepos.fetchFavicon(domain)
+            ?.let {
+                faviconRepos.saveFavicon(it)
+            }
     }
 }
