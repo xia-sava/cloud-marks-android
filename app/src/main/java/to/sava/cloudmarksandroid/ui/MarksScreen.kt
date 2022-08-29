@@ -123,6 +123,8 @@ private fun MarksBreadcrumbs(
     ) {
         Row(
             modifier = Modifier
+                .padding(horizontal = 8.dp, vertical = 1.dp)
+                .height(32.dp)
         ) {
             for ((i, mark) in markPath.withIndex()) {
                 val text = if (i == 0) "/" else mark.title
@@ -134,7 +136,10 @@ private fun MarksBreadcrumbs(
                         fontSize = 10.sp,
                         modifier = Modifier
                             .align(Alignment.CenterVertically)
-                            .padding(horizontal = 4.dp)
+                            .padding(
+                                vertical = 2.dp,
+                                horizontal = 8.dp,
+                            )
                     )
                 }
 
@@ -147,6 +152,8 @@ private fun MarksBreadcrumbs(
                         contentPadding = PaddingValues(all = 0.dp),
                         onClick = { onMarkClick(mark) },
                         modifier = Modifier
+                            .height(24.dp)
+                            .align(Alignment.CenterVertically)
                     ) {
                         TextElement(text)
                     }
