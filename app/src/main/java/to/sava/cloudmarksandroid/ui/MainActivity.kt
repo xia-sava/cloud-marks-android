@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +35,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import to.sava.cloudmarksandroid.BuildConfig
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.MarkNode
@@ -68,6 +70,8 @@ fun MainPage(modifier: Modifier = Modifier) {
     val scaffoldState = rememberScaffoldState()
     val navBackStack by navController.currentBackStackEntryAsState()
 
+    var showAboutDialog by rememberSaveable { mutableStateOf(false) }
+
     val marksWorkerRunning by viewModel.marksWorkerRunning.collectAsState(false)
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
     val lastOpenedTime by viewModel.lastOpenedTime.collectAsState("")
@@ -85,6 +89,7 @@ fun MainPage(modifier: Modifier = Modifier) {
                 onClickSettings = { navController.navigate("settings") },
                 disableLoadMenu = marksWorkerRunning,
                 onClickLoad = { viewModel.loadMarks(lifecycleOwner) },
+                onClickAbout = { showAboutDialog = true },
                 onClickBack = { viewModel.back() },
             )
         },
@@ -150,6 +155,24 @@ fun MainPage(modifier: Modifier = Modifier) {
             }
         }
     }
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = {
+                Text("Cloud Marks Android")
+            },
+            text = {
+                Text("Version: ${BuildConfig.VERSION_NAME}")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showAboutDialog = false }
+                ) {
+                    Text("OK")
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -159,6 +182,7 @@ private fun CloudMarksTopAppBar(
     onClickSettings: () -> Unit = {},
     disableLoadMenu: Boolean = false,
     onClickLoad: () -> Unit = {},
+    onClickAbout: () -> Unit = {},
     onClickBack: () -> Unit = {},
 ) {
     var showMenu by mutableStateOf(false)
@@ -204,6 +228,15 @@ private fun CloudMarksTopAppBar(
                     enabled = !disableLoadMenu,
                 ) {
                     Text("Load")
+                }
+                DropdownMenuItem(
+                    onClick = {
+                        showMenu = false
+                        onClickAbout()
+                    },
+                    enabled = true,
+                ) {
+                    Text("About ...")
                 }
             }
         }
