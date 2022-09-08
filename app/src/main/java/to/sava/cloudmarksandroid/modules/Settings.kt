@@ -168,5 +168,7 @@ class Settings(
     suspend fun setGoogleAccount(value: String) =
         setValue(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, value)
 
-    suspend fun googleConnected() = getGoogleAccount() != ""
+    fun isGoogleConnected() =
+        getString(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
+        .map { it != "" }
 }

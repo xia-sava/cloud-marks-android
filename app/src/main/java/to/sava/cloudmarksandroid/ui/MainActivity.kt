@@ -75,6 +75,7 @@ fun MainPage(modifier: Modifier = Modifier) {
     val marksWorkerRunning by viewModel.marksWorkerRunning.collectAsState(false)
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
     val lastOpenedTime by viewModel.lastOpenedTime.collectAsState("")
+    val isGoogleConnected by viewModel.isGoogleConnected.collectAsState(false)
 
     val markId = lastOpenedMarkId ?: return
 
@@ -87,7 +88,7 @@ fun MainPage(modifier: Modifier = Modifier) {
                         ),
                 disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
-                disableLoadMenu = marksWorkerRunning,
+                disableLoadMenu = marksWorkerRunning || !isGoogleConnected,
                 onClickLoad = { viewModel.loadMarks(lifecycleOwner) },
                 onClickAbout = { showAboutDialog = true },
                 onClickBack = { viewModel.back() },
@@ -250,6 +251,7 @@ private class MainPageViewModel @Inject constructor(
     private val marks: Marks,
 ) : ViewModel() {
     val lastOpenedId = settings.getLastOpenedMarkId()
+    val isGoogleConnected = settings.isGoogleConnected()
 
     private var _marksWorkerRunning = MutableStateFlow(false)
     val marksWorkerRunning get() = _marksWorkerRunning.asStateFlow()
