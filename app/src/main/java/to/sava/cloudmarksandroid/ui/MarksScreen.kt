@@ -254,7 +254,7 @@ private fun MarksItem(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(32.dp)
+            .height(48.dp)
             .combinedClickable(
                 onClick = { onMarkClick(mark) },
                 onLongClick = { onMarkLongClick(mark) }
@@ -263,7 +263,7 @@ private fun MarksItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(31.dp)
+                .height(46.dp)
         ) {
             Box(
                 modifier = Modifier
