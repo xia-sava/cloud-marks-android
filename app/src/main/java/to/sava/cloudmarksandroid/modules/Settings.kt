@@ -17,6 +17,7 @@ object PreferenceKeys {
     val LAST_SYNCED = longPreferencesKey("last_synced")
     val LAST_BOOKMARK_MODIFIED = longPreferencesKey("last_bookmark_modified")
     val LAST_OPENED_MARK_ID = longPreferencesKey("last_opened_mark_id")
+    val MARK_READ_TO_HERE = longPreferencesKey("mark_read_to_here")
     val GOOGLE_DRIVE_ACCOUNT = stringPreferencesKey("google_drive_account")
 }
 
@@ -149,6 +150,15 @@ class Settings(
 
     suspend fun setLastOpenedMarkId(value: Long) =
         setValue(PreferenceKeys.LAST_OPENED_MARK_ID, value)
+
+    fun getMarkReadToHere() =
+        getLong(PreferenceKeys.MARK_READ_TO_HERE, MarkNode.ROOT_ID)
+
+    suspend fun getMarkReadToHereValue() =
+        getLongValue(PreferenceKeys.MARK_READ_TO_HERE, MarkNode.ROOT_ID)
+
+    suspend fun setMarkReadToHere(value: Long) =
+        setValue(PreferenceKeys.MARK_READ_TO_HERE, value)
 
     fun getFolderColumns() =
         getInt(PreferenceKeys.FOLDER_COLUMNS, 1)

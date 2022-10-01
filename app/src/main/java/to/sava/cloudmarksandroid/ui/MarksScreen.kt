@@ -27,6 +27,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import to.sava.cloudmarksandroid.R
@@ -49,6 +50,7 @@ fun MarksScreen(
     val openMenu by viewModel.openMenu.collectAsState(false)
     val selectedMark by viewModel.selectedMark.collectAsState(null)
     val marksMenuItems by viewModel.marksMenuItems.collectAsState(listOf())
+    val markReadToHere by viewModel.markReadToHere.collectAsState(listOf())
 
     LaunchedEffect(lastOpenedTime) {
         viewModel.getMarks(markId)
@@ -77,6 +79,7 @@ fun MarksScreen(
             for (children in markColumns) {
                 MarksColumn(
                     children,
+                    markReadToHere,
                     modifier = Modifier
                         .weight(1f / markColumns.size)
                         .padding(horizontal = 1.dp),
@@ -171,6 +174,7 @@ enum class MarksMenuItem(val label: String) {
     SHARE("Share to ..."),
     COPY_URL("Copy URL"),
     COPY_TITLE("Copy title"),
+    MARK_READ("Mark read"),
     FETCH_FAVICON("Fetch favicon"),
     FETCH_FAVICON_IN_FOLDER("Fetch favicon in this folder"),
 }
@@ -217,6 +221,7 @@ private fun MarksMenu(
 @Composable
 private fun MarksColumn(
     children: List<Pair<MarkNode, Favicon?>>,
+    markReadToHere: List<MarkNode>,
     modifier: Modifier = Modifier,
     onMarkClick: (mark: MarkNode) -> Unit = {},
     onMarkLongClick: (mark: MarkNode) -> Unit = {},
@@ -229,6 +234,10 @@ private fun MarksColumn(
             MarksItem(
                 mark,
                 favicon,
+                modifier = if (markReadToHere.any { it.id == mark.id })
+                    Modifier.background(MaterialTheme.colors.primary)
+                else
+                    Modifier,
                 onMarkClick = { onMarkClick(it) },
                 onMarkLongClick = { onMarkLongClick(it) },
             )
@@ -317,6 +326,7 @@ class MarksScreenViewModel @Inject constructor(
     var showMessage: (message: String) -> Unit = {}
     var onSelectFolder: (markId: Long) -> Unit = {}
     var onCopyToClipboard: (copyText: String, typeText: String) -> Unit = { _, _ -> }
+    var onMarkRead: (mark: MarkNode) -> Unit = {}
     var openMark: (url: String) -> Unit = {}
     var shareMark: (url: String) -> Unit = {}
     var fetchFavicon: (domains: List<String>) -> Unit = {}
@@ -336,6 +346,12 @@ class MarksScreenViewModel @Inject constructor(
 
     private val _marksMenuItems = MutableStateFlow(listOf<MarksMenuItem>())
     val marksMenuItems get() = _marksMenuItems.asStateFlow()
+
+    val markReadToHere = settings.getMarkReadToHere().map {
+        marks.getMark(it)?.let { mark ->
+            marks.getMarkPath(mark)
+        } ?: listOf()
+    }
 
     suspend fun getMarks(markId: Long) {
         currentMarkId = markId
@@ -372,11 +388,13 @@ class MarksScreenViewModel @Inject constructor(
                 MarksMenuItem.SHARE,
                 MarksMenuItem.COPY_URL,
                 MarksMenuItem.COPY_TITLE,
+                MarksMenuItem.MARK_READ,
                 MarksMenuItem.FETCH_FAVICON,
             )
             MarkType.Folder -> listOf(
                 MarksMenuItem.OPEN,
                 MarksMenuItem.COPY_TITLE,
+                MarksMenuItem.MARK_READ,
                 MarksMenuItem.FETCH_FAVICON_IN_FOLDER,
             )
         }
@@ -396,6 +414,9 @@ class MarksScreenViewModel @Inject constructor(
             }
             MarksMenuItem.COPY_TITLE -> {
                 onCopyToClipboard(mark.title, "タイトル")
+            }
+            MarksMenuItem.MARK_READ -> {
+                onMarkRead(mark)
             }
             MarksMenuItem.FETCH_FAVICON -> {
                 fetchFavicon(listOf(mark.domain))

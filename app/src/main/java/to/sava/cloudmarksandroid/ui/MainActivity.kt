@@ -120,6 +120,10 @@ fun MainPage(modifier: Modifier = Modifier) {
                             clipboardManager.setText(AnnotatedString(copyText))
                             showMessage("${typeText}をクリップボードにコピーしました。")
                         }
+                        onMarkRead = { mark ->
+                            viewModel.setMarkReadToHere(mark.id)
+                            showMessage("${mark.title}にここまで読んだマークを付けました。")
+                        }
                         openMark = { url ->
                             uriHandler.openUri(url)
                         }
@@ -294,6 +298,12 @@ private class MainPageViewModel @Inject constructor(
     fun setLastOpenedId(markId: Long) {
         viewModelScope.launch {
             settings.setLastOpenedMarkId(markId)
+        }
+    }
+
+    fun setMarkReadToHere(markId: Long) {
+        viewModelScope.launch {
+            settings.setMarkReadToHere(markId)
         }
     }
 
