@@ -83,6 +83,7 @@ android {
             excludes += "/META-INF/gradle/incremental.annotation.processors"
         }
     }
+    namespace = "to.sava.cloudmarksandroid"
 }
 
 dependencies {
