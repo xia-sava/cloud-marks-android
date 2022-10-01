@@ -24,8 +24,8 @@ android {
         applicationId = "to.sava.cloudmarksandroid"
         minSdk = 29
         targetSdk = 32
-        versionCode = 602
-        versionName = "0.6.2"
+        versionCode = 700
+        versionName = "0.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
