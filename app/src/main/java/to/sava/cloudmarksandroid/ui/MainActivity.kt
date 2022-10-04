@@ -203,7 +203,7 @@ private fun CloudMarksTopAppBar(
         } else {
             {
                 Image(
-                    painterResource(R.drawable.ic_launcher),
+                    painterResource(R.drawable.ic_cloud_marks),
                     "Cloud Marks Android",
                 )
             }
