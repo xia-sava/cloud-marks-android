@@ -18,12 +18,12 @@ plugins {
 }
 
 android {
-    compileSdk = 32
 
+    compileSdk = 34
     defaultConfig {
         applicationId = "to.sava.cloudmarksandroid"
         minSdk = 29
-        targetSdk = 32
+        targetSdk = 33
         versionCode = 701
         versionName = "0.7.1"
 
@@ -64,11 +64,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility(JavaVersion.VERSION_1_8)
-        targetCompatibility(JavaVersion.VERSION_1_8)
+        sourceCompatibility(JavaVersion.VERSION_17)
+        targetCompatibility(JavaVersion.VERSION_17)
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
         freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=all" + "-opt-in=kotlin.RequiresOptIn"
     }
     buildFeatures {
@@ -88,15 +88,15 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.8.0")
+    implementation("androidx.core:core-ktx:1.9.0")
     implementation("androidx.compose.ui:ui:1.2.1")
-    implementation("androidx.navigation:navigation-compose:2.5.1")
+    implementation("androidx.navigation:navigation-compose:2.5.2")
     implementation("androidx.compose.material:material:1.2.1")
     implementation("androidx.compose.material:material-icons-core:1.2.1")
     implementation("androidx.compose.material:material-icons-extended:1.2.1")
     implementation("androidx.compose.runtime:runtime-livedata:1.2.1")
     implementation("androidx.compose.ui:ui-tooling-preview:1.2.1")
-    implementation("androidx.activity:activity-compose:1.5.1")
+    implementation("androidx.activity:activity-compose:1.6.0")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("androidx.work:work-runtime-ktx:2.7.1")
 
@@ -116,7 +116,7 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
 
     implementation("com.google.accompanist:accompanist-permissions:0.23.1")
-    implementation("com.google.android.gms:play-services-auth:20.2.0")
+    implementation("com.google.android.gms:play-services-auth:20.3.0")
     implementation("com.google.api-client:google-api-client-android:1.26.0") {
         exclude("org.apache.httpcomponents")
     }
