@@ -3,10 +3,10 @@ package to.sava.cloudmarksandroid.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.androidx.workmanager.dsl.worker
+import org.koin.dsl.module
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.dataStore
 import to.sava.cloudmarksandroid.databases.CloudMarksAndroidDatabase
@@ -14,54 +14,26 @@ import to.sava.cloudmarksandroid.databases.dao.FaviconDao
 import to.sava.cloudmarksandroid.databases.dao.MarkNodeDao
 import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
+import to.sava.cloudmarksandroid.modules.MarkWorker
 import to.sava.cloudmarksandroid.modules.Marks
 import to.sava.cloudmarksandroid.modules.Settings
+import to.sava.cloudmarksandroid.ui.MainPageViewModel
+import to.sava.cloudmarksandroid.ui.MarksScreenViewModel
 
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class DiModuleBinding {
-}
 
-@Module
-@InstallIn(SingletonComponent::class)
-object DiModuleProvider {
-    @Provides
-    fun provideApplicationContext(): Context =
-        CloudMarksAndroidApplication.instance
+fun appModule() = module {
+    single<Context> { CloudMarksAndroidApplication.instance }
+    single<CloudMarksAndroidDatabase> { CloudMarksAndroidApplication.database }
+    single<DataStore<Preferences>> { get<Context>().dataStore }
+    single<MarkNodeDao> { get<CloudMarksAndroidDatabase>().markNodeDao() }
+    single<FaviconDao> { get<CloudMarksAndroidDatabase>().faviconDao() }
+    single { Settings(get<Context>(), get()) }
+    single { MarkNodeRepository(get()) }
+    single { FaviconRepository(get()) }
+    single { Marks(get(), get(), get()) }
 
-    @Provides
-    fun provideCloudMarksAndroidDatabase(): CloudMarksAndroidDatabase =
-        CloudMarksAndroidApplication.database
+    viewModel { MainPageViewModel(get(), get()) }
+    viewModel { MarksScreenViewModel(get(), get()) }
 
-    @Provides
-    fun provideDataStore(context: Context): DataStore<Preferences> =
-        context.dataStore
-
-    @Provides
-    fun provideMarkNodeDao(db: CloudMarksAndroidDatabase) =
-        db.markNodeDao()
-
-    @Provides
-    fun provideFaviconDao(db: CloudMarksAndroidDatabase) =
-        db.faviconDao()
-
-    @Provides
-    fun provideSettings(context: Context) =
-        Settings(context, context.dataStore)
-
-    @Provides
-    fun provideMarkNodeRepository(markNodeDao: MarkNodeDao) =
-        MarkNodeRepository(markNodeDao)
-
-    @Provides
-    fun provideFaviconRepository(faviconDao: FaviconDao) =
-        FaviconRepository(faviconDao)
-
-    @Provides
-    fun provideMarks(
-        settings: Settings,
-        markNodeRepository: MarkNodeRepository,
-        faviconRepository: FaviconRepository
-    ) =
-        Marks(settings, markNodeRepository, faviconRepository)
+    worker { MarkWorker(get(), get<Context>(), get()) }
 }

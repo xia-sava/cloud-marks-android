@@ -23,13 +23,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.androidx.compose.koinViewModel
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.databases.models.Favicon
 import to.sava.cloudmarksandroid.databases.models.MarkNode
@@ -37,14 +37,16 @@ import to.sava.cloudmarksandroid.databases.models.MarkType
 import to.sava.cloudmarksandroid.modules.Marks
 import to.sava.cloudmarksandroid.modules.Settings
 import java.nio.ByteBuffer
-import javax.inject.Inject
 
 @Composable
 fun MarksScreen(
-    viewModel: MarksScreenViewModel,
+    modifier: Modifier = Modifier,
     markId: Long,
     lastOpenedTime: String,
+    viewModelConfigurator: MarksScreenViewModel.() -> Unit = {},
+    content: @Composable () -> Unit = {},
 ) {
+    val viewModel = koinViewModel<MarksScreenViewModel>().apply(viewModelConfigurator)
     val markPath by viewModel.markPath.collectAsState(listOf())
     val markColumns by viewModel.markColumns.collectAsState(listOf())
     val openMenu by viewModel.openMenu.collectAsState(false)
@@ -62,10 +64,10 @@ fun MarksScreen(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
     ) {
         MarksBreadcrumbs(
-            markPath,
+            markPath = markPath,
             onMarkClick = { viewModel.clickMark(it) }
         )
         Row(
@@ -99,19 +101,21 @@ fun MarksScreen(
             offset = DpOffset(16.dp, 32.dp),
         ) {
             MarksMenu(
-                selectedMark,
-                marksMenuItems,
-                { mark, menuItem -> viewModel.clickMenu(menuItem, mark) }
+                mark = selectedMark,
+                menuItems = marksMenuItems,
+                onClick = { mark, menuItem -> viewModel.clickMenu(menuItem, mark) }
             )
         }
+        content()
     }
 }
 
 @Composable
 private fun MarksBreadcrumbs(
-    markPath: List<MarkNode>,
     modifier: Modifier = Modifier,
-    onMarkClick: (mark: MarkNode) -> Unit = {}
+    markPath: List<MarkNode>,
+    onMarkClick: (mark: MarkNode) -> Unit = {},
+    content: @Composable () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     LaunchedEffect(markPath) {
@@ -166,6 +170,7 @@ private fun MarksBreadcrumbs(
                 }
             }
         }
+        content()
     }
 }
 
@@ -181,10 +186,11 @@ enum class MarksMenuItem(val label: String) {
 
 @Composable
 private fun MarksMenu(
+    modifier: Modifier = Modifier,
     mark: MarkNode?,
     menuItems: List<MarksMenuItem> = listOf(),
     onClick: (mark: MarkNode, menuItem: MarksMenuItem) -> Unit = { _, _ -> },
-    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit = {},
 ) {
     mark ?: return
     Surface(
@@ -214,6 +220,7 @@ private fun MarksMenu(
                     Text(menuItem.label)
                 }
             }
+            content()
         }
     }
 }
@@ -316,8 +323,7 @@ private fun MarksItem(
 }
 
 
-@HiltViewModel
-class MarksScreenViewModel @Inject constructor(
+class MarksScreenViewModel(
     private val marks: Marks,
     private val settings: Settings,
 ) : ViewModel() {

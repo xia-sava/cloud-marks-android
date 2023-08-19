@@ -31,8 +31,10 @@ import com.google.android.gms.common.api.Scope
 import com.google.android.gms.tasks.Task
 import com.google.api.services.drive.DriveScopes
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.dataStore
+import to.sava.cloudmarksandroid.modules.Storage
 
 private enum class LoadingStatus {
     NORMAL, ERROR, LOADING
@@ -49,6 +51,7 @@ fun GoogleDrivePreference(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val dataStore = context.dataStore
+    val storage: Storage = koinInject()
 
     val prefs by remember { dataStore.data }.collectAsState(initial = null)
     val permissionState = rememberPermissionState(Manifest.permission.GET_ACCOUNTS)
@@ -96,6 +99,7 @@ fun GoogleDrivePreference(
             }
         } else {
             account = ""
+            storage.clearCredential()
             SideEffect {
                 scope.launch {
                     dataStore.edit { it[key] = "" }

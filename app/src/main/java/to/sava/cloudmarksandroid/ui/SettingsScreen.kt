@@ -22,7 +22,7 @@ fun Settings(
             EditTextPreference(
                 key = PreferenceKeys.FOLDER_NAME,
                 label = "Folder name on storage service",
-                defaultValue = "cloud_marks-",
+                defaultValue = "cloud_marks",
             )
             SliderPreference(
                 key = PreferenceKeys.FOLDER_COLUMNS,

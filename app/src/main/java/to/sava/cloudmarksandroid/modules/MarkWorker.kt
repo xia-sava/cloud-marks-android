@@ -5,18 +5,14 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.hilt.work.HiltWorker
 import androidx.lifecycle.LifecycleOwner
 import androidx.work.*
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.koin.android.annotation.KoinWorker
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.ui.MainActivity
@@ -32,7 +28,13 @@ fun enqueueMarkLoader(
     lifecycleOwner: LifecycleOwner,
     onWorkerEnds: (workInfo: WorkInfo) -> Unit = {},
 ) {
+    MarkWorker.createChannel()
     val request = OneTimeWorkRequestBuilder<MarkWorker>()
+        .setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+        )
         .setInputData(workDataOf("action" to action.name))
         .build()
     CloudMarksAndroidApplication.instance.workerManager
@@ -47,13 +49,15 @@ fun enqueueMarkLoader(
         .enqueue(request)
 }
 
-@HiltWorker
-class MarkWorker @AssistedInject constructor(
-    val marks: Marks,
-    @Assisted private val appContext: Context,
-    @Assisted workerParams: WorkerParameters,
-) : CoroutineWorker(appContext, workerParams) {
-
+@KoinWorker
+class MarkWorker(
+    private val marks: Marks,
+    private val appContext: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(
+    appContext,
+    workerParams
+) {
     enum class Action {
         LOAD,
         SAVE,
@@ -95,6 +99,7 @@ class MarkWorker @AssistedInject constructor(
                     "認証エラーが発生しました",
                     "認証処理でエラーが発生しました。\n設定画面から認証をやり直してみてください。",
                 )
+
                 else -> Pair(
                     "何かエラーが発生しました",
                     "${ex::class.java.name}\n${ex.message}",
@@ -127,10 +132,6 @@ class MarkWorker @AssistedInject constructor(
         progressText: String,
         percent: Int,
     ): ForegroundInfo {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createChannel()
-        }
-
         NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
             .setOngoing(true)
             .setSmallIcon(R.drawable.ic_cloud_download_black_24dp)
@@ -157,7 +158,7 @@ class MarkWorker @AssistedInject constructor(
                     Intent(appContext, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                     },
-                    PendingIntent.FLAG_ONE_SHOT
+                    PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
                 )
             )
             .build()
@@ -169,15 +170,17 @@ class MarkWorker @AssistedInject constructor(
             }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createChannel() {
-        applicationContext.notificationManager.createNotificationChannel(
-            NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW
-            )
-        )
+    companion object {
+        fun createChannel() {
+            CloudMarksAndroidApplication.instance
+                .notificationManager
+                .createNotificationChannel(
+                    NotificationChannel(
+                        NOTIFICATION_CHANNEL_ID,
+                        NOTIFICATION_CHANNEL_NAME,
+                        NotificationManager.IMPORTANCE_LOW
+                    )
+                )
+        }
     }
-
 }

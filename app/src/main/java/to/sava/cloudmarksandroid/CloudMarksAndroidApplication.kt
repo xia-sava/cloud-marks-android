@@ -5,28 +5,17 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.hilt.work.HiltWorkerFactory
 import androidx.room.Room
-import androidx.work.Configuration
-import dagger.hilt.android.HiltAndroidApp
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.workmanager.koin.workManagerFactory
+import org.koin.core.component.KoinComponent
+import org.koin.core.context.startKoin
 import to.sava.cloudmarksandroid.databases.CloudMarksAndroidDatabase
-import javax.inject.Inject
-
+import to.sava.cloudmarksandroid.di.appModule
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-
-@HiltAndroidApp
-class CloudMarksAndroidApplication : Application(), Configuration.Provider {
-
-    companion object ApplicationInstance {
-        lateinit var instance: CloudMarksAndroidApplication
-        lateinit var database: CloudMarksAndroidDatabase
-    }
-
-    @Inject
-    lateinit var workerFactory: HiltWorkerFactory
-
+class CloudMarksAndroidApplication : Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
 
@@ -37,10 +26,16 @@ class CloudMarksAndroidApplication : Application(), Configuration.Provider {
             CloudMarksAndroidDatabase::class.java,
             "cma.db"
         ).build()
+
+        startKoin {
+            androidContext(this@CloudMarksAndroidApplication)
+            workManagerFactory()
+            modules(appModule())
+        }
     }
 
-    override fun getWorkManagerConfiguration() =
-        Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+    companion object ApplicationInstance {
+        lateinit var instance: CloudMarksAndroidApplication
+        lateinit var database: CloudMarksAndroidDatabase
+    }
 }

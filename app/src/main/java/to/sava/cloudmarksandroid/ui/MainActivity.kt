@@ -1,12 +1,15 @@
 package to.sava.cloudmarksandroid.ui
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -20,7 +23,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -30,11 +32,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 import to.sava.cloudmarksandroid.BuildConfig
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
@@ -42,9 +45,7 @@ import to.sava.cloudmarksandroid.databases.models.MarkNode
 import to.sava.cloudmarksandroid.modules.*
 import to.sava.cloudmarksandroid.ui.theme.CloudMarksAndroidTheme
 import java.time.LocalTime
-import javax.inject.Inject
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,9 +58,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainPage(modifier: Modifier = Modifier) {
-    val viewModel: MainPageViewModel = hiltViewModel()
+    val viewModel = koinViewModel<MainPageViewModel>()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -76,6 +78,8 @@ fun MainPage(modifier: Modifier = Modifier) {
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
     val lastOpenedTime by viewModel.lastOpenedTime.collectAsState("")
     val isGoogleConnected by viewModel.isGoogleConnected.collectAsState(false)
+    val permissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+        rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS) else null
 
     val markId = lastOpenedMarkId ?: return
 
@@ -89,15 +93,32 @@ fun MainPage(modifier: Modifier = Modifier) {
                 disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
                 disableLoadMenu = marksWorkerRunning || !isGoogleConnected,
-                onClickLoad = { viewModel.loadMarks(lifecycleOwner) },
+                onClickLoad = {
+                    if (permissionState == null || permissionState.hasPermission) {
+                        viewModel.loadMarks(lifecycleOwner)
+                    } else {
+                        context.toast("進捗通知のための権限付与後に再実行してください")
+                        permissionState.launchPermissionRequest()
+                    }
+                },
                 onClickAbout = { showAboutDialog = true },
-                onClickBack = { viewModel.back() },
+                onClickBack = {
+                    if (navBackStack?.destination?.route == "settings") {
+                        navController.popBackStack()
+                    } else {
+                        viewModel.back()
+                    }
+                },
             )
         },
         modifier = modifier,
         scaffoldState = scaffoldState,
-    ) {
-        NavHost(navController, startDestination = "marks/{markId}") {
+    ) { innerPadding ->
+        NavHost(
+            navController,
+            modifier = Modifier.padding(innerPadding),
+            startDestination = "marks/{markId}",
+        ) {
             composable(
                 "marks/{markId}",
                 arguments = listOf(
@@ -108,7 +129,9 @@ fun MainPage(modifier: Modifier = Modifier) {
                 )
             ) { backStackEntry ->
                 MarksScreen(
-                    hiltViewModel<MarksScreenViewModel>().apply {
+                    markId = backStackEntry.arguments?.getLong("markId") ?: markId,
+                    lastOpenedTime = lastOpenedTime,
+                    viewModelConfigurator = {
                         showMessage = { message ->
                             viewModel.showMessage(message)
                         }
@@ -150,9 +173,7 @@ fun MainPage(modifier: Modifier = Modifier) {
                         backButton = {
                             viewModel.back()
                         }
-                    },
-                    backStackEntry.arguments?.getLong("markId") ?: markId,
-                    lastOpenedTime,
+                    }
                 )
             }
             composable("settings") {
@@ -190,7 +211,7 @@ private fun CloudMarksTopAppBar(
     onClickAbout: () -> Unit = {},
     onClickBack: () -> Unit = {},
 ) {
-    var showMenu by mutableStateOf(false)
+    var showMenu by remember { mutableStateOf(false) }
 
     TopAppBar(
         title = { Text("Cloud Marks Android") },
@@ -249,8 +270,7 @@ private fun CloudMarksTopAppBar(
 }
 
 
-@HiltViewModel
-private class MainPageViewModel @Inject constructor(
+class MainPageViewModel(
     private val settings: Settings,
     private val marks: Marks,
 ) : ViewModel() {
@@ -278,6 +298,7 @@ private class MainPageViewModel @Inject constructor(
                 ?.let {
                     setLastOpenedId(it.id)
                 }
+                ?: setLastOpenedId(MarkNode.ROOT_ID)
         }
     }
 
