@@ -29,8 +29,8 @@ class MarkNodeRepository(
     /**
      * 指定 ID の直接の children を取得する．
      */
-    suspend fun getMarkNodeChildren(parent_id: Long): List<MarkNode> {
-        return access.getMarkNodeChildren(parent_id)
+    suspend fun getMarkNodeChildren(parentId: Long): List<MarkNode> {
+        return access.getMarkNodeChildren(parentId)
     }
 
     suspend fun getMarkNodeChildren(parent: MarkNode): List<MarkNode> {
@@ -40,8 +40,8 @@ class MarkNodeRepository(
     /**
      * 指定 ID の直接の children の数を取得する．
      */
-    private suspend fun getMarkNodeChildrenCount(parent_id: Long): Long {
-        return access.getMarkNodeChildrenCount(parent_id)
+    private suspend fun getMarkNodeChildrenCount(parentId: Long): Long {
+        return access.getMarkNodeChildrenCount(parentId)
     }
 
     suspend fun getMarkNodeChildrenCount(parent: MarkNode): Long {

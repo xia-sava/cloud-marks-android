@@ -1,6 +1,7 @@
+
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.io.FileInputStream
 import java.util.Properties
-import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 
 val releaseSigningConfigsProperties = Properties().also {
     it.load(FileInputStream(file("releaseSigningConfigs.properties")))

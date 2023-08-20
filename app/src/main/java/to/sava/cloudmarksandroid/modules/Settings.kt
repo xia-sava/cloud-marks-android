@@ -2,7 +2,12 @@ package to.sava.cloudmarksandroid.modules
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -69,7 +74,10 @@ abstract class BaseSettings(
         return prefs.map { it[key] ?: default }
     }
 
-    protected suspend fun getStringValue(key: Preferences.Key<String>, default: String = ""): String {
+    protected suspend fun getStringValue(
+        key: Preferences.Key<String>,
+        default: String = ""
+    ): String {
         return prefs.map { it[key] ?: default }.first()
     }
 
@@ -85,7 +93,10 @@ abstract class BaseSettings(
         return prefs.map { it[key] ?: default }.first()
     }
 
-    protected suspend fun getDoubleValue(key: Preferences.Key<Double>, default: Double = 0.0): Double {
+    protected suspend fun getDoubleValue(
+        key: Preferences.Key<Double>,
+        default: Double = 0.0
+    ): Double {
         return prefs.map { it[key] ?: default }.first()
     }
 
@@ -180,5 +191,5 @@ class Settings(
 
     fun isGoogleConnected() =
         getString(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
-        .map { it != "" }
+            .map { it != "" }
 }

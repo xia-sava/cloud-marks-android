@@ -131,8 +131,8 @@ class Marks(
      * 要するに path みたいな．/root/fooFolder/barMark とかそういう．
      */
     suspend fun getMarkPath(child: MarkNode): List<MarkNode> {
-        return child.parent_id?.let { parent_id ->
-            repos.getMarkNode(parent_id)?.let { parent ->
+        return child.parentId?.let { parentId ->
+            repos.getMarkNode(parentId)?.let { parent ->
                 getMarkPath(parent).toMutableList().apply {
                     add(child)
                 }

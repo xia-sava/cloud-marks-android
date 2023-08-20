@@ -2,12 +2,34 @@ package to.sava.cloudmarksandroid.ui
 
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Divider
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedButton
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -298,6 +320,7 @@ private fun MarksItem(
                             painterResource(R.drawable.ic_folder_open_black_24dp),
                             "Folder"
                         )
+
                         MarkType.Bookmark -> Icon(
                             painterResource(R.drawable.ic_bookmark_border_black_24dp),
                             "Bookmark"
@@ -397,6 +420,7 @@ class MarksScreenViewModel(
                 MarksMenuItem.MARK_READ,
                 MarksMenuItem.FETCH_FAVICON,
             )
+
             MarkType.Folder -> listOf(
                 MarksMenuItem.OPEN,
                 MarksMenuItem.COPY_TITLE,
@@ -418,16 +442,20 @@ class MarksScreenViewModel(
             MarksMenuItem.COPY_URL -> {
                 onCopyToClipboard(mark.url, "URL")
             }
+
             MarksMenuItem.COPY_TITLE -> {
                 onCopyToClipboard(mark.title, "タイトル")
             }
+
             MarksMenuItem.MARK_READ -> {
                 onMarkRead(mark)
             }
+
             MarksMenuItem.FETCH_FAVICON -> {
                 fetchFavicon(listOf(mark.domain))
                 showMessage("Favicon を取得しました")
             }
+
             MarksMenuItem.FETCH_FAVICON_IN_FOLDER -> {
                 viewModelScope.launch {
                     marks.getMarkChildren(mark)

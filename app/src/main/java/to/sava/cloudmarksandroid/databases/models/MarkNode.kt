@@ -1,6 +1,7 @@
 package to.sava.cloudmarksandroid.databases.models
 
 import android.net.Uri
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -21,12 +22,13 @@ class MarkNode(
     var title: String = "",
     var url: String = "",
     var order: Int = 0,
-    var parent_id: Long? = null
+    @ColumnInfo(name = "parent_id")
+    var parentId: Long? = null
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0L
 
-    override fun toString() = "${type.name}/${parent_id}/${order}/${title}/<${url}>"
+    override fun toString() = "${type.name}/${parentId}/${order}/${title}/<${url}>"
 
     val domain: String get() = parseDomain(url)
 
