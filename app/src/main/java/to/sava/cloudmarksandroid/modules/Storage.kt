@@ -1,6 +1,5 @@
 package to.sava.cloudmarksandroid.modules
 
-import android.accounts.Account
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
@@ -55,7 +54,6 @@ abstract class Storage(val settings: Settings) {
             .create()
     }
 
-    abstract fun clearCredential()
     abstract suspend fun checkAccessibility(): Boolean
     abstract suspend fun lsDir(dirName: String, parent: FileInfo): List<FileInfo>
     abstract suspend fun lsDir(dirName: String, parentName: String): List<FileInfo>
@@ -103,7 +101,8 @@ class GoogleDriveStorage(settings: Settings) : Storage(settings) {
 
     private var _credential: GoogleAccountCredential? = null
     private suspend fun credential(): GoogleAccountCredential {
-        return _credential ?: run {
+        val googleAccount = settings.getGoogleAccount()
+        if (_credential?.selectedAccountName != googleAccount) {
             GoogleAccountCredential.usingOAuth2(settings.context, SCOPES).also { cred ->
                 cred.backOff = ExponentialBackOff()
                 settings.getGoogleAccount()
@@ -120,9 +119,7 @@ class GoogleDriveStorage(settings: Settings) : Storage(settings) {
                 _credential = cred
             }
         }
-    }
-    override fun clearCredential() {
-        _credential = null
+        return _credential!!
     }
 
     private var _api: Drive? = null

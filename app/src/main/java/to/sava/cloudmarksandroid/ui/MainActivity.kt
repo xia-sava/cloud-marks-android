@@ -82,6 +82,7 @@ fun MainPage(modifier: Modifier = Modifier) {
         rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS) else null
 
     val markId = lastOpenedMarkId ?: return
+    var showPermissionDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -97,8 +98,7 @@ fun MainPage(modifier: Modifier = Modifier) {
                     if (permissionState == null || permissionState.hasPermission) {
                         viewModel.loadMarks(lifecycleOwner)
                     } else {
-                        context.toast("進捗通知のための権限付与後に再実行してください")
-                        permissionState.launchPermissionRequest()
+                        showPermissionDialog = true
                     }
                 },
                 onClickAbout = { showAboutDialog = true },
@@ -193,6 +193,29 @@ fun MainPage(modifier: Modifier = Modifier) {
             confirmButton = {
                 TextButton(
                     onClick = { showAboutDialog = false }
+                ) {
+                    Text("OK")
+                }
+            },
+        )
+    }
+    if (showPermissionDialog && permissionState != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showPermissionDialog = false
+            },
+            title = {
+                Text("進捗通知のための権限付与")
+            },
+            text = {
+                Text("進捗通知を表示するために通知権限を許可してください")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPermissionDialog = false
+                        permissionState.launchPermissionRequest()
+                    }
                 ) {
                     Text("OK")
                 }
