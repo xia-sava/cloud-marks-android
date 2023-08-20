@@ -27,3 +27,23 @@
 # アプリ
 -keep public class to.sava.cloudmarksandroid.** {*;}
 -keep public class com.google.api.** {*;}
+
+# OkHttp
+-dontwarn org.apache.http.client.config.RequestConfig$Builder
+-dontwarn org.apache.http.client.config.RequestConfig
+-dontwarn org.apache.http.client.methods.HttpPatch
+-dontwarn org.apache.http.config.Registry
+-dontwarn org.apache.http.config.RegistryBuilder
+-dontwarn org.apache.http.config.SocketConfig$Builder
+-dontwarn org.apache.http.config.SocketConfig
+-dontwarn org.apache.http.conn.DnsResolver
+-dontwarn org.apache.http.conn.HttpClientConnectionManager
+-dontwarn org.apache.http.conn.HttpConnectionFactory
+-dontwarn org.apache.http.conn.SchemePortResolver
+-dontwarn org.apache.http.conn.socket.LayeredConnectionSocketFactory
+-dontwarn org.apache.http.conn.socket.PlainConnectionSocketFactory
+-dontwarn org.apache.http.conn.ssl.SSLConnectionSocketFactory
+-dontwarn org.apache.http.impl.client.CloseableHttpClient
+-dontwarn org.apache.http.impl.client.HttpClientBuilder
+-dontwarn org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+-dontwarn org.apache.http.impl.conn.SystemDefaultRoutePlanner
