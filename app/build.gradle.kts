@@ -80,6 +80,7 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/gradle/incremental.annotation.processors"
+            excludes += "/META-INF/INDEX.LIST"
         }
     }
     namespace = "to.sava.cloudmarksandroid"
@@ -122,10 +123,10 @@ dependencies {
 
     implementation("com.google.accompanist:accompanist-permissions:0.23.1")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation("com.google.api-client:google-api-client-android:1.26.0") {
+    implementation("com.google.api-client:google-api-client-android:2.6.0") {
         exclude("org.apache.httpcomponents")
     }
-    implementation("com.google.apis:google-api-services-drive:v3-rev20211107-1.32.1") {
+    implementation("com.google.apis:google-api-services-drive:v3-rev20240521-2.0.0") {
         exclude("org.apache.httpcomponents")
     }
     implementation("io.coil-kt:coil-compose:2.1.0")
