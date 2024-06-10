@@ -100,25 +100,21 @@ fun MarksScreen(
                     .fillMaxHeight()
                     .width(1.dp)
             )
-            if (markColumns.isEmpty()) {
-                EmptyColumn()
-            } else {
-                for (children in markColumns) {
-                    MarksColumn(
-                        children,
-                        markReadToHere,
-                        modifier = Modifier
-                            .weight(1f / markColumns.size)
-                            .padding(horizontal = 1.dp),
-                        onMarkClick = { viewModel.clickMark(it) },
-                        onMarkLongClick = { viewModel.selectMark(it) }
-                    )
-                    Divider(
-                        Modifier
-                            .fillMaxHeight()
-                            .width(1.dp)
-                    )
-                }
+            for (children in markColumns) {
+                MarksColumn(
+                    children,
+                    markReadToHere,
+                    modifier = Modifier
+                        .weight(1f / markColumns.size)
+                        .padding(horizontal = 1.dp),
+                    onMarkClick = { viewModel.clickMark(it) },
+                    onMarkLongClick = { viewModel.selectMark(it) }
+                )
+                Divider(
+                    Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                )
             }
         }
         DropdownMenu(
@@ -259,21 +255,25 @@ private fun MarksColumn(
     onMarkClick: (mark: MarkNode) -> Unit = {},
     onMarkLongClick: (mark: MarkNode) -> Unit = {},
 ) {
-    LazyColumn(
-        state = rememberLazyListState(),
-        modifier = modifier,
-    ) {
-        items(children) { (mark, favicon) ->
-            MarksItem(
-                mark,
-                favicon,
-                modifier = if (markReadToHere.any { it.id == mark.id })
-                    Modifier.background(MaterialTheme.colors.primary)
-                else
-                    Modifier,
-                onMarkClick = { onMarkClick(it) },
-                onMarkLongClick = { onMarkLongClick(it) },
-            )
+    if (children.isEmpty()) {
+        EmptyColumn(modifier)
+    } else {
+        LazyColumn(
+            state = rememberLazyListState(),
+            modifier = modifier,
+        ) {
+            items(children) { (mark, favicon) ->
+                MarksItem(
+                    mark,
+                    favicon,
+                    modifier = if (markReadToHere.any { it.id == mark.id })
+                        Modifier.background(MaterialTheme.colors.primary)
+                    else
+                        Modifier,
+                    onMarkClick = { onMarkClick(it) },
+                    onMarkLongClick = { onMarkLongClick(it) },
+                )
+            }
         }
     }
 }
@@ -371,7 +371,8 @@ private fun EmptyColumn(
                 Icon(
                     painterResource(R.drawable.ic_info_black_24dp),
                     "Folder"
-                )            }
+                )
+            }
             Text(
                 text = "ブックマークが空です",
                 softWrap = false,
@@ -380,12 +381,6 @@ private fun EmptyColumn(
                     .horizontalScroll(rememberScrollState())
             )
         }
-        Divider(
-            color = Color.Gray,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-        )
     }
 }
 
