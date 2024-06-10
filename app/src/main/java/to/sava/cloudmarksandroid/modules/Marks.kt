@@ -104,6 +104,16 @@ class Marks(
     }
 
     /**
+     * Room DBから指定名のノードを取得する．
+     */
+    suspend fun initializeDb() {
+        if (repos.getRootMarkNode() == null) {
+            val root = createBookmark(null, MarkType.Folder, "root")
+            createBookmark(root, MarkType.Folder, "デフォルトブックマークフォルダ")
+        }
+    }
+
+    /**
      * Room DBからルートノードを取得する．
      * 取得できなかった場合（まだ一度も保存していないとか）は新規に作成．
      */

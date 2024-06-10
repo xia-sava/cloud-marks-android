@@ -20,7 +20,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
@@ -92,6 +92,7 @@ fun MainPage(modifier: Modifier = Modifier) {
 
     var showAboutDialog by rememberSaveable { mutableStateOf(false) }
 
+    val isDbInitialized by viewModel.isDbInitialized.collectAsState(false)
     val marksWorkerRunning by viewModel.marksWorkerRunning.collectAsState(false)
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
     val lastOpenedTime by viewModel.lastOpenedTime.collectAsState("")
@@ -101,6 +102,10 @@ fun MainPage(modifier: Modifier = Modifier) {
 
     val markId = lastOpenedMarkId ?: return
     var showPermissionDialog by remember { mutableStateOf(false) }
+
+    if (!isDbInitialized) {
+        viewModel.initializeDb()
+    }
 
     Scaffold(
         topBar = {
@@ -259,7 +264,7 @@ private fun CloudMarksTopAppBar(
         navigationIcon = if (showBackButton) {
             {
                 IconButton(onClick = onClickBack) {
-                    Icon(Icons.Filled.ArrowBack, "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
             }
         } else {
@@ -315,6 +320,9 @@ class MainPageViewModel(
     private val settings: Settings,
     private val marks: Marks,
 ) : ViewModel() {
+    private var _isDbInitialized = MutableStateFlow(false)
+    val isDbInitialized get() = _isDbInitialized.asStateFlow()
+
     val lastOpenedId = settings.getLastOpenedMarkId()
     val isGoogleConnected = settings.isGoogleConnected()
 
@@ -323,6 +331,14 @@ class MainPageViewModel(
 
     private var _lastOpenedTime = MutableStateFlow(LocalTime.now().toString())
     val lastOpenedTime get() = _lastOpenedTime.asStateFlow()
+
+    fun initializeDb() {
+        viewModelScope.launch {
+            marks.initializeDb()
+            _isDbInitialized.value = true
+            refresh()
+        }
+    }
 
     fun showMessage(message: String) {
         CloudMarksAndroidApplication.instance.toast(message)
