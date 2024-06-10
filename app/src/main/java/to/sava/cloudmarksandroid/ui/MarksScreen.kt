@@ -100,21 +100,25 @@ fun MarksScreen(
                     .fillMaxHeight()
                     .width(1.dp)
             )
-            for (children in markColumns) {
-                MarksColumn(
-                    children,
-                    markReadToHere,
-                    modifier = Modifier
-                        .weight(1f / markColumns.size)
-                        .padding(horizontal = 1.dp),
-                    onMarkClick = { viewModel.clickMark(it) },
-                    onMarkLongClick = { viewModel.selectMark(it) }
-                )
-                Divider(
-                    Modifier
-                        .fillMaxHeight()
-                        .width(1.dp)
-                )
+            if (markColumns.isEmpty()) {
+                EmptyColumn()
+            } else {
+                for (children in markColumns) {
+                    MarksColumn(
+                        children,
+                        markReadToHere,
+                        modifier = Modifier
+                            .weight(1f / markColumns.size)
+                            .padding(horizontal = 1.dp),
+                        onMarkClick = { viewModel.clickMark(it) },
+                        onMarkLongClick = { viewModel.selectMark(it) }
+                    )
+                    Divider(
+                        Modifier
+                            .fillMaxHeight()
+                            .width(1.dp)
+                    )
+                }
             }
         }
         DropdownMenu(
@@ -330,6 +334,46 @@ private fun MarksItem(
             }
             Text(
                 text = mark.title,
+                softWrap = false,
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .horizontalScroll(rememberScrollState())
+            )
+        }
+        Divider(
+            color = Color.Gray,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+        )
+    }
+}
+
+@Composable
+private fun EmptyColumn(
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(46.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(start = 4.dp, end = 4.dp)
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_info_black_24dp),
+                    "Folder"
+                )            }
+            Text(
+                text = "ブックマークが空です",
                 softWrap = false,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
