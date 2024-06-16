@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleOwner
@@ -147,7 +148,11 @@ class MarkWorker(
             .setStyle(NotificationCompat.BigTextStyle().bigText(progressText))
             .build()
             .let {
-                return ForegroundInfo(NOTIFICATION_ID, it)
+                return ForegroundInfo(
+                    NOTIFICATION_ID,
+                    it,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
             }
     }
 
