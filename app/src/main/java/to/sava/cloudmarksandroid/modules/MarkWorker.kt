@@ -5,13 +5,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.ForegroundInfo
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
@@ -82,12 +80,10 @@ class MarkWorker(
     override suspend fun doWork(): Result {
         val action = Action.valueOf(inputData.keyValueMap["action"].toString())
         try {
-            setForeground(
-                createNotification(
-                    "ブックマークを${action.actionName}しています",
-                    "読込中……",
-                    0,
-                )
+            showProgressNotification(
+                "ブックマークを${action.actionName}しています",
+                "読込中……",
+                0,
             )
             when (action) {
                 Action.LOAD -> loadAction()
@@ -98,6 +94,7 @@ class MarkWorker(
                     "Cloud Marks Android: ${action.actionName}処理が完了しました。",
                     Toast.LENGTH_LONG,
                 )
+                applicationContext.notificationManager.cancel(NOTIFICATION_ID)
             }
             return Result.success()
 
@@ -123,23 +120,21 @@ class MarkWorker(
 
         marks.progressListener = { folder: String, percent: Int ->
             setProgress(workDataOf("percent" to percent))
-            setForeground(
-                createNotification(
-                    "ブックマークをロードしています",
-                    "フォルダ $folder を処理しています……",
-                    percent,
-                )
+            showProgressNotification(
+                "ブックマークをロードしています",
+                "フォルダ $folder を処理しています……",
+                percent,
             )
         }
         marks.load()
         marks.fetchAllFavicons()
     }
 
-    private fun createNotification(
+    private fun showProgressNotification(
         title: String,
         progressText: String,
         percent: Int,
-    ): ForegroundInfo {
+    ) {
         NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
             .setOngoing(true)
             .setSmallIcon(R.drawable.ic_cloud_download_black_24dp)
@@ -148,11 +143,7 @@ class MarkWorker(
             .setStyle(NotificationCompat.BigTextStyle().bigText(progressText))
             .build()
             .let {
-                return ForegroundInfo(
-                    NOTIFICATION_ID,
-                    it,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
+                applicationContext.notificationManager.notify(NOTIFICATION_ID, it)
             }
     }
 
