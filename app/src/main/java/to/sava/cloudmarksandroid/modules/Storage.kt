@@ -49,7 +49,7 @@ abstract class Storage(val settings: Settings) {
         GsonBuilder()
             .disableHtmlEscaping()
             .registerTypeAdapter(MarkType::class.java, JsonDeserializer { json, _, _ ->
-                MarkType.values().first { it.rawValue == json.asInt }
+                MarkType.entries.first { it.rawValue == json.asInt }
             })
             .create()
     }
@@ -96,7 +96,6 @@ abstract class Storage(val settings: Settings) {
 }
 
 
-@Suppress("BlockingMethodInNonBlockingContext")
 class GoogleDriveStorage(settings: Settings) : Storage(settings) {
 
     private var _credential: GoogleAccountCredential? = null
