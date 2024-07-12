@@ -21,13 +21,21 @@ import java.security.MessageDigest
 
 
 enum class Services {
-    Gdrive
+    GoogleDrive
 }
 
 
-class FileInfo(var filename: String, var fileObject: Map<String, String> = mutableMapOf()) {
+abstract class FileInfo<T>(
+    val filename: String,
+) {
+    abstract val fileObject: T
+
     val isEmpty: Boolean
         get() = filename == ""
+
+    val timestamp: Long
+        get() = Regex("""^bookmarks\.(\d+)\.json$""")
+            .find(filename)?.groupValues?.get(1)?.toLong() ?: 0
 }
 
 
@@ -35,16 +43,7 @@ class FileInfo(var filename: String, var fileObject: Map<String, String> = mutab
 class MarksJsonContainer(val version: Int, val hash: String, val contents: MarkTreeNode)
 
 
-abstract class Storage(val settings: Settings) {
-    companion object {
-        suspend fun factory(settings: Settings): Storage {
-            // 将来は対応サービス増やしたい意思表示だけど今はこんだけ
-            return when (settings.getCurrentService()) {
-                Services.Gdrive -> GoogleDriveStorage(settings)
-            }
-        }
-    }
-
+abstract class Storage<T: FileInfo<*>>(val settings: Settings) {
     open val gson: Gson by lazy {
         GsonBuilder()
             .disableHtmlEscaping()
@@ -55,13 +54,12 @@ abstract class Storage(val settings: Settings) {
     }
 
     abstract suspend fun checkAccessibility(): Boolean
-    abstract suspend fun lsDir(dirName: String, parent: FileInfo): List<FileInfo>
-    abstract suspend fun lsDir(dirName: String, parentName: String): List<FileInfo>
-    abstract suspend fun lsDir(dirName: String): List<FileInfo>
-    abstract suspend fun lsFile(filename: String, parent: FileInfo): FileInfo
-    abstract suspend fun lsFile(filename: String, parentName: String): FileInfo
-    abstract suspend fun lsFile(filename: String): FileInfo
-    abstract suspend fun read(fileInfo: FileInfo): String
+    abstract suspend fun ls(): List<T>
+    abstract suspend fun read(fileInfo: T): String
+
+    suspend fun listDir(): List<T> {
+        return ls()
+    }
 
     /**
      * JSONをMarksツリーとして読み込む．
@@ -69,7 +67,7 @@ abstract class Storage(val settings: Settings) {
      * readContents()みたく汎用の読み込みルーチンにしたかったけど，
      * gsonの入出力を共に外から与えるのが困難すぎて断念．
      */
-    suspend fun readMarksContents(file: FileInfo): MarkTreeNode {
+    suspend fun readMarkFile(file: T): MarkTreeNode {
         val jsonStr = read(file)
         val container: MarksJsonContainer
         try {
@@ -96,7 +94,12 @@ abstract class Storage(val settings: Settings) {
 }
 
 
-class GoogleDriveStorage(settings: Settings) : Storage(settings) {
+class GoogleDriveFileInfo(
+    filename: String,
+    override val fileObject: File,
+) : FileInfo<File>(filename)
+
+class GoogleDriveStorage(settings: Settings) : Storage<GoogleDriveFileInfo>(settings) {
 
     private var _credential: GoogleAccountCredential? = null
     private suspend fun credential(): GoogleAccountCredential {
@@ -130,65 +133,10 @@ class GoogleDriveStorage(settings: Settings) : Storage(settings) {
         }
     }
 
-    override suspend fun lsFile(filename: String, parent: FileInfo): FileInfo {
-        val response = withContext(Dispatchers.IO) {
-            api()
-                .files().list()
-                .setQ(
-                    listOf(
-                        "name = '$filename'",
-                        "'${parent.fileObject["id"]}' in parents",
-                        "trashed = false"
-                    ).joinToString(" and ")
-                )
-                .execute()
-        }
-        if (response.files.size == 0) {
-            return FileInfo("", mutableMapOf())
-        }
-        return mapFileInfo(response.files[0])
-    }
-
-    override suspend fun lsFile(filename: String, parentName: String): FileInfo {
-        return lsFile(filename, findDirectory(parentName))
-    }
-
-    override suspend fun lsFile(filename: String): FileInfo {
-        return lsFile(filename, FileInfo("root", mutableMapOf("id" to "root")))
-    }
-
-    override suspend fun lsDir(dirName: String, parent: FileInfo): List<FileInfo> {
-        val dirInfo = lsFile(dirName, parent)
-        if (dirInfo.isEmpty) {
-            return listOf()
-        }
-        val response = withContext(Dispatchers.IO) {
-            api()
-                .files().list()
-                .setQ(
-                    listOf(
-                        "'${dirInfo.fileObject["id"]}' in parents",
-                        "trashed = false"
-                    ).joinToString(" and ")
-                )
-                .execute()
-        }
-        return response.files.map { file -> mapFileInfo(file) }
-    }
-
-    override suspend fun lsDir(dirName: String, parentName: String): List<FileInfo> {
-        return lsDir(dirName, findDirectory(parentName))
-    }
-
-    override suspend fun lsDir(dirName: String): List<FileInfo> {
-        return lsDir(dirName, FileInfo("root", mutableMapOf("id" to "root")))
-    }
-
-
-    override suspend fun read(fileInfo: FileInfo): String {
+    override suspend fun read(fileInfo: GoogleDriveFileInfo): String {
         val response = withContext(Dispatchers.IO) {
             api().files()
-                .get(fileInfo.fileObject["id"])
+                .get(fileInfo.fileObject.id)
                 .executeMedia()
         }
         return object : ByteSource() {
@@ -196,26 +144,36 @@ class GoogleDriveStorage(settings: Settings) : Storage(settings) {
         }.asCharSource(Charset.defaultCharset()).read()
     }
 
-
-    private suspend fun findDirectory(dirName: String): FileInfo {
-        val dirInfo = lsFile(dirName)
-        if (dirInfo.isEmpty) {
-            throw DirectoryNotFoundException("ディレクトリ $dirName が見つかりません")
+    override suspend fun ls(): List<GoogleDriveFileInfo> {
+        val response = withContext(Dispatchers.IO) {
+            api()
+                .files().list()
+                .setQ(
+                    listOf(
+                        "'${getFolderId()}' in parents",
+                        "trashed = false"
+                    ).joinToString(" and ")
+                )
+                .execute()
         }
-        return dirInfo
+        return response.files.map { file -> GoogleDriveFileInfo(file.name, file) }
     }
 
-
-    private fun mapFileInfo(file: File): FileInfo {
-        val map = mutableMapOf<String, String>()
-        for ((key, value) in file) {
-            if (value is String) {
-                map[key] = value
-            }
+    private suspend fun getFolderId(): String? {
+        val response = withContext(Dispatchers.IO) {
+            api()
+                .files().list()
+                .setQ(
+                    listOf(
+                        "name = '${settings.getGoogleDriveFolderName()}'",
+                        "'root' in parents",
+                        "trashed = false"
+                    ).joinToString(" and ")
+                )
+                .execute()
         }
-        return FileInfo(file.name, map)
+        return response.files.firstOrNull()?.id
     }
-
 
     /**
      * 試しに今の認証情報でアクセスしてみる．
@@ -230,5 +188,13 @@ class GoogleDriveStorage(settings: Settings) : Storage(settings) {
 
     companion object {
         val SCOPES: List<String> = listOf(DriveScopes.DRIVE)
+    }
+}
+
+
+suspend fun storageFactory(settings: Settings): Storage<FileInfo<*>> {
+    // 将来は対応サービス増やしたい意思表示だけど今はこんだけ
+    return when (settings.getCurrentService()) {
+        Services.GoogleDrive -> GoogleDriveStorage(settings) as Storage<FileInfo<*>>
     }
 }

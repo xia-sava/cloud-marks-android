@@ -20,7 +20,7 @@ fun Settings(
     ) {
         PreferenceGroup(name = "Application Settings") {
             EditTextPreference(
-                key = PreferenceKeys.FOLDER_NAME,
+                key = PreferenceKeys.GOOGLE_DRIVE_FOLDER_NAME,
                 label = "Folder name on storage service",
                 defaultValue = "cloud_marks",
             )
@@ -33,7 +33,7 @@ fun Settings(
             )
         }
         PreferenceGroup(name = "Google Drive Settings") {
-            GoogleDrivePreference(
+            GoogleDriveConnectionPreference(
                 key = PreferenceKeys.GOOGLE_DRIVE_ACCOUNT,
                 label = "Google Drive Connection",
                 defaultValue = "",

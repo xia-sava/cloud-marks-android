@@ -27,10 +27,10 @@ class Marks(
     /**
      * 設定画面で指定されたリモートストレージを保持する．
      */
-    private var _storage: Storage? = null
-    private suspend fun storage(): Storage {
+    private var _storage: Storage<FileInfo<*>>? = null
+    private suspend fun storage(): Storage<FileInfo<*>> {
         return _storage ?: run {
-            Storage.factory(settings).also {
+            storageFactory(settings).also {
                 _storage = it
             }
         }
@@ -40,8 +40,8 @@ class Marks(
      * リモートJSONの一番新しそうなやつの情報．
      * 複数回呼ばれると取得に時間がかかるのでキャッシュする用プロパティ．
      */
-    private var remoteFile: FileInfo? = null
-    private var remoteFileCreated: Long? = null
+    private var _remoteFile: FileInfo<*>? = null
+    private var _remoteFileCreated: Long? = null
 
     /**
      * 作業状況を外部へ伝えるためのリスナー
@@ -64,10 +64,7 @@ class Marks(
     suspend fun load() {
         // ストレージの最新ファイルを取得
         val (remoteFile, remoteFileCreated) = getLatestRemoteFile()
-        if (remoteFile == null || remoteFileCreated == null) {
-            throw FileNotFoundException("ブックマークがまだ保存されていません")
-        }
-        val remote = storage().readMarksContents(remoteFile)
+        val remote = storage().readMarkFile(remoteFile)
 
         // 差分を取って適用
         try {
@@ -84,23 +81,22 @@ class Marks(
     /**
      * リモートJSONの一覧から最新っぽいファイル名を取得する．
      */
-    private suspend fun getLatestRemoteFile(): Pair<FileInfo?, Long?> {
+    private suspend fun getLatestRemoteFile(): Pair<FileInfo<*>, Long> {
         // ストレージのファイル一覧を取得して最新ファイルを取得
         // 複数回呼ばれると結果が変わらないのに時間がかかるのでプロパティにキャッシュ
-        if (remoteFile == null || remoteFileCreated == null) {
-            val remoteFiles = storage().lsDir(settings.getFolderNameValue())
-                .filter { f ->
-                    Regex("""^bookmarks\.\d+\.json$""").containsMatchIn(f.filename)
-                }
-                .sortedBy { it.filename }
-            if (remoteFiles.isEmpty()) {
-                throw FileNotFoundException("ブックマークがまだ保存されていません")
+        _remoteFile?.let { rf ->
+            _remoteFileCreated?.let { ts ->
+                return Pair(rf, ts)
             }
-            remoteFile = remoteFiles.last()
-            remoteFileCreated = Regex("""\d+""")
-                .find(remoteFile!!.filename)?.groupValues?.get(0)?.toLong()
         }
-        return Pair(remoteFile, remoteFileCreated)
+        val remoteFileInfo = storage().listDir()
+            .maxByOrNull { it.timestamp }
+        if (remoteFileInfo == null) {
+            throw FileNotFoundException("ブックマークがまだ保存されていません")
+        }
+        _remoteFile = remoteFileInfo
+        _remoteFileCreated = remoteFileInfo.timestamp
+        return Pair(remoteFileInfo, remoteFileInfo.timestamp)
     }
 
     /**

@@ -56,13 +56,13 @@ import kotlinx.coroutines.launch
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.dataStore
 
-private enum class LoadingStatus {
+private enum class GoogleDriveLoadingStatus {
     NORMAL, ERROR, LOADING
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun GoogleDrivePreference(
+fun GoogleDriveConnectionPreference(
     key: Preferences.Key<String>,
     label: String,
     defaultValue: String,
@@ -75,7 +75,7 @@ fun GoogleDrivePreference(
     val prefs by remember { dataStore.data }.collectAsState(initial = null)
     val permissionState = rememberPermissionState(Manifest.permission.GET_ACCOUNTS)
     var runConnectionProcess by rememberSaveable { mutableStateOf(false) }
-    var loadingState by rememberSaveable { mutableStateOf(LoadingStatus.NORMAL) }
+    var loadingState by rememberSaveable { mutableStateOf(GoogleDriveLoadingStatus.NORMAL) }
     var account by rememberSaveable { mutableStateOf(defaultValue) }
 
     LaunchedEffect(prefs) {
@@ -91,14 +91,14 @@ fun GoogleDrivePreference(
                 scope.launch {
                     dataStore.edit { it[key] = email }
                 }
-                LoadingStatus.NORMAL
+                GoogleDriveLoadingStatus.NORMAL
             } ?: run {
                 Toast.makeText(context, "Sign in error!", Toast.LENGTH_LONG).show()
-                LoadingStatus.ERROR
+                GoogleDriveLoadingStatus.ERROR
             }
         } catch (e: ApiException) {
             Toast.makeText(context, e.toString(), Toast.LENGTH_LONG).show()
-            LoadingStatus.ERROR
+            GoogleDriveLoadingStatus.ERROR
         }
     }
 
@@ -111,7 +111,7 @@ fun GoogleDrivePreference(
                 }
 
                 else -> {
-                    loadingState = LoadingStatus.LOADING
+                    loadingState = GoogleDriveLoadingStatus.LOADING
                     SideEffect {
                         permissionState.launchPermissionRequest()
                     }
@@ -169,7 +169,7 @@ fun GoogleDrivePreference(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
         ) {
-            if (loadingState == LoadingStatus.LOADING) {
+            if (loadingState == GoogleDriveLoadingStatus.LOADING) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colors.onBackground,
                     modifier = Modifier.size(16.dp)

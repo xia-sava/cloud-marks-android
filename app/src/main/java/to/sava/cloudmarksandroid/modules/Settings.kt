@@ -17,13 +17,13 @@ import java.io.IOException
 
 
 object PreferenceKeys {
-    val FOLDER_NAME = stringPreferencesKey("folder_name")
     val FOLDER_COLUMNS = intPreferencesKey("folder_columns")
     val LAST_SYNCED = longPreferencesKey("last_synced")
     val LAST_BOOKMARK_MODIFIED = longPreferencesKey("last_bookmark_modified")
     val LAST_OPENED_MARK_ID = longPreferencesKey("last_opened_mark_id")
     val MARK_READ_TO_HERE = longPreferencesKey("mark_read_to_here")
     val GOOGLE_DRIVE_ACCOUNT = stringPreferencesKey("google_drive_account")
+    val GOOGLE_DRIVE_FOLDER_NAME = stringPreferencesKey("google_drive_folder_name")
 }
 
 abstract class BaseSettings(
@@ -126,15 +126,6 @@ class Settings(
     dataStore: DataStore<Preferences>
 ) : BaseSettings(context, dataStore) {
 
-    fun getFolderName() =
-        getString(PreferenceKeys.FOLDER_NAME, "cloud_marks")
-
-    suspend fun getFolderNameValue() =
-        getStringValue(PreferenceKeys.FOLDER_NAME, "cloud_marks")
-
-    suspend fun setFolderName(value: String) =
-        setValue(PreferenceKeys.FOLDER_NAME, value)
-
     fun getLastSynced() =
         getLong(PreferenceKeys.LAST_SYNCED)
 
@@ -181,13 +172,19 @@ class Settings(
         setValue(PreferenceKeys.FOLDER_COLUMNS, value)
 
     // サービス設定
-    suspend fun getCurrentService() = Services.Gdrive
+    suspend fun getCurrentService() = Services.GoogleDrive
 
     suspend fun getGoogleAccount() =
         getStringValue(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
 
     suspend fun setGoogleAccount(value: String) =
         setValue(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, value)
+
+    suspend fun getGoogleDriveFolderName() =
+        getStringValue(PreferenceKeys.GOOGLE_DRIVE_FOLDER_NAME, "cloud_marks")
+
+    suspend fun setGoogleDriveFolderName(value: String) =
+        setValue(PreferenceKeys.GOOGLE_DRIVE_FOLDER_NAME, value)
 
     fun isGoogleConnected() =
         getString(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
