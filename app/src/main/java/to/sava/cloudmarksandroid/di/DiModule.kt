@@ -18,6 +18,7 @@ import to.sava.cloudmarksandroid.modules.Marks
 import to.sava.cloudmarksandroid.modules.Settings
 import to.sava.cloudmarksandroid.ui.MainPageViewModel
 import to.sava.cloudmarksandroid.ui.MarksScreenViewModel
+import to.sava.cloudmarksandroid.ui.SettingsViewModel
 
 
 fun appModule() = module {
@@ -33,6 +34,7 @@ fun appModule() = module {
 
     viewModel { MainPageViewModel(get(), get()) }
     viewModel { MarksScreenViewModel(get(), get()) }
+    viewModel { SettingsViewModel(get()) }
 
     worker { MarkWorker(get(), get<Context>(), get()) }
 }

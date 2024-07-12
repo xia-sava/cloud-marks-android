@@ -54,6 +54,7 @@ android {
         getByName("debug") {
             signingConfig = signingConfigs.getByName("release")
             isJniDebuggable =true
+            isMinifyEnabled = false
             isDebuggable = true
             configure<CrashlyticsExtension> {
                 nativeSymbolUploadEnabled = true
@@ -135,6 +136,9 @@ dependencies {
     implementation("com.google.apis:google-api-services-drive:v3-rev20240521-2.0.0") {
         exclude("org.apache.httpcomponents")
     }
+
+    implementation("aws.sdk.kotlin:s3:1.2.49")
+
     implementation("io.coil-kt:coil-compose:2.1.0")
 
     testImplementation("junit:junit:4.13.2")

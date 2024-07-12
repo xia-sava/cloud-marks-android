@@ -1,5 +1,11 @@
 package to.sava.cloudmarksandroid.modules
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
+import aws.sdk.kotlin.services.s3.S3Client
+import aws.sdk.kotlin.services.s3.model.GetObjectRequest
+import aws.sdk.kotlin.services.s3.model.ListBucketsRequest
+import aws.sdk.kotlin.services.s3.model.ListObjectsV2Request
+import aws.smithy.kotlin.runtime.content.toByteArray
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
@@ -18,12 +24,13 @@ import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import java.nio.charset.Charset
 import java.security.MessageDigest
+import aws.sdk.kotlin.services.s3.model.Object as S3Object
 
 
 enum class Services {
-    GoogleDrive
+    GoogleDrive,
+    AwsS3,
 }
-
 
 abstract class FileInfo<T>(
     val filename: String,
@@ -38,12 +45,11 @@ abstract class FileInfo<T>(
             .find(filename)?.groupValues?.get(1)?.toLong() ?: 0
 }
 
-
-//class JsonContainer(val version: Int, val hash: String, val contents: Any)
 class MarksJsonContainer(val version: Int, val hash: String, val contents: MarkTreeNode)
 
-
-abstract class Storage<T: FileInfo<*>>(val settings: Settings) {
+abstract class Storage<T : FileInfo<*>>(
+    val settings: Settings
+) {
     open val gson: Gson by lazy {
         GsonBuilder()
             .disableHtmlEscaping()
@@ -93,6 +99,97 @@ abstract class Storage<T: FileInfo<*>>(val settings: Settings) {
     }
 }
 
+class AwsS3FileInfo(
+    filename: String,
+    override val fileObject: S3Object,
+) : FileInfo<S3Object>(filename)
+
+class AwsS3Storage(settings: Settings) : Storage<AwsS3FileInfo>(settings) {
+    private var _awsS3AccessKeyId: String? = null
+    private suspend fun getAwsS3AccessKeyId(): String {
+        return _awsS3AccessKeyId
+            ?: settings.getAwsS3AccessKeyId().also { _awsS3AccessKeyId = it }
+    }
+
+    private var _awsS3SecretAccessKey: String? = null
+    private suspend fun getAwsS3SecretAccessKey(): String {
+        return _awsS3SecretAccessKey
+            ?: settings.getAwsS3SecretAccessKey().also { _awsS3SecretAccessKey = it }
+    }
+
+    private var _awsS3Region: String? = null
+    private suspend fun getAwsS3Region(): String {
+        return _awsS3Region
+            ?: settings.getAwsS3Region().also { _awsS3Region = it }
+    }
+
+    private var _awsS3BucketName: String? = null
+    private suspend fun getAwsS3BucketName(): String {
+        return _awsS3BucketName
+            ?: settings.getAwsS3BucketName().also { _awsS3BucketName = it }
+    }
+
+    private var _awsS3FolderName: String? = null
+    private suspend fun getAwsS3FolderName(): String {
+        return _awsS3FolderName
+            ?: settings.getAwsS3FolderName().also { _awsS3FolderName = it }
+    }
+
+    private suspend fun <T> api(
+        block: suspend (
+            s3: S3Client,
+            bucketName: String,
+            folderName: String,
+        ) -> T
+    ): T {
+        val awsS3AccessKeyId = getAwsS3AccessKeyId()
+        val awsS3SecretAccessKey = getAwsS3SecretAccessKey()
+        val awsS3Region = getAwsS3Region()
+        val awsS3BucketName = getAwsS3BucketName()
+        val awsS3FolderName = getAwsS3FolderName()
+
+        S3Client {
+            region = awsS3Region
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = awsS3AccessKeyId
+                secretAccessKey = awsS3SecretAccessKey
+            }
+        }.use { client ->
+            return block(client, awsS3BucketName, awsS3FolderName)
+        }
+    }
+
+    override suspend fun read(fileInfo: AwsS3FileInfo): String {
+        return api { s3, bucketName, folderName ->
+            s3.getObject(GetObjectRequest {
+                bucket = bucketName
+                key = fileInfo.filename
+            }) {
+                it.body?.toByteArray()?.toString(Charset.defaultCharset())
+                    ?: throw InvalidJsonException("ファイルの読込みに失敗しました")
+            }
+        }
+    }
+
+    override suspend fun ls(): List<AwsS3FileInfo> {
+        return api { s3, bucketName, folderName ->
+            val response = s3.listObjectsV2(ListObjectsV2Request {
+                bucket = bucketName
+                prefix = "${folderName}/"
+            })
+            (response.contents ?: listOf()).mapNotNull { obj ->
+                obj.key?.let { AwsS3FileInfo(it, obj) }
+            }
+        }
+    }
+
+    override suspend fun checkAccessibility(): Boolean {
+        return api { s3, bucketName, folderName ->
+            val response = s3.listBuckets(ListBucketsRequest {})
+            getAwsS3BucketName() in (response.buckets ?: listOf()).map { it.name }
+        }
+    }
+}
 
 class GoogleDriveFileInfo(
     filename: String,
@@ -100,7 +197,6 @@ class GoogleDriveFileInfo(
 ) : FileInfo<File>(filename)
 
 class GoogleDriveStorage(settings: Settings) : Storage<GoogleDriveFileInfo>(settings) {
-
     private var _credential: GoogleAccountCredential? = null
     private suspend fun credential(): GoogleAccountCredential {
         val googleAccount = settings.getGoogleAccount()
@@ -193,8 +289,10 @@ class GoogleDriveStorage(settings: Settings) : Storage<GoogleDriveFileInfo>(sett
 
 
 suspend fun storageFactory(settings: Settings): Storage<FileInfo<*>> {
-    // 将来は対応サービス増やしたい意思表示だけど今はこんだけ
-    return when (settings.getCurrentService()) {
-        Services.GoogleDrive -> GoogleDriveStorage(settings) as Storage<FileInfo<*>>
-    }
+    val currentService = Services.entries[settings.getCurrentService()]
+    @Suppress("UNCHECKED_CAST")
+    return when (currentService) {
+        Services.GoogleDrive -> GoogleDriveStorage(settings)
+        Services.AwsS3 -> AwsS3Storage(settings)
+    } as Storage<FileInfo<*>>
 }
