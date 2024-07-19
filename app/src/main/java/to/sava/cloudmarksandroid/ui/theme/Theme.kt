@@ -12,9 +12,9 @@ val XiaDarkGreen = Color(0xFF408060)
 val XiaDeepGreen = Color(0xFF204030)
 
 private val DarkColorPalette = darkColors(
-    primary = XiaDarkGreen,
+    primary = XiaGreen,
     onPrimary = Color.White,
-    surface = XiaDarkGreen,
+    surface = XiaDeepGreen,
     onSurface = Color.White,
     secondary = XiaDeepGreen,
     onSecondary = Color.White,
