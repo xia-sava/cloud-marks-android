@@ -41,7 +41,7 @@ abstract class FileInfo<T>(
         get() = filename == ""
 
     val timestamp: Long
-        get() = Regex("""^bookmarks\.(\d+)\.json$""")
+        get() = Regex("""/bookmarks\.(\d+)\.json$""")
             .find(filename)?.groupValues?.get(1)?.toLong() ?: 0
 }
 

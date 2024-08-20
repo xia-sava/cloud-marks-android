@@ -148,7 +148,7 @@ fun AwsS3ConnectionPreference(
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text(
-                if (connected) "(not connected)" else "",
+                if (connected) "(connected)" else "(not connected)",
                 color = MaterialTheme.colors.onSecondary,
                 fontSize = 10.sp,
             )
