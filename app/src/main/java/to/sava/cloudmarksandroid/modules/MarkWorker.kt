@@ -47,7 +47,7 @@ fun enqueueMarkLoader(
         .apply {
             getWorkInfoByIdLiveData(request.id)
                 .observe(lifecycleOwner) { workInfo ->
-                    if (workInfo.state.isFinished) {
+                    if (workInfo?.state?.isFinished == true) {
                         onWorkerEnds(workInfo)
                     }
                 }

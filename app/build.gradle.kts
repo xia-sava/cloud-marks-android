@@ -20,11 +20,11 @@ plugins {
 
 android {
 
-    compileSdk = 34
+    compileSdk = 35
     defaultConfig {
         applicationId = "to.sava.cloudmarksandroid"
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 35
         //noinspection HighAppVersionCode
         versionCode = 2024082001
         versionName = "1.0.0b4"
@@ -103,17 +103,17 @@ composeCompiler {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.compose.ui:ui:1.6.8")
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation("androidx.compose.material:material:1.6.8")
-    implementation("androidx.compose.material:material-icons-core:1.6.8")
-    implementation("androidx.compose.material:material-icons-extended:1.6.8")
-    implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
-    implementation("androidx.activity:activity-compose:1.9.1")
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.compose.ui:ui:1.7.8")
+    implementation("androidx.navigation:navigation-compose:2.8.7")
+    implementation("androidx.compose.material:material:1.7.8")
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.8")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
+    implementation("androidx.activity:activity-compose:1.10.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.2")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
@@ -130,7 +130,7 @@ dependencies {
     ksp("io.insert-koin:koin-ksp-compiler:1.2.2")
 
     implementation("com.google.accompanist:accompanist-permissions:0.23.1")
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("com.google.api-client:google-api-client-android:2.6.0") {
         exclude("org.apache.httpcomponents")
     }
@@ -145,8 +145,8 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.8")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
 
-    debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.8")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
 }
