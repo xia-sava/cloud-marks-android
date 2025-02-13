@@ -97,6 +97,7 @@ fun MainPage(modifier: Modifier = Modifier) {
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
     val lastOpenedTime by viewModel.lastOpenedTime.collectAsState("")
     val isGoogleConnected by viewModel.isGoogleConnected.collectAsState(false)
+    val isAwsS3Connected by viewModel.isAwsS3Connected.collectAsState(false)
     val permissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS) else null
 
@@ -116,7 +117,7 @@ fun MainPage(modifier: Modifier = Modifier) {
                         ),
                 disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
-                disableLoadMenu = marksWorkerRunning || !isGoogleConnected,
+                disableLoadMenu = marksWorkerRunning || (!isGoogleConnected && !isAwsS3Connected),
                 onClickLoad = {
                     if (permissionState == null || permissionState.hasPermission) {
                         viewModel.loadMarks(lifecycleOwner)
@@ -325,6 +326,7 @@ class MainPageViewModel(
 
     val lastOpenedId = settings.getLastOpenedMarkId()
     val isGoogleConnected = settings.isGoogleConnected()
+    val isAwsS3Connected = settings.isAwsS3Connected()
 
     private var _marksWorkerRunning = MutableStateFlow(false)
     val marksWorkerRunning get() = _marksWorkerRunning.asStateFlow()

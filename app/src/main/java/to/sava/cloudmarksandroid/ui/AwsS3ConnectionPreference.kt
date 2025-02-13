@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.dataStore
@@ -85,6 +86,7 @@ fun AwsS3ConnectionPreference(
                         storage.checkAccessibility()
                     }
                     connected = true
+                    scope.launch { dataStore.edit { it[key] = true }}
                     loadingState = AwsS3LoadingStatus.NORMAL
                 } catch (e: Exception) {
                     loadingState = AwsS3LoadingStatus.ERROR
@@ -93,7 +95,7 @@ fun AwsS3ConnectionPreference(
 
             } else {
                 connected = false
-                dataStore.edit { it[key] = false }
+                scope.launch { dataStore.edit { it[key] = false }}
                 runConnectionProcess = false
             }
         }
