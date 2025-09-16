@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.androidx.compose.koinViewModel
 import to.sava.cloudmarksandroid.modules.PreferenceKeys
-import to.sava.cloudmarksandroid.modules.Services
 import to.sava.cloudmarksandroid.modules.Settings
 import to.sava.cloudmarksandroid.ui.preferences.EditTextPreference
 import to.sava.cloudmarksandroid.ui.preferences.PreferenceGroup
@@ -28,23 +27,17 @@ fun Settings(
     val settings = viewModel.settingsInstance.collectAsState()
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
         ApplicationSettings()
 
         TabSwitchPreference(
-            key = PreferenceKeys.CURRENT_SERVICE,
-            defaultValue = Services.GoogleDrive.ordinal,
-            tabs = listOf(
-                Services.GoogleDrive.ordinal to "Google Drive",
-                Services.AwsS3.ordinal to "AWS S3",
-            ),
-            modifier = Modifier.fillMaxWidth()
+            key = PreferenceKeys.CURRENT_SERVICE, defaultValue = 0, tabs = listOf(
+                0 to "AWS S3",
+            ), modifier = Modifier.fillMaxWidth()
         ) { index ->
             when (index) {
-                0 -> GoogleDriveSettings()
-                1 -> AWSS3Settings(settings.value)
+                0 -> AWSS3Settings(settings.value)
             }
         }
     }
@@ -63,21 +56,6 @@ fun ApplicationSettings() {
     }
 }
 
-@Composable
-fun GoogleDriveSettings() {
-    PreferenceGroup(name = "Google Drive Settings") {
-        GoogleDriveConnectionPreference(
-            key = PreferenceKeys.GOOGLE_DRIVE_ACCOUNT,
-            label = "Google Drive Connection",
-            defaultValue = "",
-        )
-        EditTextPreference(
-            key = PreferenceKeys.GOOGLE_DRIVE_FOLDER_NAME,
-            label = "Folder name on Google Drive",
-            defaultValue = "cloud_marks",
-        )
-    }
-}
 
 @Composable
 fun AWSS3Settings(

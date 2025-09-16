@@ -24,8 +24,6 @@ object PreferenceKeys {
     val LAST_BOOKMARK_MODIFIED = longPreferencesKey("last_bookmark_modified")
     val LAST_OPENED_MARK_ID = longPreferencesKey("last_opened_mark_id")
     val MARK_READ_TO_HERE = longPreferencesKey("mark_read_to_here")
-    val GOOGLE_DRIVE_ACCOUNT = stringPreferencesKey("google_drive_account")
-    val GOOGLE_DRIVE_FOLDER_NAME = stringPreferencesKey("google_drive_folder_name")
     val AWS_S3_ACCESS_KEY_ID = stringPreferencesKey("aws_s3_access_key_id")
     val AWS_S3_SECRET_ACCESS_KEY = stringPreferencesKey("aws_s3_secret_access_key")
     val AWS_S3_REGION = stringPreferencesKey("aws_s3_region")
@@ -180,27 +178,17 @@ class Settings(
         setValue(PreferenceKeys.FOLDER_COLUMNS, value)
 
     // サービス設定
-    suspend fun getCurrentService() =
-        getIntValue(PreferenceKeys.CURRENT_SERVICE, Services.GoogleDrive.ordinal)
+    suspend fun getCurrentService(): Int {
+        val currentValue = getIntValue(PreferenceKeys.CURRENT_SERVICE, 0)
+        return when (currentValue) {
+            0, 1 -> 0
+            else -> 0
+        }
+    }
 
     suspend fun setCurrentService(value: Int) =
         setValue(PreferenceKeys.CURRENT_SERVICE, value)
 
-    suspend fun getGoogleAccount() =
-        getStringValue(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
-
-    suspend fun setGoogleAccount(value: String) =
-        setValue(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, value)
-
-    suspend fun getGoogleDriveFolderName() =
-        getStringValue(PreferenceKeys.GOOGLE_DRIVE_FOLDER_NAME, "cloud_marks")
-
-    suspend fun setGoogleDriveFolderName(value: String) =
-        setValue(PreferenceKeys.GOOGLE_DRIVE_FOLDER_NAME, value)
-
-    fun isGoogleConnected() =
-        getString(PreferenceKeys.GOOGLE_DRIVE_ACCOUNT, "")
-            .map { it != "" }
 
     suspend fun getAwsS3AccessKeyId() =
         getStringValue(PreferenceKeys.AWS_S3_ACCESS_KEY_ID, "")

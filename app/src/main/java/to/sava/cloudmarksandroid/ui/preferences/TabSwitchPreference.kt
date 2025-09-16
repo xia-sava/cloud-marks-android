@@ -35,13 +35,22 @@ fun TabSwitchPreference(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(prefs) {
-        prefs?.get(key)?.also {
-            selectedTabIndex = it
+        prefs?.get(key)?.also { storedValue ->
+            // タブのインデックスが範囲内にあるか確認
+            val tabIndices = tabs.map { it.first }
+            selectedTabIndex = if (storedValue in tabIndices) {
+                storedValue
+            } else {
+                // 存在しないインデックスの場合は最初のタブを使用
+                tabIndices.firstOrNull() ?: defaultValue
+            }
         }
     }
 
     TabRow(
-        selectedTabIndex = selectedTabIndex,
+        selectedTabIndex = tabs.indexOfFirst { it.first == selectedTabIndex }.let {
+            if (it >= 0) it else 0
+        },
         modifier = modifier,
     ) {
         tabs.forEach { (index, title) ->

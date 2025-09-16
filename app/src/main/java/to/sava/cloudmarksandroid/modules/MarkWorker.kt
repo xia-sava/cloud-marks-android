@@ -15,7 +15,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinWorker
@@ -100,7 +99,7 @@ class MarkWorker(
 
         } catch (ex: Exception) {
             when (ex) {
-                is ServiceAuthenticationException, is GoogleAuthIOException -> Pair(
+                is ServiceAuthenticationException -> Pair(
                     "認証エラーが発生しました",
                     "認証処理でエラーが発生しました。\n設定画面から認証をやり直してみてください。",
                 )

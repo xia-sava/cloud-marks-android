@@ -129,16 +129,10 @@ dependencies {
     implementation("io.insert-koin:koin-ksp-compiler:1.2.2")
     ksp("io.insert-koin:koin-ksp-compiler:1.2.2")
 
-    implementation("com.google.accompanist:accompanist-permissions:0.23.1")
-    implementation("com.google.android.gms:play-services-auth:21.3.0")
-    implementation("com.google.api-client:google-api-client-android:2.6.0") {
-        exclude("org.apache.httpcomponents")
-    }
-    implementation("com.google.apis:google-api-services-drive:v3-rev20240521-2.0.0") {
-        exclude("org.apache.httpcomponents")
-    }
 
     implementation("aws.sdk.kotlin:s3:1.2.49")
+
+    implementation("com.google.code.gson:gson:2.10.1")
 
     implementation("io.coil-kt:coil-compose:2.1.0")
 

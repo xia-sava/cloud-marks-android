@@ -1,10 +1,8 @@
 package to.sava.cloudmarksandroid.ui
 
-import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,8 +44,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -76,7 +72,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainPage(modifier: Modifier = Modifier) {
     val viewModel = koinViewModel<MainPageViewModel>()
@@ -96,13 +91,9 @@ fun MainPage(modifier: Modifier = Modifier) {
     val marksWorkerRunning by viewModel.marksWorkerRunning.collectAsState(false)
     val lastOpenedMarkId by viewModel.lastOpenedId.collectAsState(null)
     val lastOpenedTime by viewModel.lastOpenedTime.collectAsState("")
-    val isGoogleConnected by viewModel.isGoogleConnected.collectAsState(false)
     val isAwsS3Connected by viewModel.isAwsS3Connected.collectAsState(false)
-    val permissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-        rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS) else null
 
     val markId = lastOpenedMarkId ?: return
-    var showPermissionDialog by remember { mutableStateOf(false) }
 
     if (!isDbInitialized) {
         viewModel.initializeDb()
@@ -117,13 +108,9 @@ fun MainPage(modifier: Modifier = Modifier) {
                         ),
                 disableSettingsMenu = navBackStack?.destination?.route == "settings",
                 onClickSettings = { navController.navigate("settings") },
-                disableLoadMenu = marksWorkerRunning || (!isGoogleConnected && !isAwsS3Connected),
+                disableLoadMenu = marksWorkerRunning || !isAwsS3Connected,
                 onClickLoad = {
-                    if (permissionState == null || permissionState.hasPermission) {
-                        viewModel.loadMarks(lifecycleOwner)
-                    } else {
-                        showPermissionDialog = true
-                    }
+                    viewModel.loadMarks(lifecycleOwner)
                 },
                 onClickAbout = { showAboutDialog = true },
                 onClickBack = {
@@ -224,29 +211,6 @@ fun MainPage(modifier: Modifier = Modifier) {
             },
         )
     }
-    if (showPermissionDialog && permissionState != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showPermissionDialog = false
-            },
-            title = {
-                Text("進捗通知のための権限付与")
-            },
-            text = {
-                Text("進捗通知を表示するために通知権限を許可してください")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showPermissionDialog = false
-                        permissionState.launchPermissionRequest()
-                    }
-                ) {
-                    Text("OK")
-                }
-            },
-        )
-    }
 }
 
 @Composable
@@ -326,7 +290,6 @@ class MainPageViewModel(
     val isDbInitialized get() = _isDbInitialized.asStateFlow()
 
     val lastOpenedId = settings.getLastOpenedMarkId()
-    val isGoogleConnected = settings.isGoogleConnected()
     val isAwsS3Connected = settings.isAwsS3Connected()
 
     private var _marksWorkerRunning = MutableStateFlow(false)
