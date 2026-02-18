@@ -158,9 +158,11 @@ fun MainPage(modifier: Modifier = Modifier) {
                             viewModel.setMarkReadToHere(mark.id)
                             showMessage("${mark.title}にここまで読んだマークを付けました。")
                         }
-                        openMark = { mark ->
+                        openMark = { mark, updateReadMark ->
                             uriHandler.openUri(mark.url)
-                            viewModel.setMarkReadToHere(mark.id)
+                            if (updateReadMark) {
+                                viewModel.setMarkReadToHere(mark.id)
+                            }
                         }
                         shareMark = { url ->
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))

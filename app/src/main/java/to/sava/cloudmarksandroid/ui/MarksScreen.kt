@@ -395,7 +395,7 @@ class MarksScreenViewModel(
     var onSelectFolder: (markId: Long) -> Unit = {}
     var onCopyToClipboard: (copyText: String, typeText: String) -> Unit = { _, _ -> }
     var onMarkRead: (mark: MarkNode) -> Unit = {}
-    var openMark: (mark: MarkNode) -> Unit = {}
+    var openMark: (mark: MarkNode, updateReadMark: Boolean) -> Unit = { _, _ -> }
     var shareMark: (url: String) -> Unit = {}
     var fetchFavicon: (domains: List<String>) -> Unit = {}
     var backButton: () -> Unit = {}
@@ -443,7 +443,7 @@ class MarksScreenViewModel(
     fun clickMark(mark: MarkNode) {
         when (mark.type) {
             MarkType.Folder -> onSelectFolder(mark.id)
-            MarkType.Bookmark -> openMark(mark)
+            MarkType.Bookmark -> openMark(mark, true)
         }
     }
 
@@ -476,7 +476,10 @@ class MarksScreenViewModel(
     fun clickMenu(menuItem: MarksMenuItem, mark: MarkNode) {
         dismissMenu()
         when (menuItem) {
-            MarksMenuItem.OPEN -> clickMark(mark)
+            MarksMenuItem.OPEN -> when (mark.type) {
+                MarkType.Folder -> onSelectFolder(mark.id)
+                MarkType.Bookmark -> openMark(mark, false)
+            }
             MarksMenuItem.SHARE -> shareMark(mark.url)
             MarksMenuItem.COPY_URL -> {
                 onCopyToClipboard(mark.url, "URL")
