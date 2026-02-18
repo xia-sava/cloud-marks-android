@@ -22,6 +22,8 @@ class Marks(
     private val settings: Settings,
     private val repos: MarkNodeRepository,
     private val faviconRepos: FaviconRepository,
+    private val storageFactory: suspend (Settings) -> Storage<FileInfo<*>> = ::storageFactory,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
     /**
@@ -75,7 +77,7 @@ class Marks(
 
         // 最終ロード日時保存
         settings.setLastSynced(remoteFileCreated)
-        settings.setLastBookmarkModified(System.currentTimeMillis())
+        settings.setLastBookmarkModified(clock())
     }
 
     /**

@@ -1,6 +1,5 @@
 package to.sava.cloudmarksandroid.modules
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -33,7 +32,6 @@ object PreferenceKeys {
 }
 
 abstract class BaseSettings(
-    val context: Context,
     private val dataStore: DataStore<Preferences>
 ) {
     private val prefs: Flow<Preferences>
@@ -128,9 +126,8 @@ abstract class BaseSettings(
 }
 
 class Settings(
-    context: Context,
     dataStore: DataStore<Preferences>
-) : BaseSettings(context, dataStore) {
+) : BaseSettings(dataStore) {
 
     fun getLastSynced() =
         getLong(PreferenceKeys.LAST_SYNCED)

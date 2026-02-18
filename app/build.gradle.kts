@@ -16,6 +16,7 @@ plugins {
     id("com.google.firebase.crashlytics")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
+    id("org.jetbrains.kotlinx.kover")
 }
 
 android {
@@ -84,6 +85,11 @@ android {
             excludes += "/META-INF/INDEX.LIST"
         }
     }
+    testOptions {
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
+    }
     namespace = "to.sava.cloudmarksandroid"
     applicationVariants.configureEach {
         kotlin.sourceSets {
@@ -136,7 +142,11 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.1.0")
 
-    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.11.4")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
+    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")

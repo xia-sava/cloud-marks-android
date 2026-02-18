@@ -1,6 +1,5 @@
 package to.sava.cloudmarksandroid.databases.models
 
-import android.net.Uri
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -37,7 +36,8 @@ class MarkNode(
 
     companion object {
         const val ROOT_ID = 1L
-        fun parseDomain(url: String): String = Uri.parse(url).host ?: ""
+        fun parseDomain(url: String): String =
+            runCatching { java.net.URI(url).host }.getOrNull() ?: ""
     }
 }
 

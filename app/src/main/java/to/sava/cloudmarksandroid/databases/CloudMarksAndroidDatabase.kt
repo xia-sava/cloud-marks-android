@@ -1,6 +1,5 @@
 package to.sava.cloudmarksandroid.databases
 
-import android.util.Base64
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
@@ -22,12 +21,12 @@ abstract class CloudMarksAndroidDatabase : RoomDatabase() {
 class ByteArrayConverter {
     @TypeConverter
     fun fromByteArray(byteArray: ByteArray): String {
-        return Base64.encodeToString(byteArray, Base64.NO_WRAP)
+        return java.util.Base64.getEncoder().encodeToString(byteArray)
     }
 
     @TypeConverter
     fun toByteArray(base64: String): ByteArray {
-        return Base64.decode(base64, Base64.NO_WRAP)
+        return java.util.Base64.getDecoder().decode(base64)
     }
 }
 
@@ -42,4 +41,3 @@ class MarkTypeConverter {
         return markType.rawValue
     }
 }
-

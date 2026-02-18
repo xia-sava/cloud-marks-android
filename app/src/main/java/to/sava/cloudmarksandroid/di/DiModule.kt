@@ -27,7 +27,7 @@ fun appModule() = module {
     single<DataStore<Preferences>> { get<Context>().dataStore }
     single<MarkNodeDao> { get<CloudMarksAndroidDatabase>().markNodeDao() }
     single<FaviconDao> { get<CloudMarksAndroidDatabase>().faviconDao() }
-    single { Settings(get<Context>(), get()) }
+    single { Settings(get()) }
     single { MarkNodeRepository(get()) }
     single { FaviconRepository(get()) }
     single { Marks(get(), get(), get()) }

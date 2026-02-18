@@ -10,8 +10,8 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonParseException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.google.gson.JsonPrimitive
+import com.google.gson.JsonSerializer
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import java.nio.charset.Charset
@@ -44,6 +44,9 @@ abstract class Storage<T : FileInfo<*>>(
     open val gson: Gson by lazy {
         GsonBuilder()
             .disableHtmlEscaping()
+            .registerTypeAdapter(MarkType::class.java, JsonSerializer<MarkType> { src, _, _ ->
+                JsonPrimitive(src.rawValue)
+            })
             .registerTypeAdapter(MarkType::class.java, JsonDeserializer { json, _, _ ->
                 MarkType.entries.first { it.rawValue == json.asInt }
             })
@@ -181,7 +184,6 @@ class AwsS3Storage(settings: Settings) : Storage<AwsS3FileInfo>(settings) {
         }
     }
 }
-
 
 
 suspend fun storageFactory(settings: Settings): Storage<FileInfo<*>> {
