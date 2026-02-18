@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -288,7 +289,7 @@ private fun MarksItem(
     onMarkLongClick: (mark: MarkNode) -> Unit = {},
 ) {
     val faviconBitmap: Bitmap? = favicon?.let {
-        Bitmap.createBitmap(it.size, it.size, Bitmap.Config.ARGB_8888).apply {
+        createBitmap(it.size, it.size).apply {
             copyPixelsFromBuffer(ByteBuffer.wrap(it.favicon))
         }
     }
