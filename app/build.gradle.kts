@@ -11,24 +11,23 @@ fun Properties.str(key: String): String = this[key] as String
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
     id("com.google.devtools.ksp")
-    id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.10"
     id("org.jetbrains.kotlinx.kover")
 }
 
 android {
 
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "to.sava.cloudmarksandroid"
         minSdk = 30
-        targetSdk = 35
+        targetSdk = 36
         //noinspection HighAppVersionCode
-        versionCode = 2025021301
-        versionName = "1.2.0"
+        versionCode = 2026021901
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -61,18 +60,13 @@ android {
             configure<CrashlyticsExtension> {
                 nativeSymbolUploadEnabled = true
                 mappingFileUploadEnabled = false
-                strippedNativeLibsDir = "build/ndklibs/obj"
                 unstrippedNativeLibsDir = "build/ndklibs/libs"
             }
         }
     }
     compileOptions {
-        sourceCompatibility(JavaVersion.VERSION_17)
-        targetCompatibility(JavaVersion.VERSION_17)
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=all" + "-opt-in=kotlin.RequiresOptIn"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -91,66 +85,60 @@ android {
         }
     }
     namespace = "to.sava.cloudmarksandroid"
-    applicationVariants.configureEach {
-        kotlin.sourceSets {
-            getByName(name) {
-                kotlin.srcDir("build/generated/ksp/${name}/kotlin")
-            }
-        }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        freeCompilerArgs.addAll("-Xjvm-default=all", "-opt-in=kotlin.RequiresOptIn")
     }
 }
 
 composeCompiler {
-    enableStrongSkippingMode = true
-
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
+    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.compose.ui:ui:1.7.8")
-    implementation("androidx.navigation:navigation-compose:2.8.7")
-    implementation("androidx.compose.material:material:1.7.8")
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.compose.ui:ui:1.10.3")
+    implementation("androidx.navigation:navigation-compose:2.9.7")
+    implementation("androidx.compose.material:material:1.10.3")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("androidx.compose.runtime:runtime-livedata:1.7.8")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
-    implementation("androidx.activity:activity-compose:1.10.0")
-    implementation("androidx.datastore:datastore-preferences:1.1.2")
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.10.3")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.10.3")
+    implementation("androidx.activity:activity-compose:1.12.4")
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.1")
 
-    implementation("androidx.room:room-runtime:2.6.1")
-    annotationProcessor("androidx.room:room-compiler:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
 
-    implementation("io.insert-koin:koin-android:3.4.3")
-    implementation("io.insert-koin:koin-androidx-workmanager:3.4.3")
-    implementation("io.insert-koin:koin-androidx-compose:3.4.6")
-    implementation("io.insert-koin:koin-androidx-compose-navigation:3.4.6")
-    implementation("io.insert-koin:koin-compose:1.0.4")
-    runtimeOnly("io.insert-koin:koin-annotations:1.2.2")
-    implementation("io.insert-koin:koin-ksp-compiler:1.2.2")
-    ksp("io.insert-koin:koin-ksp-compiler:1.2.2")
+    implementation(platform("io.insert-koin:koin-bom:4.1.1"))
+    implementation("io.insert-koin:koin-android")
+    implementation("io.insert-koin:koin-androidx-workmanager")
+    implementation("io.insert-koin:koin-androidx-compose")
 
 
-    implementation("aws.sdk.kotlin:s3:1.2.49")
+    implementation("aws.sdk.kotlin:s3:1.6.19")
 
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.13.2")
 
-    implementation("io.coil-kt:coil-compose:2.1.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.11.4")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
-    testImplementation("io.mockk:mockk:1.13.13")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:6.0.3")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("io.mockk:mockk:1.14.9")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.10.3")
 
-    debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.10.3")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.10.3")
 }

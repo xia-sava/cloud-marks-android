@@ -1,5 +1,6 @@
 package to.sava.cloudmarksandroid.ui
 
+import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -25,14 +26,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
@@ -78,7 +80,8 @@ fun MainPage(modifier: Modifier = Modifier) {
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
 
     val navController = rememberNavController()
@@ -151,7 +154,11 @@ fun MainPage(modifier: Modifier = Modifier) {
                             navController.navigate("marks/$selectedId")
                         }
                         onCopyToClipboard = { copyText, typeText ->
-                            clipboardManager.setText(AnnotatedString(copyText))
+                            clipboardScope.launch {
+                                clipboard.setClipEntry(
+                                    ClipData.newPlainText(typeText, copyText).toClipEntry()
+                                )
+                            }
                             showMessage("${typeText}をクリップボードにコピーしました。")
                         }
                         onMarkRead = { mark ->

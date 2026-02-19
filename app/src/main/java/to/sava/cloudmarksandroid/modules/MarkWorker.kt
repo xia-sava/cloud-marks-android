@@ -17,7 +17,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.koin.android.annotation.KoinWorker
 import to.sava.cloudmarksandroid.CloudMarksAndroidApplication
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.ui.MainActivity
@@ -54,7 +53,6 @@ fun enqueueMarkLoader(
         .enqueue(request)
 }
 
-@KoinWorker
 class MarkWorker(
     private val marks: Marks,
     private val appContext: Context,
