@@ -5,11 +5,11 @@ AWS S3 上のブックマーク JSON (`cloud_marks` 形式) を同期・閲覧�
 
 ## 技術スタック
 
-- **言語:** Kotlin 2.2.10
+- **言語:** Kotlin 2.3.10（AGP 9 built-in を `android.kotlin.version` でオーバーライド）
 - **UI:** Jetpack Compose 1.10.3 (Material Design)
 - **DB:** Room 2.8.4 (スキーマ v1)
 - **DI:** Koin 4.1.1 (BOM, DSL ベース。KSP 不使用)
-- **クラウド:** AWS SDK for Kotlin (S3) 1.5.85
+- **クラウド:** AWS SDK for Kotlin (S3) 1.6.19
 - **バックグラウンド処理:** WorkManager
 - **設定管理:** DataStore Preferences
 - **画像読込:** Coil 2.7.0
@@ -18,7 +18,7 @@ AWS S3 上のブックマーク JSON (`cloud_marks` 形式) を同期・閲覧�
 
 ## SDK バージョン
 
-- minSdk: 30 / targetSdk: 35 / compileSdk: 36
+- minSdk: 30 / targetSdk: 36 / compileSdk: 36
 
 ## パッケージ構成
 
@@ -85,7 +85,7 @@ MVVM パターン。ViewModel + Compose で UI を構成し、Koin で DI を行
 
 ## ビルド
 
-- Gradle 8.13 KTS (AGP 8.13.2, KSP 2.2.10-2.0.2)
+- Gradle 9.3.1 KTS (AGP 9.0.1, KSP 2.3.5)
 - リリース署名: `releaseSigningConfigs.properties` に keystore 情報を記載
 - リリースビルド: ProGuard minify + resource shrink 有効
 - Firebase Crashlytics: デバッグビルドでネイティブシンボルアップロード
@@ -94,7 +94,7 @@ MVVM パターン。ViewModel + Compose で UI を構成し、Koin で DI を行
 
 ### フレームワーク・ツール
 
-- **JUnit 5** (jupiter) — Unit Test に使用
+- **JUnit 6** (jupiter 6.0.3) — Unit Test に使用
 - **Kover** — カバレッジ計測。`./gradlew koverHtmlReport` で HTML レポート出力
 
 ### テストの書き方ルール
