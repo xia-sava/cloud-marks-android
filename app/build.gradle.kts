@@ -1,20 +1,6 @@
 
-import java.util.Properties
-
-/**
- * リリース署名の情報を releaseSigningConfigs.properties から読む．
- * 手元にファイルを置かない環境では環境変数から受け取る．
- */
-val releaseSigningProperties = file("releaseSigningConfigs.properties")
-    .takeIf { it.exists() }
-    ?.let { propertiesFile ->
-        Properties().apply { propertiesFile.inputStream().use { load(it) } }
-    }
-
-fun signingValue(key: String, environmentVariable: String): String? =
-    releaseSigningProperties?.getProperty(key)
-        ?: providers.environmentVariable(environmentVariable).orNull
-
+// 配布用の署名鍵。設定が無ければ署名せずに組む。
+val releaseKeystore = providers.environmentVariable("CLOUD_MARKS_RELEASE_KEYSTORE").orNull
 
 plugins {
     id("com.android.application")
@@ -44,27 +30,27 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            signingValue("storeFile", "CLOUD_MARKS_RELEASE_KEYSTORE")?.let { path ->
-                storeFile = file(path)
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
                 storePassword =
-                    signingValue("storePassword", "CLOUD_MARKS_RELEASE_KEYSTORE_PASSWORD")
-                keyAlias = signingValue("keyAlias", "CLOUD_MARKS_RELEASE_KEY_ALIAS")
-                keyPassword = signingValue("keyPassword", "CLOUD_MARKS_RELEASE_KEY_PASSWORD")
+                    providers.environmentVariable("CLOUD_MARKS_RELEASE_KEYSTORE_PASSWORD").orNull
+                keyAlias = providers.environmentVariable("CLOUD_MARKS_RELEASE_KEY_ALIAS").orNull
+                keyPassword =
+                    providers.environmentVariable("CLOUD_MARKS_RELEASE_KEY_PASSWORD").orNull
             }
         }
     }
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled  = true
             isShrinkResources = true
             isDebuggable = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         getByName("debug") {
-            signingConfig = signingConfigs.getByName("release")
             isJniDebuggable = true
             isMinifyEnabled = false
             isDebuggable = true

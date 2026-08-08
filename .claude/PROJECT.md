@@ -101,8 +101,15 @@ MVVM パターン。ViewModel + Compose で UI を構成し、Koin で DI を行
 
 - Gradle 9.3.1 KTS (AGP 9.0.1, KSP 2.3.5)
 - リリースビルド: ProGuard minify + resource shrink 有効
-- リリース署名: keystore の情報は `releaseSigningConfigs.properties` から読む。
-  ファイルが無ければ環境変数 (`CLOUD_MARKS_RELEASE_KEYSTORE` ほか) から受け取る
+- リリース署名: keystore とその資格は環境変数 `CLOUD_MARKS_RELEASE_*` から受け取る。
+  鍵はリポジトリの外 (`~/.keys/cloud-marks/`) に置き、手元では `signing.env` を読み込んでから
+  ビルドする。設定が無ければ署名せずに組む (debug は AGP 既定の署名で組まれる)
+
+```sh
+set -a; . ~/.keys/cloud-marks/signing.env; set +a
+export CLOUD_MARKS_RELEASE_KEYSTORE=C:/Users/xia/.keys/cloud-marks/release.jks
+./gradlew :app:assembleRelease
+```
 
 ## 配布と自己更新
 
