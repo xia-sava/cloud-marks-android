@@ -42,7 +42,7 @@ import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.dataStore
 import to.sava.cloudmarksandroid.modules.PreferenceKeys
 import to.sava.cloudmarksandroid.modules.Settings
-import to.sava.cloudmarksandroid.modules.storageFactory
+import to.sava.cloudmarksandroid.modules.AwsS3Storage
 
 private enum class AwsS3LoadingStatus {
     NORMAL, ERROR, LOADING
@@ -80,7 +80,7 @@ fun AwsS3ConnectionPreference(
         LaunchedEffect(connected) {
             if (!connected) {
                 loadingState = AwsS3LoadingStatus.LOADING
-                val storage = storageFactory(settings)
+                val storage = AwsS3Storage(settings)
                 try {
                     withContext(Dispatchers.IO) {
                         storage.checkAccessibility()

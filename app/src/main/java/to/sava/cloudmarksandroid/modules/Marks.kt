@@ -22,15 +22,15 @@ class Marks(
     private val settings: Settings,
     private val repos: MarkNodeRepository,
     private val faviconRepos: FaviconRepository,
-    private val storageFactory: suspend (Settings) -> Storage<FileInfo<*>> = ::storageFactory,
+    private val storageFactory: (Settings) -> Storage = ::AwsS3Storage,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
     /**
-     * 設定画面で指定されたリモートストレージを保持する．
+     * リモートストレージを保持する．
      */
-    private var _storage: Storage<FileInfo<*>>? = null
-    private suspend fun storage(): Storage<FileInfo<*>> {
+    private var _storage: Storage? = null
+    private fun storage(): Storage {
         return _storage ?: run {
             storageFactory(settings).also {
                 _storage = it
@@ -42,7 +42,7 @@ class Marks(
      * リモートJSONの一番新しそうなやつの情報．
      * 複数回呼ばれると取得に時間がかかるのでキャッシュする用プロパティ．
      */
-    private var _remoteFile: FileInfo<*>? = null
+    private var _remoteFile: FileInfo? = null
     private var _remoteFileCreated: Long? = null
 
     /**
@@ -83,7 +83,7 @@ class Marks(
     /**
      * リモートJSONの一覧から最新っぽいファイル名を取得する．
      */
-    private suspend fun getLatestRemoteFile(): Pair<FileInfo<*>, Long> {
+    private suspend fun getLatestRemoteFile(): Pair<FileInfo, Long> {
         // ストレージのファイル一覧を取得して最新ファイルを取得
         // 複数回呼ばれると結果が変わらないのに時間がかかるのでプロパティにキャッシュ
         _remoteFile?.let { rf ->

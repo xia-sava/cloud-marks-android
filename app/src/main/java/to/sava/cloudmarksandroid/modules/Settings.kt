@@ -17,7 +17,6 @@ import java.io.IOException
 
 
 object PreferenceKeys {
-    val CURRENT_SERVICE = intPreferencesKey("current_service")
     val FOLDER_COLUMNS = intPreferencesKey("folder_columns")
     val LAST_SYNCED = longPreferencesKey("last_synced")
     val LAST_BOOKMARK_MODIFIED = longPreferencesKey("last_bookmark_modified")
@@ -173,19 +172,6 @@ class Settings(
 
     suspend fun setFolderColumns(value: Int) =
         setValue(PreferenceKeys.FOLDER_COLUMNS, value)
-
-    // サービス設定
-    suspend fun getCurrentService(): Int {
-        val currentValue = getIntValue(PreferenceKeys.CURRENT_SERVICE, 0)
-        return when (currentValue) {
-            0, 1 -> 0
-            else -> 0
-        }
-    }
-
-    suspend fun setCurrentService(value: Int) =
-        setValue(PreferenceKeys.CURRENT_SERVICE, value)
-
 
     suspend fun getAwsS3AccessKeyId() =
         getStringValue(PreferenceKeys.AWS_S3_ACCESS_KEY_ID, "")

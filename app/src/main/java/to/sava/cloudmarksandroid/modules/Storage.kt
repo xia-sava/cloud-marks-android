@@ -16,18 +16,11 @@ import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
 import to.sava.cloudmarksandroid.databases.models.MarkType
 import java.nio.charset.Charset
 import java.security.MessageDigest
-import aws.sdk.kotlin.services.s3.model.Object as S3Object
 
 
-enum class Services {
-    AwsS3,
-}
-
-abstract class FileInfo<T>(
+class FileInfo(
     val filename: String,
 ) {
-    abstract val fileObject: T
-
     val isEmpty: Boolean
         get() = filename == ""
 
@@ -38,67 +31,62 @@ abstract class FileInfo<T>(
 
 class MarksJsonContainer(val version: Int, val hash: String, val contents: MarkTreeNode)
 
-abstract class Storage<T : FileInfo<*>>(
-    val settings: Settings
-) {
-    open val gson: Gson by lazy {
-        GsonBuilder()
-            .disableHtmlEscaping()
-            .registerTypeAdapter(MarkType::class.java, JsonSerializer<MarkType> { src, _, _ ->
-                JsonPrimitive(src.rawValue)
-            })
-            .registerTypeAdapter(MarkType::class.java, JsonDeserializer { json, _, _ ->
-                MarkType.entries.first { it.rawValue == json.asInt }
-            })
-            .create()
-    }
+private val gson: Gson by lazy {
+    GsonBuilder()
+        .disableHtmlEscaping()
+        .registerTypeAdapter(MarkType::class.java, JsonSerializer<MarkType> { src, _, _ ->
+            JsonPrimitive(src.rawValue)
+        })
+        .registerTypeAdapter(MarkType::class.java, JsonDeserializer { json, _, _ ->
+            MarkType.entries.first { it.rawValue == json.asInt }
+        })
+        .create()
+}
 
-    abstract suspend fun checkAccessibility(): Boolean
-    abstract suspend fun ls(): List<T>
-    abstract suspend fun read(fileInfo: T): String
-
-    suspend fun listDir(): List<T> {
-        return ls()
-    }
-
-    /**
-     * JSONをMarksツリーとして読み込む．
-     *
-     * readContents()みたく汎用の読み込みルーチンにしたかったけど，
-     * gsonの入出力を共に外から与えるのが困難すぎて断念．
-     */
-    suspend fun readMarkFile(file: T): MarkTreeNode {
-        val jsonStr = read(file)
-        val container: MarksJsonContainer
-        try {
-            container = gson.fromJson(jsonStr, MarksJsonContainer::class.java)
-        } catch (jsonEx: JsonParseException) {
-            throw InvalidJsonException("読込みデータの形式が不正です")
-        }
-        when (container.version) {
-            1 -> {
-                if (container.hash != hashContents(container.contents)) {
-                    throw InvalidJsonException("読込みデータの整合性エラーです")
-                }
-            }
-        }
-        return container.contents
-    }
-
-    private fun hashContents(contents: Any): String {
-        val json = gson.toJson(contents).trim()
-        return MessageDigest.getInstance("SHA-256").digest(json.toByteArray()).joinToString("") {
-            String.format("%02x", it)
-        }
+/**
+ * contents をシリアライズしたJSONのSHA-256を求める．
+ * cloud_marks形式の hash と突き合わせる値なので，シリアライズの出力が変わると既存データを読めなくなる．
+ */
+internal fun hashContents(contents: MarkTreeNode): String {
+    val json = gson.toJson(contents).trim()
+    return MessageDigest.getInstance("SHA-256").digest(json.toByteArray()).joinToString("") {
+        String.format("%02x", it)
     }
 }
 
-class AwsS3FileInfo(
-    filename: String,
-    override val fileObject: S3Object,
-) : FileInfo<S3Object>(filename)
+/**
+ * cloud_marks形式のJSONをMarksツリーとして読み込む．
+ * version 1 では contents のハッシュが hash と一致することを確かめる．
+ */
+internal fun parseMarkFile(jsonStr: String): MarkTreeNode {
+    val container: MarksJsonContainer
+    try {
+        container = gson.fromJson(jsonStr, MarksJsonContainer::class.java)
+    } catch (jsonEx: JsonParseException) {
+        throw InvalidJsonException("読込みデータの形式が不正です")
+    }
+    when (container.version) {
+        1 -> {
+            if (container.hash != hashContents(container.contents)) {
+                throw InvalidJsonException("読込みデータの整合性エラーです")
+            }
+        }
+    }
+    return container.contents
+}
 
-class AwsS3Storage(settings: Settings) : Storage<AwsS3FileInfo>(settings) {
+interface Storage {
+
+    suspend fun checkAccessibility(): Boolean
+
+    suspend fun listDir(): List<FileInfo>
+
+    suspend fun read(fileInfo: FileInfo): String
+
+    suspend fun readMarkFile(file: FileInfo): MarkTreeNode = parseMarkFile(read(file))
+}
+
+class AwsS3Storage(private val settings: Settings) : Storage {
     private var _awsS3AccessKeyId: String? = null
     private suspend fun getAwsS3AccessKeyId(): String {
         return _awsS3AccessKeyId
@@ -153,7 +141,7 @@ class AwsS3Storage(settings: Settings) : Storage<AwsS3FileInfo>(settings) {
         }
     }
 
-    override suspend fun read(fileInfo: AwsS3FileInfo): String {
+    override suspend fun read(fileInfo: FileInfo): String {
         return api { s3, bucketName, folderName ->
             s3.getObject(GetObjectRequest {
                 bucket = bucketName
@@ -165,14 +153,14 @@ class AwsS3Storage(settings: Settings) : Storage<AwsS3FileInfo>(settings) {
         }
     }
 
-    override suspend fun ls(): List<AwsS3FileInfo> {
+    override suspend fun listDir(): List<FileInfo> {
         return api { s3, bucketName, folderName ->
             val response = s3.listObjectsV2(ListObjectsV2Request {
                 bucket = bucketName
                 prefix = "${folderName}/"
             })
             (response.contents ?: listOf()).mapNotNull { obj ->
-                obj.key?.let { AwsS3FileInfo(it, obj) }
+                obj.key?.let { FileInfo(it) }
             }
         }
     }
@@ -183,13 +171,4 @@ class AwsS3Storage(settings: Settings) : Storage<AwsS3FileInfo>(settings) {
             getAwsS3BucketName() in (response.buckets ?: listOf()).map { it.name }
         }
     }
-}
-
-
-suspend fun storageFactory(settings: Settings): Storage<FileInfo<*>> {
-    val currentService = Services.entries[settings.getCurrentService()]
-    @Suppress("UNCHECKED_CAST")
-    return when (currentService) {
-        Services.AwsS3 -> AwsS3Storage(settings)
-    } as Storage<FileInfo<*>>
 }

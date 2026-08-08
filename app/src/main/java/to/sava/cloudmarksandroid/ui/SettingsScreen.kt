@@ -2,7 +2,6 @@ package to.sava.cloudmarksandroid.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -15,7 +14,6 @@ import to.sava.cloudmarksandroid.modules.Settings
 import to.sava.cloudmarksandroid.ui.preferences.EditTextPreference
 import to.sava.cloudmarksandroid.ui.preferences.PreferenceGroup
 import to.sava.cloudmarksandroid.ui.preferences.SliderPreference
-import to.sava.cloudmarksandroid.ui.preferences.TabSwitchPreference
 
 
 @Composable
@@ -31,15 +29,7 @@ fun Settings(
     ) {
         ApplicationSettings()
 
-        TabSwitchPreference(
-            key = PreferenceKeys.CURRENT_SERVICE, defaultValue = 0, tabs = listOf(
-                0 to "AWS S3",
-            ), modifier = Modifier.fillMaxWidth()
-        ) { index ->
-            when (index) {
-                0 -> AWSS3Settings(settings.value)
-            }
-        }
+        AWSS3Settings(settings.value)
     }
 }
 

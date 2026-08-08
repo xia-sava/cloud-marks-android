@@ -6,11 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
-/** テスト用の FileInfo 具象クラス */
-private class TestFileInfo(filename: String) : FileInfo<Unit>(filename) {
-    override val fileObject = Unit
-}
-
 class FileInfoTest {
 
     @Nested
@@ -19,7 +14,7 @@ class FileInfoTest {
         /** bookmarks.{timestamp}.json のパターンからタイムスタンプを抽出する */
         @Test
         fun validFilename() {
-            val info = TestFileInfo("folder/bookmarks.1234567890.json")
+            val info = FileInfo("folder/bookmarks.1234567890.json")
             assertEquals(1234567890L, info.timestamp)
         }
 
@@ -27,7 +22,7 @@ class FileInfoTest {
         @ParameterizedTest(name = "\"{0}\" → 0")
         @CsvSource("other.json", "bookmarks.json", "bookmarks.abc.json", "''")
         fun invalidFilenames(filename: String) {
-            assertEquals(0L, TestFileInfo(filename).timestamp)
+            assertEquals(0L, FileInfo(filename).timestamp)
         }
     }
 
@@ -37,13 +32,13 @@ class FileInfoTest {
         /** 空文字列のファイル名は空と判定する */
         @Test
         fun emptyFilename() {
-            assertEquals(true, TestFileInfo("").isEmpty)
+            assertEquals(true, FileInfo("").isEmpty)
         }
 
         /** 空でないファイル名は空でないと判定する */
         @Test
         fun nonEmptyFilename() {
-            assertEquals(false, TestFileInfo("bookmarks.json").isEmpty)
+            assertEquals(false, FileInfo("bookmarks.json").isEmpty)
         }
     }
 }

@@ -17,18 +17,12 @@ import to.sava.cloudmarksandroid.databases.models.MarkType
 import to.sava.cloudmarksandroid.databases.repositories.FaviconRepository
 import to.sava.cloudmarksandroid.databases.repositories.MarkNodeRepository
 
-/** テスト用の FileInfo 具象クラス */
-private class DummyFileInfo(
-    filename: String,
-    override val fileObject: Unit = Unit,
-) : FileInfo<Unit>(filename)
-
 class MarksTest {
 
     private lateinit var settings: Settings
     private lateinit var repos: MarkNodeRepository
     private lateinit var faviconRepos: FaviconRepository
-    private lateinit var storage: Storage<FileInfo<*>>
+    private lateinit var storage: Storage
     private var fixedClock = 99999L
     private lateinit var marks: Marks
 
@@ -172,7 +166,7 @@ class MarksTest {
         @Test
         fun updatesDbAndSavesTimestamp() = runTest {
             fixedClock = 50000L
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.1000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.1000.json")
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
             val root = markNode(id = 1, type = MarkType.Folder, title = "root")
             coEvery { storage.listDir() } returns listOf(fileInfo)
@@ -198,7 +192,7 @@ class MarksTest {
         /** タイトルに差分がある場合は DB を更新する */
         @Test
         fun titleDiff_updatesDb() = runTest {
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.2000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.2000.json")
             val remote = MarkTreeNode(MarkType.Folder, "new-root", "", listOf())
             val root = markNode(id = 1, type = MarkType.Folder, title = "old-root")
             coEvery { storage.listDir() } returns listOf(fileInfo)
@@ -213,7 +207,7 @@ class MarksTest {
         /** 差分がない場合はノードを保存しない */
         @Test
         fun noDiff_doesNotSave() = runTest {
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.3000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.3000.json")
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
             val root = markNode(id = 1, type = MarkType.Folder, title = "root")
             coEvery { storage.listDir() } returns listOf(fileInfo)
@@ -227,7 +221,7 @@ class MarksTest {
         /** 子ノード数に差分がある場合は全消し＋再作成する */
         @Test
         fun childCountDiff_recreatesChildren() = runTest {
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.4000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.4000.json")
             val childTree = MarkTreeNode(MarkType.Bookmark, "new-child", "https://new.example.com", listOf())
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf(childTree))
             val root = markNode(id = 1, type = MarkType.Folder, title = "root")
@@ -245,7 +239,7 @@ class MarksTest {
         /** 子ノードに差分がある場合は既存の子を削除してから再作成する */
         @Test
         fun existingChildren_deletedBeforeRecreate() = runTest {
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.5000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.5000.json")
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
             val root = markNode(id = 1, type = MarkType.Folder, title = "root")
             val existingChild = markNode(id = 2, type = MarkType.Bookmark, title = "old-child")
@@ -261,8 +255,8 @@ class MarksTest {
         /** 最新 timestamp のファイルが選ばれる */
         @Test
         fun selectsLatestFile() = runTest {
-            val oldFile = DummyFileInfo("bookmarks/bookmarks.100.json")
-            val newFile = DummyFileInfo("bookmarks/bookmarks.999.json")
+            val oldFile = FileInfo("bookmarks/bookmarks.100.json")
+            val newFile = FileInfo("bookmarks/bookmarks.999.json")
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
             val root = markNode(id = 1, type = MarkType.Folder, title = "root")
             coEvery { storage.listDir() } returns listOf(oldFile, newFile)
@@ -277,7 +271,7 @@ class MarksTest {
         /** root が DB に存在しない場合は新規作成して続行する */
         @Test
         fun noRoot_createsRootAndContinues() = runTest {
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.6000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.6000.json")
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
             val newRoot = markNode(id = 1, type = MarkType.Folder, title = "root")
             coEvery { storage.listDir() } returns listOf(fileInfo)
@@ -292,7 +286,7 @@ class MarksTest {
         /** progressListener が設定されている場合は進捗が通知される */
         @Test
         fun progressListenerCalled() = runTest {
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.7000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.7000.json")
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
             val root = markNode(id = 1, type = MarkType.Folder, title = "root")
             coEvery { storage.listDir() } returns listOf(fileInfo)
@@ -309,7 +303,7 @@ class MarksTest {
         /** ネストしたフォルダ構造の再帰的な反映 */
         @Test
         fun nestedFolders_appliedRecursively() = runTest {
-            val fileInfo = DummyFileInfo("bookmarks/bookmarks.8000.json")
+            val fileInfo = FileInfo("bookmarks/bookmarks.8000.json")
             val leaf = MarkTreeNode(MarkType.Bookmark, "leaf", "https://leaf.example.com", listOf())
             val subFolder = MarkTreeNode(MarkType.Folder, "sub", "", listOf(leaf))
             val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf(subFolder))
