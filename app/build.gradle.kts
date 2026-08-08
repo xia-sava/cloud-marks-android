@@ -87,6 +87,8 @@ android {
         unitTests.all {
             it.useJUnitPlatform()
         }
+        // android.util.Log のような Android フレームワークの呼び出しを既定値で通す
+        unitTests.isReturnDefaultValues = true
     }
     namespace = "to.sava.cloudmarksandroid"
 }
