@@ -24,3 +24,13 @@ sealed interface UpdateInstallState {
     /** 適用できなかった．理由を握り潰さず保持する． */
     data class Failed(val reason: String) : UpdateInstallState
 }
+
+/** ダウンロードからインストーラの起動までの途中かどうか．途中なら操作を受け付けない． */
+val UpdateInstallState?.isRunning: Boolean
+    get() = when (this) {
+        is UpdateInstallState.Downloading,
+        UpdateInstallState.Verifying,
+        UpdateInstallState.Launching -> true
+
+        else -> false
+    }

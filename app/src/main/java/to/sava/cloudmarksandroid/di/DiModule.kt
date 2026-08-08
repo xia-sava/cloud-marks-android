@@ -18,6 +18,7 @@ import to.sava.cloudmarksandroid.modules.MarkWorker
 import to.sava.cloudmarksandroid.modules.Marks
 import to.sava.cloudmarksandroid.modules.Settings
 import to.sava.cloudmarksandroid.modules.createHttpClient
+import to.sava.cloudmarksandroid.update.Updater
 import to.sava.cloudmarksandroid.ui.MainPageViewModel
 import to.sava.cloudmarksandroid.ui.MarksScreenViewModel
 import to.sava.cloudmarksandroid.ui.SettingsViewModel
@@ -34,10 +35,11 @@ fun appModule() = module {
     single { MarkNodeRepository(get()) }
     single { FaviconRepository(get(), get()) }
     single { Marks(get(), get(), get()) }
+    single { Updater(get(), get()) }
 
     viewModel { MainPageViewModel(get(), get()) }
     viewModel { MarksScreenViewModel(get(), get()) }
-    viewModel { SettingsViewModel(get()) }
+    viewModel { SettingsViewModel(get(), get()) }
 
     worker { MarkWorker(get(), get<Context>(), get()) }
 }
