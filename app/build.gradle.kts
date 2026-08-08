@@ -1,5 +1,4 @@
 
-import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -11,8 +10,6 @@ fun Properties.str(key: String): String = this[key] as String
 
 plugins {
     id("com.android.application")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.compose") version "2.3.10"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.10"
@@ -55,14 +52,9 @@ android {
         }
         getByName("debug") {
             signingConfig = signingConfigs.getByName("release")
-            isJniDebuggable =true
+            isJniDebuggable = true
             isMinifyEnabled = false
             isDebuggable = true
-            configure<CrashlyticsExtension> {
-                nativeSymbolUploadEnabled = true
-                mappingFileUploadEnabled = false
-                unstrippedNativeLibsDir = "build/ndklibs/libs"
-            }
         }
     }
     compileOptions {
