@@ -1,11 +1,19 @@
 
-import java.io.FileInputStream
 import java.util.Properties
 
-val releaseSigningConfigsProperties = Properties().also {
-    it.load(FileInputStream(file("releaseSigningConfigs.properties")))
-}
-fun Properties.str(key: String): String = this[key] as String
+/**
+ * リリース署名の情報を releaseSigningConfigs.properties から読む．
+ * 手元にファイルを置かない環境では環境変数から受け取る．
+ */
+val releaseSigningProperties = file("releaseSigningConfigs.properties")
+    .takeIf { it.exists() }
+    ?.let { propertiesFile ->
+        Properties().apply { propertiesFile.inputStream().use { load(it) } }
+    }
+
+fun signingValue(key: String, environmentVariable: String): String? =
+    releaseSigningProperties?.getProperty(key)
+        ?: providers.environmentVariable(environmentVariable).orNull
 
 
 plugins {
@@ -33,12 +41,15 @@ android {
         }
     }
 
-    signingConfigs  {
+    signingConfigs {
         create("release") {
-            keyAlias = releaseSigningConfigsProperties.str("keyAlias")
-            keyPassword = releaseSigningConfigsProperties.str("keyPassword")
-            storeFile = file(releaseSigningConfigsProperties.str("storeFile"))
-            storePassword = releaseSigningConfigsProperties.str("storePassword")
+            signingValue("storeFile", "CLOUD_MARKS_RELEASE_KEYSTORE")?.let { path ->
+                storeFile = file(path)
+                storePassword =
+                    signingValue("storePassword", "CLOUD_MARKS_RELEASE_KEYSTORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "CLOUD_MARKS_RELEASE_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "CLOUD_MARKS_RELEASE_KEY_PASSWORD")
+            }
         }
     }
 
