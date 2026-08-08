@@ -3,11 +3,38 @@ package to.sava.cloudmarksandroid.databases.models
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 
+@Serializable(with = MarkTypeSerializer::class)
 enum class MarkType(val rawValue: Int) {
     Folder(0),
     Bookmark(1),
+}
+
+/**
+ * cloud_marks形式のJSONでは MarkType を列挙子の名前ではなく rawValue の整数で表現する．
+ */
+object MarkTypeSerializer : KSerializer<MarkType> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("MarkType", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: MarkType) {
+        encoder.encodeInt(value.rawValue)
+    }
+
+    override fun deserialize(decoder: Decoder): MarkType {
+        val rawValue = decoder.decodeInt()
+        return MarkType.entries.firstOrNull { it.rawValue == rawValue }
+            ?: throw SerializationException("未知のMarkTypeです: $rawValue")
+    }
 }
 
 /**
@@ -46,6 +73,7 @@ class MarkNode(
  * Androidではこちらが内部処理のメインのMarksツリー．
  * ツリー構造は再帰して持つ．
  */
+@Serializable
 class MarkTreeNode(
     val type: MarkType,
     val title: String,

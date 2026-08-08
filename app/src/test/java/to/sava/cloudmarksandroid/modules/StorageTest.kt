@@ -74,6 +74,24 @@ class StorageTest {
             assertEquals("root", parseMarkFile(json).title)
         }
 
+        /** 未知の type 値は InvalidJsonException を投げる */
+        @Test
+        fun unknownMarkType_throwsException() {
+            val json =
+                """{"version":2,"hash":"wrong","contents":{"type":9,"title":"root","url":"","children":[]}}"""
+            assertThrows(InvalidJsonException::class.java) {
+                parseMarkFile(json)
+            }
+        }
+
+        /** 知らないフィールドがあっても読み進める */
+        @Test
+        fun unknownFieldsAreIgnored() {
+            val json =
+                """{"version":2,"hash":"wrong","extra":"x","contents":{"type":0,"title":"root","url":"","children":[],"note":"y"}}"""
+            assertEquals("root", parseMarkFile(json).title)
+        }
+
         /** ブックマークタイプのノードを解釈できる */
         @Test
         fun bookmarkType() {

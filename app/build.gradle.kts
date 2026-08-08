@@ -15,6 +15,7 @@ plugins {
     id("com.google.firebase.crashlytics")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.compose") version "2.3.10"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.10"
     id("org.jetbrains.kotlinx.kover")
 }
 
@@ -125,7 +126,7 @@ dependencies {
 
     implementation("aws.sdk.kotlin:s3:1.6.19")
 
-    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
 

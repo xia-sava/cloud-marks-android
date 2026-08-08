@@ -6,14 +6,10 @@ import aws.sdk.kotlin.services.s3.model.GetObjectRequest
 import aws.sdk.kotlin.services.s3.model.ListBucketsRequest
 import aws.sdk.kotlin.services.s3.model.ListObjectsV2Request
 import aws.smithy.kotlin.runtime.content.toByteArray
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonDeserializer
-import com.google.gson.JsonParseException
-import com.google.gson.JsonPrimitive
-import com.google.gson.JsonSerializer
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import to.sava.cloudmarksandroid.databases.models.MarkTreeNode
-import to.sava.cloudmarksandroid.databases.models.MarkType
 import java.nio.charset.Charset
 import java.security.MessageDigest
 
@@ -29,18 +25,14 @@ class FileInfo(
             .find(filename)?.groupValues?.get(1)?.toLong() ?: 0
 }
 
+@Serializable
 class MarksJsonContainer(val version: Int, val hash: String, val contents: MarkTreeNode)
 
-private val gson: Gson by lazy {
-    GsonBuilder()
-        .disableHtmlEscaping()
-        .registerTypeAdapter(MarkType::class.java, JsonSerializer<MarkType> { src, _, _ ->
-            JsonPrimitive(src.rawValue)
-        })
-        .registerTypeAdapter(MarkType::class.java, JsonDeserializer { json, _, _ ->
-            MarkType.entries.first { it.rawValue == json.asInt }
-        })
-        .create()
+/**
+ * cloud_marks形式のJSONは他のクライアントも書き込むため，知らないフィールドがあっても読み進める．
+ */
+private val json = Json {
+    ignoreUnknownKeys = true
 }
 
 /**
@@ -48,8 +40,8 @@ private val gson: Gson by lazy {
  * cloud_marks形式の hash と突き合わせる値なので，シリアライズの出力が変わると既存データを読めなくなる．
  */
 internal fun hashContents(contents: MarkTreeNode): String {
-    val json = gson.toJson(contents).trim()
-    return MessageDigest.getInstance("SHA-256").digest(json.toByteArray()).joinToString("") {
+    val serialized = json.encodeToString(contents)
+    return MessageDigest.getInstance("SHA-256").digest(serialized.toByteArray()).joinToString("") {
         String.format("%02x", it)
     }
 }
@@ -61,8 +53,8 @@ internal fun hashContents(contents: MarkTreeNode): String {
 internal fun parseMarkFile(jsonStr: String): MarkTreeNode {
     val container: MarksJsonContainer
     try {
-        container = gson.fromJson(jsonStr, MarksJsonContainer::class.java)
-    } catch (jsonEx: JsonParseException) {
+        container = json.decodeFromString<MarksJsonContainer>(jsonStr)
+    } catch (jsonEx: SerializationException) {
         throw InvalidJsonException("読込みデータの形式が不正です")
     }
     when (container.version) {
