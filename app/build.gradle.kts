@@ -31,9 +31,11 @@ android {
         applicationId = "to.sava.cloudmarksandroid"
         minSdk = 30
         targetSdk = 36
+        // 配布ビルドでは CI が版数を渡す。手元でのビルドは既定値のまま動く
         //noinspection HighAppVersionCode
-        versionCode = 2026021901
-        versionName = "1.3.0"
+        versionCode =
+            (providers.gradleProperty("cloudmarks.versionCode").orNull ?: "2026021901").toInt()
+        versionName = providers.gradleProperty("cloudmarks.versionName").orNull ?: "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
