@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import to.sava.cloudmarksandroid.modules.PreferenceDefaults
 import to.sava.cloudmarksandroid.modules.PreferenceKeys
 import to.sava.cloudmarksandroid.modules.Settings
 import to.sava.cloudmarksandroid.ui.preferences.EditTextPreference
@@ -62,7 +63,7 @@ fun ApplicationSettings() {
             label = "Folder Columns",
             minValue = 1,
             maxValue = 5,
-            defaultValue = 1,
+            defaultValue = PreferenceDefaults.FOLDER_COLUMNS,
         )
     }
 }
@@ -76,32 +77,32 @@ fun AWSS3Settings(
         EditTextPreference(
             key = PreferenceKeys.AWS_S3_ACCESS_KEY_ID,
             label = "Access Key ID on AWS S3",
-            defaultValue = "",
+            defaultValue = PreferenceDefaults.AWS_S3_ACCESS_KEY_ID,
         )
         EditTextPreference(
             key = PreferenceKeys.AWS_S3_SECRET_ACCESS_KEY,
             label = "Secret Access Key on AWS S3",
-            defaultValue = "",
+            defaultValue = PreferenceDefaults.AWS_S3_SECRET_ACCESS_KEY,
         )
         EditTextPreference(
             key = PreferenceKeys.AWS_S3_REGION,
             label = "Region on AWS S3",
-            defaultValue = "",
+            defaultValue = PreferenceDefaults.AWS_S3_REGION,
         )
         EditTextPreference(
             key = PreferenceKeys.AWS_S3_BUCKET_NAME,
             label = "Bucket name on AWS S3",
-            defaultValue = "",
+            defaultValue = PreferenceDefaults.AWS_S3_BUCKET_NAME,
         )
         EditTextPreference(
             key = PreferenceKeys.AWS_S3_FOLDER_NAME,
             label = "Folder name on AWS S3",
-            defaultValue = "cloud_marks",
+            defaultValue = PreferenceDefaults.AWS_S3_FOLDER_NAME,
         )
         AwsS3ConnectionPreference(
             key = PreferenceKeys.AWS_S3_CONNECTED,
             label = "AWS S3 Connection",
-            defaultValue = false,
+            defaultValue = PreferenceDefaults.AWS_S3_CONNECTED,
             settings = settings,
         )
     }
