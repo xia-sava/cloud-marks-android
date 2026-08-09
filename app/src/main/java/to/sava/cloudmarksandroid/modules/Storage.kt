@@ -79,36 +79,11 @@ interface Storage {
 }
 
 class AwsS3Storage(private val settings: Settings) : Storage {
-    private var _awsS3AccessKeyId: String? = null
-    private suspend fun getAwsS3AccessKeyId(): String {
-        return _awsS3AccessKeyId
-            ?: settings.getAwsS3AccessKeyId().also { _awsS3AccessKeyId = it }
-    }
 
-    private var _awsS3SecretAccessKey: String? = null
-    private suspend fun getAwsS3SecretAccessKey(): String {
-        return _awsS3SecretAccessKey
-            ?: settings.getAwsS3SecretAccessKey().also { _awsS3SecretAccessKey = it }
-    }
-
-    private var _awsS3Region: String? = null
-    private suspend fun getAwsS3Region(): String {
-        return _awsS3Region
-            ?: settings.getAwsS3Region().also { _awsS3Region = it }
-    }
-
-    private var _awsS3BucketName: String? = null
-    private suspend fun getAwsS3BucketName(): String {
-        return _awsS3BucketName
-            ?: settings.getAwsS3BucketName().also { _awsS3BucketName = it }
-    }
-
-    private var _awsS3FolderName: String? = null
-    private suspend fun getAwsS3FolderName(): String {
-        return _awsS3FolderName
-            ?: settings.getAwsS3FolderName().also { _awsS3FolderName = it }
-    }
-
+    /**
+     * S3の設定を読んでクライアントを組み立て，[block] へ渡す．
+     * 設定は毎回読み直す．保持すると設定画面での変更が次の起動まで効かない．
+     */
     private suspend fun <T> api(
         block: suspend (
             s3: S3Client,
@@ -116,11 +91,11 @@ class AwsS3Storage(private val settings: Settings) : Storage {
             folderName: String,
         ) -> T
     ): T {
-        val awsS3AccessKeyId = getAwsS3AccessKeyId()
-        val awsS3SecretAccessKey = getAwsS3SecretAccessKey()
-        val awsS3Region = getAwsS3Region()
-        val awsS3BucketName = getAwsS3BucketName()
-        val awsS3FolderName = getAwsS3FolderName()
+        val awsS3AccessKeyId = settings.getAwsS3AccessKeyId()
+        val awsS3SecretAccessKey = settings.getAwsS3SecretAccessKey()
+        val awsS3Region = settings.getAwsS3Region()
+        val awsS3BucketName = settings.getAwsS3BucketName()
+        val awsS3FolderName = settings.getAwsS3FolderName()
 
         S3Client {
             region = awsS3Region
@@ -160,7 +135,7 @@ class AwsS3Storage(private val settings: Settings) : Storage {
     override suspend fun checkAccessibility(): Boolean {
         return api { s3, bucketName, folderName ->
             val response = s3.listBuckets(ListBucketsRequest {})
-            getAwsS3BucketName() in (response.buckets ?: listOf()).map { it.name }
+            bucketName in (response.buckets ?: listOf()).map { it.name }
         }
     }
 }

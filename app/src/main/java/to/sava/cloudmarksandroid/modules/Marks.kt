@@ -27,16 +27,9 @@ class Marks(
 ) {
 
     /**
-     * リモートストレージを保持する．
+     * リモートストレージ．設定は参照のたびに読み直されるので使い回してよい．
      */
-    private var _storage: Storage? = null
-    private fun storage(): Storage {
-        return _storage ?: run {
-            storageFactory(settings).also {
-                _storage = it
-            }
-        }
-    }
+    private val storage: Storage by lazy { storageFactory(settings) }
 
     /**
      * リモートJSONの一番新しそうなやつの情報．
@@ -66,7 +59,7 @@ class Marks(
     suspend fun load() {
         // ストレージの最新ファイルを取得
         val (remoteFile, remoteFileCreated) = getLatestRemoteFile()
-        val remote = storage().readMarkFile(remoteFile)
+        val remote = storage.readMarkFile(remoteFile)
 
         // 差分を取って適用
         try {
@@ -91,7 +84,7 @@ class Marks(
                 return Pair(rf, ts)
             }
         }
-        val remoteFileInfo = storage().listDir()
+        val remoteFileInfo = storage.listDir()
             .maxByOrNull { it.timestamp }
         if (remoteFileInfo == null) {
             throw FileNotFoundException("ブックマークがまだ保存されていません")
