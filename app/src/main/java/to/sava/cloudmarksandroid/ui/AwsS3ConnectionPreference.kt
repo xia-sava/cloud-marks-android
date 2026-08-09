@@ -74,12 +74,16 @@ fun AwsS3ConnectionPreference(
                 loadingState = AwsS3LoadingStatus.LOADING
                 val storage = AwsS3Storage(settings)
                 try {
-                    withContext(Dispatchers.IO) {
+                    val accessible = withContext(Dispatchers.IO) {
                         storage.checkAccessibility()
                     }
-                    connected = true
-                    scope.launch { dataStore.edit { it[key] = true }}
-                    loadingState = AwsS3LoadingStatus.NORMAL
+                    if (accessible) {
+                        connected = true
+                        scope.launch { dataStore.edit { it[key] = true }}
+                        loadingState = AwsS3LoadingStatus.NORMAL
+                    } else {
+                        loadingState = AwsS3LoadingStatus.ERROR
+                    }
                 } catch (e: Exception) {
                     loadingState = AwsS3LoadingStatus.ERROR
                 }

@@ -120,22 +120,34 @@ class AwsS3Storage(private val settings: Settings) : Storage {
         }
     }
 
-    override suspend fun listDir(): List<FileInfo> {
-        return api { s3, bucketName, folderName ->
-            val response = s3.listObjectsV2(ListObjectsV2Request {
-                bucket = bucketName
-                prefix = "${folderName}/"
-            })
-            (response.contents ?: listOf()).mapNotNull { obj ->
-                obj.key?.let { FileInfo(it) }
-            }
+    private suspend fun S3Client.listFiles(bucketName: String, folderName: String): List<FileInfo> {
+        val response = listObjectsV2(ListObjectsV2Request {
+            bucket = bucketName
+            prefix = "${folderName}/"
+        })
+        return (response.contents ?: listOf()).mapNotNull { obj ->
+            obj.key?.let { FileInfo(it) }
         }
     }
 
+    override suspend fun listDir(): List<FileInfo> {
+        return api { s3, bucketName, folderName ->
+            s3.listFiles(bucketName, folderName)
+        }
+    }
+
+    /**
+     * 読込みができる状態かを確かめる．
+     * バケット一覧の取得はリージョンにもフォルダにも依らないため，指定フォルダに
+     * ブックマークのJSONが見えるところまで確かめる．
+     */
     override suspend fun checkAccessibility(): Boolean {
         return api { s3, bucketName, folderName ->
-            val response = s3.listBuckets(ListBucketsRequest {})
-            bucketName in (response.buckets ?: listOf()).map { it.name }
+            val buckets = s3.listBuckets(ListBucketsRequest {})
+            if (bucketName !in (buckets.buckets ?: listOf()).map { it.name }) {
+                return@api false
+            }
+            s3.listFiles(bucketName, folderName).any { it.timestamp > 0 }
         }
     }
 }
