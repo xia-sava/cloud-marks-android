@@ -45,6 +45,22 @@ class ManifestSignatureTest {
         assertFalse(verifyManifestSignature(manifest, "!!not base64!!", keyPair.publicKeyBase64()))
     }
 
+    /**
+     * 配布元の鍵で署名したマニフェストを、アプリへ埋め込んだ公開鍵で検証できる。
+     * ここが落ちるときは埋め込みの鍵かワークフローの署名方式が食い違っている。
+     */
+    @Test
+    fun verifiesSignatureFromReleaseKey() {
+        val released =
+            """{"android":{"versionCode":2026080801,"versionName":"1.4.0","sha256":"ab12"}}"""
+        val signature =
+            "MEUCIQCt3cUAS/jk61gNZnteks4TXTl41KPBRUYa2ebFNxE/HQIgUjKj6PJpfZW0Ic5wndrfzlXlx5xYdrrwHBOETObGxE0="
+
+        assertTrue(
+            verifyManifestSignature(released.toByteArray(), signature, MANIFEST_PUBLIC_KEY)
+        )
+    }
+
     /** 鍵が空のあいだは検証を通さない */
     @Test
     fun emptyPublicKey() {

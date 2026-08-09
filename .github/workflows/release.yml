@@ -17,7 +17,7 @@ env:
   JAVA_VERSION: "21"
   # マニフェストの署名を確かめる公開鍵（X.509 SubjectPublicKeyInfo の DER を base64）。
   # ManifestSignature.kt に埋め込んである値と同じでなければならない。
-  MANIFEST_PUBLIC_KEY: ""
+  MANIFEST_PUBLIC_KEY: "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEbetGgdoJVFzoVcDXhtS+k3qZCJ7OvN5XOmnGfZ9Fqh14MCbW9CPcd8qVhlGy/BKZcpHeYZqPZCFmFdo05cpPbQ=="
 
 jobs:
   version:

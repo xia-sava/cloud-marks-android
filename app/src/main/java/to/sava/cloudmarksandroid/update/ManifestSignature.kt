@@ -18,10 +18,10 @@ private const val LOG_TAG = "ManifestSignature"
  * 配布元がマニフェストへ付ける署名の検証鍵．
  * X.509 SubjectPublicKeyInfo の DER を base64 にした ECDSA P-256 の公開鍵．
  * 配布経路(TLS)ともマニフェストの中身とも独立した信頼の起点になる．
- *
- * TODO: 配布用の鍵ペアを作り，その公開鍵に差し替える．空のあいだ更新確認は必ず失敗する．
+ * ワークフローの MANIFEST_PUBLIC_KEY と同じ値でなければ，配布済みの端末が更新できなくなる．
  */
-const val MANIFEST_PUBLIC_KEY: String = ""
+const val MANIFEST_PUBLIC_KEY: String =
+    "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEbetGgdoJVFzoVcDXhtS+k3qZCJ7OvN5XOmnGfZ9Fqh14MCbW9CPcd8qVhlGy/BKZcpHeYZqPZCFmFdo05cpPbQ=="
 
 /**
  * マニフェストの生バイト [manifest] に対する [signature](DER署名をbase64にしたもの)を

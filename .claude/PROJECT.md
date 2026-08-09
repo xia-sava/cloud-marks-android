@@ -107,9 +107,12 @@ MVVM パターン。ViewModel + Compose で UI を構成し、Koin で DI を行
 
 ```sh
 set -a; . ~/.keys/cloud-marks/signing.env; set +a
-export CLOUD_MARKS_RELEASE_KEYSTORE=C:/Users/xia/.keys/cloud-marks/release.jks
+export CLOUD_MARKS_RELEASE_KEYSTORE="$(cygpath -m ~/.keys/cloud-marks/release.jks)"
 ./gradlew :app:assembleRelease
 ```
+
+`storeFile` は Java の `File` として解決されるため、`/c/...` 形式では通らない。
+git bash からは `cygpath -m` で `C:/...` 形式に直して渡す。
 
 ## 配布と自己更新
 
