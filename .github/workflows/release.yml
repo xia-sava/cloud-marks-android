@@ -28,7 +28,7 @@ jobs:
       code: ${{ steps.compute.outputs.code }}
       name: ${{ steps.compute.outputs.name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -77,19 +77,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: jetbrains
           java-version: ${{ env.JAVA_VERSION }}
 
       # リポジトリに置いている gradle-wrapper.jar が公式のものであることを確かめる。
-      - uses: gradle/actions/wrapper-validation@v4
+      - uses: gradle/actions/wrapper-validation@v5
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Run tests
         run: ./gradlew :app:testDebugUnitTest --console=plain
@@ -101,16 +101,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: jetbrains
           java-version: ${{ env.JAVA_VERSION }}
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       # 署名鍵は secrets から復元する。同じ鍵で署名し続ける限り端末上で上書き更新できる。
       - name: Restore keystore
@@ -149,7 +149,7 @@ jobs:
           mkdir -p artifacts
           cp "$apk" artifacts/cloud-marks.apk
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android
           path: artifacts/cloud-marks.apk
@@ -164,7 +164,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
@@ -223,7 +223,7 @@ jobs:
           openssl dgst -sha256 -verify "$RUNNER_TEMP/manifest-public-key.pem" \
             -signature "$RUNNER_TEMP/latest.json.sig.der" artifacts/latest.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: manifest
           path: |
@@ -239,7 +239,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
@@ -247,7 +247,7 @@ jobs:
       # 版ごとのリリース。配布物の実物が残るので、後からどの版で何を配ったかを辿れる。
       # 配布物を書き込む唯一の外部コードなので、可変タグではなくコミットで固定する。
       - name: Publish versioned release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ needs.version.outputs.name }}
@@ -262,7 +262,7 @@ jobs:
       # 更新経路。配布済みのアプリは latest からマニフェストと配布物を引くため、
       # 置き場を動かさずに中身だけ差し替える。
       - name: Update latest release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: latest
           name: "Latest build"
