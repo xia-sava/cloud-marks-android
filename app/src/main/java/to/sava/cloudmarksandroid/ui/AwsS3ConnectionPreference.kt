@@ -40,9 +40,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import to.sava.cloudmarksandroid.R
 import to.sava.cloudmarksandroid.dataStore
-import to.sava.cloudmarksandroid.modules.PreferenceKeys
-import to.sava.cloudmarksandroid.modules.Settings
 import to.sava.cloudmarksandroid.modules.AwsS3Storage
+import to.sava.cloudmarksandroid.modules.Settings
 
 private enum class AwsS3LoadingStatus {
     NORMAL, ERROR, LOADING
@@ -64,16 +63,9 @@ fun AwsS3ConnectionPreference(
     var runConnectionProcess by rememberSaveable { mutableStateOf(false) }
     var loadingState by rememberSaveable { mutableStateOf(AwsS3LoadingStatus.NORMAL) }
     var connected by rememberSaveable { mutableStateOf(defaultValue) }
-    var accessKeyId by rememberSaveable { mutableStateOf("") }
-    var secretAccessKey by rememberSaveable { mutableStateOf("") }
-    var region by rememberSaveable { mutableStateOf("") }
-    var bucketName by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(prefs) {
-        prefs?.get(PreferenceKeys.AWS_S3_ACCESS_KEY_ID)?.let { accessKeyId = it }
-        prefs?.get(PreferenceKeys.AWS_S3_SECRET_ACCESS_KEY)?.let { secretAccessKey = it }
-        prefs?.get(PreferenceKeys.AWS_S3_REGION)?.let { region = it }
-        prefs?.get(PreferenceKeys.AWS_S3_BUCKET_NAME)?.let { bucketName = it }
+        prefs?.get(key)?.let { connected = it }
     }
 
     if (runConnectionProcess) {
