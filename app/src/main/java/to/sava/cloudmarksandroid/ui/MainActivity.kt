@@ -1,11 +1,15 @@
 package to.sava.cloudmarksandroid.ui
 
+import android.Manifest
 import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.AlertDialog
@@ -22,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,9 +79,34 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * 通知の権限を求める．
+ * ブックマークの読込みは進捗も結果も通知で伝えるため，許可が無いと何も起きないように見える．
+ * 断られても読込み自体は動くので，そのまま続ける．
+ */
+@Composable
+private fun RequestNotificationPermission() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return
+    }
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+
+    LaunchedEffect(Unit) {
+        val granted = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+        if (granted != PackageManager.PERMISSION_GRANTED) {
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+}
+
 @Composable
 fun MainPage(modifier: Modifier = Modifier) {
     val viewModel = koinViewModel<MainPageViewModel>()
+
+    RequestNotificationPermission()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
