@@ -32,9 +32,10 @@ jobs:
         with:
           persist-credentials: false
 
-      # versionCode は YYYYMMDDnn（JST の日付 + 2 桁の連番）。配布中の版と同じ日付なら連番を
-      # 進める。日付を含む形にしているのは、既に配布した 2026021901 を下回れないため。
-      # versionName はタグ名から v を除いたもの。配布しない手動実行は識別できる名前を付ける。
+      # versionCode は YYYYMMDDnn（JST の日付 + 2 桁の連番）。日付を含む形にしているのは、
+      # 既に配布した 2026021901 を下回れないため。タグからの配布は 01 から始めて、配布中の版と
+      # 同じ日付なら連番を進める。配布しない手動実行は 00 を使い、同じ日のタグ版と衝突させない。
+      # versionName はタグ名から v を除いたもの。手動実行はコミットで識別できる名前を付ける。
       - name: Compute version
         id: compute
         env:
@@ -42,27 +43,28 @@ jobs:
         run: |
           set -euo pipefail
           today=$(TZ=Asia/Tokyo date +%Y%m%d)
-          url="https://github.com/${REPOSITORY}/releases/download/latest/latest.json"
-          published=$(curl -fsSL "$url" | jq -r '.android.versionCode' || true)
-          case "$published" in
-            ''|null) published=0 ;;
-          esac
-          if [ "${#published}" -eq 10 ] && [ "${published%??}" = "$today" ]; then
-            code=$((published + 1))
-          else
-            code="${today}01"
-          fi
-          if [ "$code" -le "$published" ]; then
-            echo "versionCode が増えていません（配布中 $published → 今回 $code）" >&2
-            exit 1
-          fi
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then
             name="${GITHUB_REF_NAME#v}"
             if ! printf '%s' "$name" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
               echo "タグは vMAJOR.MINOR.PATCH の形で打つこと（受け取った値: $GITHUB_REF_NAME）" >&2
               exit 1
             fi
+            url="https://github.com/${REPOSITORY}/releases/download/latest/latest.json"
+            published=$(curl -fsSL "$url" | jq -r '.android.versionCode' || true)
+            case "$published" in
+              ''|null) published=0 ;;
+            esac
+            if [ "${#published}" -eq 10 ] && [ "${published%??}" = "$today" ]; then
+              code=$((published + 1))
+            else
+              code="${today}01"
+            fi
+            if [ "$code" -le "$published" ]; then
+              echo "versionCode が増えていません（配布中 $published → 今回 $code）" >&2
+              exit 1
+            fi
           else
+            code="${today}00"
             name="dev-$(git rev-parse --short HEAD)"
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
