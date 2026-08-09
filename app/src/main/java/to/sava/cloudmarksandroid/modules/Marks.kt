@@ -32,13 +32,6 @@ class Marks(
     private val storage: Storage by lazy { storageFactory(settings) }
 
     /**
-     * リモートJSONの一番新しそうなやつの情報．
-     * 複数回呼ばれると取得に時間がかかるのでキャッシュする用プロパティ．
-     */
-    private var _remoteFile: FileInfo? = null
-    private var _remoteFileCreated: Long? = null
-
-    /**
      * 作業状況を外部へ伝えるためのリスナー
      */
     var progressListener: (suspend (folder: String, percent: Int) -> Unit)? = null
@@ -58,7 +51,7 @@ class Marks(
      */
     suspend fun load() {
         // ストレージの最新ファイルを取得
-        val (remoteFile, remoteFileCreated) = getLatestRemoteFile()
+        val remoteFile = getLatestRemoteFile()
         val remote = storage.readMarkFile(remoteFile)
 
         // 差分を取って適用
@@ -69,30 +62,17 @@ class Marks(
         }
 
         // 最終ロード日時保存
-        settings.setLastSynced(remoteFileCreated)
+        settings.setLastSynced(remoteFile.timestamp)
         settings.setLastBookmarkModified(clock())
     }
 
     /**
-     * リモートJSONの一覧から最新っぽいファイル名を取得する．
+     * リモートJSONの一覧から最新っぽいファイルを取得する．
+     * 一覧は読込みのたびに取り直す．保持すると後から書き込まれたJSONを見落とす．
      */
-    private suspend fun getLatestRemoteFile(): Pair<FileInfo, Long> {
-        // ストレージのファイル一覧を取得して最新ファイルを取得
-        // 複数回呼ばれると結果が変わらないのに時間がかかるのでプロパティにキャッシュ
-        _remoteFile?.let { rf ->
-            _remoteFileCreated?.let { ts ->
-                return Pair(rf, ts)
-            }
-        }
-        val remoteFileInfo = storage.listDir()
-            .maxByOrNull { it.timestamp }
-        if (remoteFileInfo == null) {
-            throw FileNotFoundException("ブックマークがまだ保存されていません")
-        }
-        _remoteFile = remoteFileInfo
-        _remoteFileCreated = remoteFileInfo.timestamp
-        return Pair(remoteFileInfo, remoteFileInfo.timestamp)
-    }
+    private suspend fun getLatestRemoteFile(): FileInfo =
+        storage.listDir().maxByOrNull { it.timestamp }
+            ?: throw FileNotFoundException("ブックマークがまだ保存されていません")
 
     /**
      * Room DBから指定名のノードを取得する．

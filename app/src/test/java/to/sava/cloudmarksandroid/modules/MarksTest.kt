@@ -321,6 +321,42 @@ class MarksTest {
             coVerify { repos.createMarkNode(MarkType.Folder, "sub", "", 0, 1L) }
             coVerify { repos.createMarkNode(MarkType.Bookmark, "leaf", "https://leaf.example.com", 0, 10L) }
         }
+
+        /** 読込みのたびにファイル一覧を取り直す */
+        @Test
+        fun refetchesFileListOnEachLoad() = runTest {
+            val fileInfo = FileInfo("bookmarks/bookmarks.1000.json")
+            val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
+            val root = markNode(id = 1, type = MarkType.Folder, title = "root")
+            coEvery { storage.listDir() } returns listOf(fileInfo)
+            coEvery { storage.readMarkFile(fileInfo) } returns remote
+            coEvery { repos.getRootMarkNode() } returns root
+            coEvery { repos.getMarkNodeChildren(root) } returns emptyList()
+
+            marks.load()
+            marks.load()
+
+            coVerify(exactly = 2) { storage.listDir() }
+        }
+
+        /** 前回の読込み以降に書き込まれたファイルを次の読込みで拾う */
+        @Test
+        fun picksUpFileAddedAfterPreviousLoad() = runTest {
+            val oldFile = FileInfo("bookmarks/bookmarks.1000.json")
+            val newFile = FileInfo("bookmarks/bookmarks.2000.json")
+            val remote = MarkTreeNode(MarkType.Folder, "root", "", listOf())
+            val root = markNode(id = 1, type = MarkType.Folder, title = "root")
+            coEvery { storage.listDir() } returns listOf(oldFile) andThen listOf(oldFile, newFile)
+            coEvery { storage.readMarkFile(any()) } returns remote
+            coEvery { repos.getRootMarkNode() } returns root
+            coEvery { repos.getMarkNodeChildren(root) } returns emptyList()
+
+            marks.load()
+            marks.load()
+
+            coVerify { storage.readMarkFile(newFile) }
+            coVerify { settings.setLastSynced(2000L) }
+        }
     }
 
     @Nested
